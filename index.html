@@ -25,7 +25,7 @@ input,select,textarea{font-family:inherit;outline:none}
 #app{display:flex;min-height:100vh}
 #sidebar{width:var(--sidebar);background:var(--nearblack);color:#fff;position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
 #main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
-#topbar{height:var(--topbar);background:var(--nearblack);color:#fff;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50}
+#topbar{height:52px;background:#5E1100;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 28px;gap:0;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.35)}
 #content{padding:28px;flex:1}
 
 /* Sidebar */
@@ -48,12 +48,13 @@ input,select,textarea{font-family:inherit;outline:none}
 .sb-uinfo span{font-size:10px;color:rgba(255,255,255,.4)}
 
 /* Topbar */
-.tb-logo{display:flex;align-items:center;gap:8px;margin-right:16px}
-.tb-brand{font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
-.tb-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:600;color:rgba(255,255,255,.65)}
-.tb-search{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:5px 10px;width:200px}
-.tb-search input{border:none;background:transparent;font-size:12px;color:#fff;width:100%}
-.tb-search input::placeholder{color:rgba(255,255,255,.4)}
+.tb-logo{display:flex;align-items:center;gap:10px;padding-right:28px;border-right:1px solid rgba(255,255,255,.18);margin-right:24px;flex-shrink:0}
+.tb-brand{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:.01em}
+.tb-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.7);flex:1}
+.tb-search{display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;font-weight:500;padding:5px 0;border:none;background:transparent}
+.tb-search input{border:none;background:transparent;font-size:13px;color:#fff;width:120px;cursor:pointer}
+.tb-search input::placeholder{color:rgba(255,255,255,.6)}
+.tb-search svg{opacity:.7}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;transition:.15s;cursor:pointer;border:none}
 .btn-primary{background:var(--venetian);color:#fff}.btn-primary:hover{background:var(--burnt)}
 .btn-outline{background:transparent;border:1px solid var(--border);color:var(--nearblack)}.btn-outline:hover{background:var(--halfnarrow)}
@@ -281,7 +282,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
-    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentors</div>
+    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentors Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
@@ -299,13 +300,16 @@ input,select,textarea{font-family:inherit;outline:none}
 <div id="main">
   <div id="topbar">
     <div class="tb-logo">
-      <svg width="22" height="22" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="7" r="3.5" fill="#CE2702"/><circle cx="20" cy="33" r="3.5" fill="#CE2702"/><circle cx="7" cy="20" r="3.5" fill="#CE2702"/><circle cx="33" cy="20" r="3.5" fill="#CE2702"/><circle cx="11" cy="11" r="3" fill="#CE2702"/><circle cx="29" cy="29" r="3" fill="#CE2702"/><circle cx="29" cy="11" r="3" fill="#CE2702"/><circle cx="11" cy="29" r="3" fill="#CE2702"/></svg>
+      <svg width="26" height="26" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="7" r="3.5" fill="#fff"/><circle cx="20" cy="33" r="3.5" fill="#fff"/><circle cx="7" cy="20" r="3.5" fill="#fff"/><circle cx="33" cy="20" r="3.5" fill="#fff"/><circle cx="11" cy="11" r="3" fill="#fff"/><circle cx="29" cy="29" r="3" fill="#fff"/><circle cx="29" cy="11" r="3" fill="#fff"/><circle cx="11" cy="29" r="3" fill="#fff"/></svg>
       <span class="tb-brand">Global Mentors Group</span>
     </div>
     <div class="tb-title" id="tbt">Dashboard</div>
     <div style="flex:1"></div>
-    <div class="tb-search"><span>&#x2315;</span><input type="text" placeholder="Search&#x2026;" oninput="gSearch(this.value)"></div>
-    <button class="btn btn-primary" id="tba" style="display:none" onclick="topAction()">+ Add</button>
+    <div class="tb-search">
+      <input type="text" placeholder="Search" oninput="gSearch(this.value)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <button class="btn btn-primary" id="tba" style="display:none;margin-left:12px" onclick="topAction()">+ Add</button>
   </div>
   <div id="content"></div>
 </div>
@@ -440,7 +444,7 @@ let DB = load()||JSON.parse(JSON.stringify(SEED));
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''}};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentors',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentors Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -1609,14 +1613,52 @@ function buildReport(type){
 
 /* ── MENTORS ─────────────────────────────────────────────────── */
 function rMentors(c){
-  const mentors=DB.contacts.filter(x=>x.type==='mentor');
+  const tab=S.tab.mentorCat||'chair';
+  const allMentors=DB.contacts.filter(x=>x.type==='mentor');
+
+  // Derive primary category from engagements; default to 'emerging'
+  function mentorCat(m){
+    const engs=DB.engagements.filter(e=>e.mentorId===m.id);
+    if(!engs.length) return 'emerging';
+    const types=engs.map(e=>e.type);
+    if(types.includes('chair')) return 'chair';
+    if(types.includes('executive')) return 'executive';
+    return 'emerging';
+  }
+
+  const chairs=allMentors.filter(m=>mentorCat(m)==='chair');
+  const executives=allMentors.filter(m=>mentorCat(m)==='executive');
+  const emerging=allMentors.filter(m=>mentorCat(m)==='emerging');
+  const shown=tab==='chair'?chairs:tab==='executive'?executives:emerging;
+
+  const sectionMeta={
+    chair:{label:'Chair Mentors',badge:'type-chair',desc:'Senior leaders specialising in board-level and chair mentoring'},
+    executive:{label:'Executive Mentors',badge:'type-executive',desc:'C-suite and senior executive mentoring specialists'},
+    emerging:{label:'Emerging Leaders Mentors',badge:'b-blue',desc:'Coaches supporting high-potential and emerging leaders'}
+  };
+
   c.innerHTML=`
-  <div class="phdr"><div><h2>Mentors</h2><p>${mentors.length} active mentors on the GMG network</p></div>
+  <div class="phdr"><div><h2>Mentors Library</h2><p>${allMentors.length} mentors · ${chairs.length} Chair · ${executives.length} Executive · ${emerging.length} Emerging Leaders</p></div>
   <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button></div>
+  <div class="tabs">
+    <div class="tab${tab==='chair'?' active':''}" onclick="S.tab.mentorCat='chair';renderView()">
+      Chair Mentors <span style="font-size:10px;opacity:.7">(${chairs.length})</span>
+    </div>
+    <div class="tab${tab==='executive'?' active':''}" onclick="S.tab.mentorCat='executive';renderView()">
+      Executive Mentors <span style="font-size:10px;opacity:.7">(${executives.length})</span>
+    </div>
+    <div class="tab${tab==='emerging'?' active':''}" onclick="S.tab.mentorCat='emerging';renderView()">
+      Emerging Leaders <span style="font-size:10px;opacity:.7">(${emerging.length})</span>
+    </div>
+  </div>
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 18px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+    ${sectionMeta[tab].desc}
+  </div>
   <div class="mentor-grid">
-    ${mentors.map(m=>{
+    ${shown.map(m=>{
       const engCount=DB.engagements.filter(e=>e.mentorId===m.id).length;
       const sb=m.status==='active'?'b-green':'b-amber';
+      const catBadge=sectionMeta[tab].badge;
       return`<div class="mentor-card">
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
           <div class="mentor-av">${initials(m.name)}</div>
@@ -1632,12 +1674,15 @@ function rMentors(c){
         </div>
         ${m.notes?`<div style="font-size:11px;padding:8px;background:var(--halfnarrow);border-radius:5px;margin-bottom:10px;color:var(--nearblack)">${m.notes}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:11px;color:var(--muted)">${engCount} engagement${engCount!==1?'s':''}</span>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge ${catBadge}" style="font-size:9px">${sectionMeta[tab].label.split(' ')[0]}</span>
+            <span style="font-size:11px;color:var(--muted)">${engCount} engagement${engCount!==1?'s':''}</span>
+          </div>
           <button class="btn btn-sm btn-outline" onclick="openContactModal('${m.id}')">Edit</button>
         </div>
       </div>`;
     }).join('')}
-    ${mentors.length===0?`<div class="empty" style="grid-column:1/-1"><div class="ei">◉</div><p>No mentors added yet</p></div>`:''}
+    ${shown.length===0?`<div class="empty" style="grid-column:1/-1"><div class="ei">◉</div><p>No ${sectionMeta[tab].label.toLowerCase()} added yet</p><button class="btn btn-outline" style="margin-top:12px" onclick="openContactModal(null,'mentor')">+ Add Mentor</button></div>`:''}
   </div>`;
 }
 
@@ -1795,46 +1840,4 @@ function openInvoiceModal(id,engId){
       </select></div>
       <div class="fg"><label>Engagement</label><select id="ivm-eng">
         <option value="">— Select —</option>
-        ${DB.engagements.map(e=>`<option value="${e.id}"${(inv?inv.engId:engId)===e.id?' selected':''}>${e.name.slice(0,50)}</option>`).join('')}
-      </select></div>
-    </div>
-    <div class="fgrow">
-      <div class="fg"><label>Type</label><select id="ivm-type">
-        <option value="chair-annual"${inv&&inv.type==='chair-annual'?' selected':''}>Chair Annual</option>
-        <option value="exec-quarterly"${inv&&inv.type==='exec-quarterly'?' selected':''}>Exec Quarterly</option>
-        <option value="team-adhoc"${inv&&inv.type==='team-adhoc'?' selected':''}>Team Ad-hoc</option>
-      </select></div>
-      <div class="fg"><label>Period</label><input id="ivm-period" type="text" value="${inv?inv.period:''}" placeholder="e.g. Q3 2026"></div>
-    </div>
-    <div class="fgrow">
-      <div class="fg"><label>Amount (£)</label><input id="ivm-amount" type="number" value="${inv?inv.amount:''}" placeholder="0"></div>
-      <div class="fg"><label>Issue Date</label><input id="ivm-issue" type="date" value="${inv?inv.issued:today()}"></div>
-    </div>
-    <div class="fg"><label>Due Date</label><input id="ivm-due" type="date" value="${inv?inv.due:''}"></div>
-    <div class="fg"><label>Notes</label><textarea id="ivm-notes" rows="2">${inv?inv.notes||'':''}</textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice('${id||''}','${engId||''}')">Save Invoice</button>
-    </div>
-  </div>`);
-}
-
-function saveInvoice(id,engId){
-  const amount=parseFloat(document.getElementById('ivm-amount').value)||0;
-  if(!amount)return alert('Please enter an amount.');
-  const data={clientId:document.getElementById('ivm-client').value,engId:document.getElementById('ivm-eng').value,type:document.getElementById('ivm-type').value,period:document.getElementById('ivm-period').value,amount,issued:document.getElementById('ivm-issue').value,due:document.getElementById('ivm-due').value,notes:document.getElementById('ivm-notes').value.trim(),status:'draft',xeroSynced:false};
-  if(id){const inv=DB.clientInvoices.find(x=>x.id===id);if(inv)Object.assign(inv,data);}
-  else{DB.clientInvoices.push({id:uid(),...data});addAct('◎',`Invoice created: ${fmt(amount)} — ${data.period}`);}
-  save();closeModal();renderView();
-}
-
-/* ── INIT ────────────────────────────────────────────────────── */
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-// Auto-show login on load
-window.addEventListener('load',()=>{
-  document.getElementById('login').style.display='flex';
-  document.getElementById('app').style.display='none';
-});
-</script>
-</body>
-</html>
+        ${DB.engagements.map(e=>`<option value="${e.id}"${(inv?inv.engId:engId)===e.id?' selected':''}>${e.name.slice(0,50)}</
