@@ -1419,4 +1419,66 @@ function buildReport(type){
     const quotes=DB.quotes;
     const approved=quotes.filter(q=>q.status==='approved');
     const sent=quotes.filter(q=>q.status==='sent');
-    return`<div class="kpi-grid" style="
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Total Quotes</div><div class="kpi-val">${quotes.length}</div></div>
+      <div class="kpi gold"><div class="kpi-label">Total Value</div><div class="kpi-val">${fmt(quotes.reduce((s,q)=>s+q.value,0))}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Approved</div><div class="kpi-val">${approved.length}</div><div class="kpi-sub">${fmt(approved.reduce((s,q)=>s+q.value,0))}</div></div>
+      <div class="kpi"><div class="kpi-label">Awaiting Response</div><div class="kpi-val">${sent.length}</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><h3>Quotes by Partner</h3></div><div class="card-body" style="padding:0">
+      <table class="tbl"><thead><tr><th>Partner</th><th>Quotes</th><th>Approved</th><th>Total Value</th><th>Approval Rate</th></tr></thead><tbody>
+      ${PARTNERS.map(p=>{const pq=quotes.filter(q=>q.partner===p);if(!pq.length)return'';const pa=pq.filter(q=>q.status==='approved');return`<tr><td>${p}</td><td>${pq.length}</td><td>${pa.length}</td><td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(pq.reduce((s,q)=>s+q.value,0))}</td><td>${pq.length?Math.round(pa.length/pq.length*100):0}%</td></tr>`}).join('')}
+      </tbody></table></div></div>`;
+  }
+  if(type==='tasks'){
+    const tasks=DB.tasks;
+    const open=tasks.filter(t=>t.status!=='done');
+    const overdue=open.filter(t=>t.due&&t.due<today());
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Total Tasks</div><div class="kpi-val">${tasks.length}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Open</div><div class="kpi-val">${open.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Overdue</div><div class="kpi-val" style="color:var(--venetian)">${overdue.length}</div></div>
+      <div class="kpi gold"><div class="kpi-label">Completed</div><div class="kpi-val">${tasks.filter(t=>t.status==='done').length}</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><h3>Tasks by Assignee</h3></div><div class="card-body" style="padding:0">
+      <table class="tbl"><thead><tr><th>Assignee</th><th>Total</th><th>Open</th><th>Overdue</th><th>Completed</th></tr></thead><tbody>
+      ${PARTNERS.map(p=>{const pt=tasks.filter(t=>t.assignee===p);if(!pt.length)return'';return`<tr><td>${p}</td><td>${pt.length}</td><td>${pt.filter(t=>t.status!=='done').length}</td><td style="color:${pt.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length>0?'var(--venetian)':'inherit'}">${pt.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length}</td><td>${pt.filter(t=>t.status==='done').length}</td></tr>`}).join('')}
+      </tbody></table></div></div>`;
+  }
+  if(type==='projects'){
+    const engs=DB.engagements.filter(e=>e.status==='active');
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Active Projects</div><div class="kpi-val">${engs.length}</div></div>
+      <div class="kpi gold"><div class="kpi-label">Sessions Completed</div><div class="kpi-val">${DB.sessions.filter(s=>s.status==='completed').length}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Open Tasks</div><div class="kpi-val">${DB.tasks.filter(t=>t.status!=='done').length}</div></div>
+      <div class="kpi"><div class="kpi-label">Overdue Tasks</div><div class="kpi-val" style="color:var(--venetian)">${DB.tasks.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length}</div></div>
+    </div>
+    <div class="card"><div class="card-hdr"><h3>Project Delivery Summary</h3></div><div class="card-body" style="padding:0">
+      <table class="tbl"><thead><tr><th>Project</th><th>Type</th><th>Partner</th><th>Sessions</th><th>Open Tasks</th><th>Health</th></tr></thead><tbody>
+      ${engs.map(e=>{
+        const sess=DB.sessions.filter(s=>s.engId===e.id);
+        const done=sess.filter(s=>s.status==='completed').length;
+        const total=e.sessionsPlanned||sess.length||1;
+        const pct=Math.min(100,Math.round(done/total*100));
+        const ot=DB.tasks.filter(t=>t.ref===e.id&&t.status!=='done').length;
+        const health=pct>=75&&ot===0?'b-green':pct>=40||ot<=2?'b-amber':'b-red';
+        const healthLabel=health==='b-green'?'On Track':health==='b-amber'?'At Risk':'Needs Attention';
+        return`<tr>
+          <td style="font-weight:600;font-size:12px">${e.name.split('—')[0].trim()}</td>
+          <td><span class="badge type-${e.type}">${e.type}</span></td>
+          <td style="font-size:11px">${e.partner||'—'}</td>
+          <td><div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:4px;background:var(--border);border-radius:2px"><div style="width:${pct}%;height:100%;background:var(--venetian);border-radius:2px"></div></div>
+            <span style="font-size:10px;color:var(--muted)">${done}/${total}</span>
+          </div></td>
+          <td style="font-size:12px">${ot}</td>
+          <td><span class="badge ${health}">${healthLabel}</span></td>
+        </tr>`;
+      }).join('')}
+      </tbody></table></div></div>`;
+  }
+  return`<p style="color:var(--muted);padding:32px;text-align:center">Select a report type above.</p>`;
+}
+</script>
+</body>
+</html>
