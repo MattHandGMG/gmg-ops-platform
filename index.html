@@ -259,7 +259,7 @@ input,select,textarea{font-family:inherit;outline:none}
       <circle cx="29" cy="11" r="3" fill="#CE2702"/>
       <circle cx="11" cy="29" r="3" fill="#CE2702"/>
     </svg>
-    <div class="sb-brand"><strong>Global Mentors Group</strong><span>Operations Platform</span></div>
+    <div class="sb-brand"><strong>Global Mentors Group</strong></div>
   </div>
   <div class="sb-nav">
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
@@ -267,8 +267,9 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
-    <div class="sb-item" data-v="costmgmt" onclick="nav(this)"><span class="ic">◐</span>Cost Management</div>
+    <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
+    <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
   </div>
   <div class="sb-bottom">
     <div class="sb-user">
@@ -417,7 +418,7 @@ let DB = load()||JSON.parse(JSON.stringify(SEED));
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''}};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',projects:'Project Management',quoting:'Quoting',costmgmt:'Cost Management',tasks:'Tasks'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -458,7 +459,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,projects:rProjects,quoting:rQuoting,costmgmt:rCostMgmt,tasks:rTasks};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports};
   if(r[S.view]) r[S.view](c);
 }
 
@@ -543,7 +544,7 @@ function rDashboard(c){
           <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
           <span class="badge b-amber">pending</span></div>`;
         }).join('')}
-        ${pendingPay.length>3?`<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+${pendingPay.length-3} more pending — <a href="#" onclick="S.tab.cost='autobill';nav(document.querySelector('[data-v=costmgmt]'));return false" style="color:var(--venetian)">Run auto-bill</a></div>`:''}
+        ${pendingPay.length>3?`<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+${pendingPay.length-3} more pending — <a href="#" onclick="S.tab.finSection='autobill';nav(document.querySelector('[data-v=finance]'));return false" style="color:var(--venetian)">Run auto-bill</a></div>`:''}
       </div>
     </div>
     <div class="card">
@@ -1149,299 +1150,273 @@ function approveQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='a
 function deleteQuote(id){if(!confirm('Delete this quote?'))return;DB.quotes=DB.quotes.filter(x=>x.id!==id);save();renderView();}
 
 /* ── COST MANAGEMENT ─────────────────────────────────────────── */
-function rCostMgmt(c){
-  const tab=S.tab.cost||'payments';
+function rFinance(c){
+  const entity=S.tab.finEntity||'gmg';
+  const section=S.tab.finSection||'autobill';
+  const entityLabels={gmg:'GMG',mer:'MER',cmi:'CMI'};
   c.innerHTML=`
-  <div class="phdr"><div><h2>Cost Management</h2><p>Mentor payments, billing runs &amp; Xero sync</p></div></div>
-  <div class="tabs" style="margin-bottom:0">
-    <div class="tab${tab==='payments'?' active':''}" onclick="S.tab.cost='payments';renderView()">Mentor Payments</div>
-    <div class="tab${tab==='autobill'?' active':''}" onclick="S.tab.cost='autobill';renderView()">Auto-Bill &amp; Xero</div>
-    <div class="tab${tab==='invoices'?' active':''}" onclick="S.tab.cost='invoices';renderView()">Client Invoices</div>
+  <div class="phdr"><div><h2>Finance</h2><p>Auto-billing &amp; invoicing by entity</p></div></div>
+  <div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border)">
+    ${['gmg','mer','cmi'].map(e=>`
+      <div style="padding:10px 24px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid ${entity===e?'var(--venetian)':'transparent'};margin-bottom:-2px;color:${entity===e?'var(--venetian)':'var(--muted)'};transition:.15s"
+        onclick="S.tab.finEntity='${e}';S.tab.finSection='autobill';renderView()">${entityLabels[e]}</div>`).join('')}
+  </div>
+  <div class="tabs" style="margin-bottom:0;margin-top:0;border-top:none">
+    <div class="tab${section==='autobill'?' active':''}" onclick="S.tab.finSection='autobill';renderView()">Auto-Billing</div>
+    <div class="tab${section==='autoinvoice'?' active':''}" onclick="S.tab.finSection='autoinvoice';renderView()">Auto-Invoicing</div>
   </div>`;
   const sub=document.createElement('div');
   c.appendChild(sub);
-  if(tab==='payments') rPayments(sub);
-  else if(tab==='autobill') rAutoBill(sub);
-  else rInvoices(sub);
+  if(section==='autobill') rEntityAutoBill(sub,entity);
+  else rEntityAutoInvoice(sub,entity);
 }
 
-/* ── TASKS ───────────────────────────────────────────────────── */
-function rTasks(c){
-  const viewMode=S.tab.taskView||'list';
-  const prFilter=S.tab.taskPri||'';
-  const assFilter=S.tab.taskAss||'';
-  const stFilter=S.tab.taskSt||'all';
-  let tasks=DB.tasks.filter(t=>{
-    if(stFilter==='active'&&t.status==='done') return false;
-    if(stFilter==='done'&&t.status!=='done') return false;
-    if(prFilter&&t.priority!==prFilter) return false;
-    if(assFilter&&t.assignee!==assFilter) return false;
-    return true;
-  });
-  const overdue=DB.tasks.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length;
-  const hasFilter=prFilter||assFilter||stFilter!=='all';
+function rEntityAutoBill(c,entity){
+  const label={gmg:'GMG',mer:'MER',cmi:'CMI'}[entity];
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending');
+  const autoBills=(DB.autoBills||[]).filter(b=>b.entity===entity||(entity==='gmg'&&!b.entity));
   c.innerHTML=`
-  <div class="phdr"><div><h2>Tasks</h2><p>${DB.tasks.filter(t=>t.status!=='done').length} open · ${overdue>0?`<span style="color:var(--venetian)">${overdue} overdue</span>`:'none overdue'}</p></div></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-    <select class="filter-sel" onchange="S.tab.taskSt=this.value;renderView()">
-      <option value="all"${stFilter==='all'?' selected':''}>All Tasks</option>
-      <option value="active"${stFilter==='active'?' selected':''}>Open</option>
-      <option value="done"${stFilter==='done'?' selected':''}>Completed</option>
-    </select>
-    <select class="filter-sel" onchange="S.tab.taskPri=this.value;renderView()">
-      <option value="">All Priorities</option>
-      ${['high','medium','low'].map(p=>`<option value="${p}"${prFilter===p?' selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
-    </select>
-    <select class="filter-sel" onchange="S.tab.taskAss=this.value;renderView()">
-      <option value="">All Assignees</option>
-      ${PARTNERS.map(p=>`<option value="${p}"${assFilter===p?' selected':''}>${p}</option>`).join('')}
-    </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.tab.taskPri='';S.tab.taskAss='';S.tab.taskSt='all';renderView()">✕ Clear</button>`:''}
-    <div style="margin-left:auto;display:flex;gap:4px">
-      <button class="btn btn-sm${viewMode==='list'?' btn-primary':' btn-outline'}" onclick="S.tab.taskView='list';renderView()">☰ List</button>
-      <button class="btn btn-sm${viewMode==='board'?' btn-primary':' btn-outline'}" onclick="S.tab.taskView='board';renderView()">▦ Board</button>
+  <div style="margin-top:16px">
+  <div class="g3" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-label">Pending Payments</div><div class="kpi-val accent">${pending.length}</div><div class="kpi-sub">awaiting consolidation</div></div>
+    <div class="kpi gold"><div class="kpi-label">Pending Value</div><div class="kpi-val">${fmt(pending.reduce((s,p)=>s+p.amount,0))}</div><div class="kpi-sub">mentor fees due</div></div>
+    <div class="kpi"><div class="kpi-label">Last Bill Run</div><div class="kpi-val" style="font-size:14px">${autoBills.length>0?autoBills[autoBills.length-1].month:'—'}</div><div class="kpi-sub">${autoBills.length} runs total</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h3>${label} — Pending Mentor Payments</h3>
+      <button class="btn btn-primary" onclick="runEntityAutoBill('${entity}')">▶ Run Auto-Bill for ${label}</button>
+    </div>
+    <div class="card-body" style="padding:0">
+      ${pending.length===0?`<p style="padding:20px 18px;color:var(--muted);font-size:12px">No pending payments — all up to date ✓</p>`:`
+      <table class="tbl"><thead><tr><th>Mentor</th><th>Engagement</th><th>Type</th><th>Period</th><th>Amount</th><th>Status</th></tr></thead>
+      <tbody>${pending.map(p=>{
+        const m=DB.contacts.find(x=>x.id===p.mentorId);
+        const e=DB.engagements.find(x=>x.id===p.engId);
+        return`<tr><td style="font-weight:600;font-size:12px">${m?.name||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${e?.name?.split('—')[0]?.trim()||'—'}</td>
+        <td><span class="badge b-amber">${p.type}</span></td>
+        <td style="font-size:11px">${p.period||'—'}</td>
+        <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(p.amount)}</td>
+        <td><span class="badge b-amber">pending</span></td></tr>`;
+      }).join('')}</tbody></table>`}
     </div>
   </div>
-  ${viewMode==='board'?taskBoard(tasks):taskList(tasks)}`;
-}
-function taskList(tasks){
-  const priBadge={high:'b-red',medium:'b-amber',low:'b-grey'};
-  return`<div class="card">
-    <table class="tbl"><thead><tr><th style="width:32px"></th><th>Task</th><th>Priority</th><th>Assignee</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${tasks.map(t=>{
-      const pb=priBadge[t.priority]||'b-grey';
-      const overdue=t.status!=='done'&&t.due&&t.due<today();
-      return`<tr style="${t.status==='done'?'opacity:.55':''}">
-        <td><input type="checkbox" ${t.status==='done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:var(--venetian)"></td>
-        <td><div style="font-weight:600;font-size:12px;${t.status==='done'?'text-decoration:line-through;color:var(--muted)':''}">${t.title}</div>
-          ${t.notes?`<div style="font-size:10px;color:var(--muted);margin-top:1px">${t.notes.slice(0,70)}${t.notes.length>70?'…':''}</div>`:''}</td>
-        <td><span class="badge ${pb}">${t.priority}</span></td>
-        <td style="font-size:11px">${t.assignee||'—'}</td>
-        <td style="font-size:11px;${overdue?'color:var(--venetian);font-weight:700':''}">${t.due||'—'}${overdue?' ⚠':''}</td>
-        <td><span class="badge ${t.status==='done'?'b-green':t.status==='inprogress'?'b-blue':'b-grey'}">${t.status==='inprogress'?'In Progress':t.status==='done'?'Done':'To Do'}</span></td>
-        <td><div class="acts">
-          <button class="btn btn-sm btn-outline" onclick="openTaskModal('${t.id}')">Edit</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">×</button>
-        </div></td>
-      </tr>`;
-    }).join('')}
-    ${tasks.length===0?`<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No tasks found.</td></tr>`:''}</tbody></table>
+  <div class="card">
+    <div class="card-hdr"><h3>${label} — Bill Run History</h3></div>
+    <div class="card-body" style="padding:0">
+      ${autoBills.length===0?`<p style="padding:20px 18px;color:var(--muted);font-size:12px">No bill runs yet for ${label}.</p>`:`
+      <table class="tbl"><thead><tr><th>Month</th><th>Mentors</th><th>Total</th><th>Status</th><th>Xero</th></tr></thead>
+      <tbody>${[...autoBills].reverse().map(b=>`<tr>
+        <td style="font-weight:600;font-size:12px">${b.month}</td>
+        <td style="font-size:12px">${b.mentorCount||'—'}</td>
+        <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(b.total)}</td>
+        <td><span class="badge b-green">completed</span></td>
+        <td>${b.xeroSynced?`<span class="badge b-blue">Synced</span>`:`<button class="btn btn-sm btn-xero" onclick="syncBillXero('${b.id}')">→ Xero</button>`}</td>
+      </tr>`).join('')}</tbody></table>`}
+    </div>
+  </div>
   </div>`;
 }
-function taskBoard(tasks){
-  const cols=[{key:'todo',label:'To Do',badge:'b-grey'},{key:'inprogress',label:'In Progress',badge:'b-blue'},{key:'done',label:'Done',badge:'b-green'}];
-  const priBadge={high:'b-red',medium:'b-amber',low:'b-grey'};
-  return`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-    ${cols.map(col=>{
-      const colTasks=tasks.filter(t=>t.status===col.key);
-      return`<div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-          <span class="badge ${col.badge}">${col.label}</span>
-          <span style="font-size:11px;color:var(--muted)">${colTasks.length}</span>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px">
-          ${colTasks.map(t=>{
-            const pb=priBadge[t.priority]||'b-grey';
-            const overdue=col.key!=='done'&&t.due&&t.due<today();
-            return`<div class="card" style="padding:12px;cursor:pointer" onclick="openTaskModal('${t.id}')">
-              <div style="font-weight:600;font-size:12px;margin-bottom:6px">${t.title}</div>
-              ${t.notes?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${t.notes.slice(0,60)}…</div>`:''}
-              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
-                <span class="badge ${pb}">${t.priority}</span>
-                ${t.due?`<span style="font-size:10px;color:${overdue?'var(--venetian)':'var(--muted)'}">${t.due}${overdue?' ⚠':''}</span>`:''}
-              </div>
-              ${t.assignee?`<div style="font-size:10px;color:var(--muted);margin-top:6px">👤 ${t.assignee}</div>`:''}
-            </div>`;
-          }).join('')}
-          <button class="btn btn-sm btn-outline" style="width:100%;justify-content:center" onclick="openTaskModal(null,'${col.key}')">+ Add task</button>
-        </div>
-      </div>`;
-    }).join('')}
-  </div>`;
-}
-function toggleTask(id,checked){const t=DB.tasks.find(x=>x.id===id);if(t){t.status=checked?'done':'todo';save();renderView();}}
-function deleteTask(id){if(!confirm('Delete task?'))return;DB.tasks=DB.tasks.filter(x=>x.id!==id);save();renderView();}
-function openTaskModal(id,defaultStatus){
-  const t=id?DB.tasks.find(x=>x.id===id):null;
-  const defSt=defaultStatus||'todo';
-  showModal(`<div class="mhdr"><h3>${t?'Edit Task':'New Task'}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
-  <div class="mbody">
-    <div class="fg"><label>Title</label><input id="tk-title" class="fi" placeholder="Task title" value="${t?t.title:''}"></div>
-    <div class="ir2">
-      <div class="fg"><label>Assignee</label><select id="tk-ass" class="fi">
-        <option value="">— Unassigned —</option>
-        ${PARTNERS.map(p=>`<option value="${p}"${t&&t.assignee===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Status</label><select id="tk-st" class="fi">
-        ${[{v:'todo',l:'To Do'},{v:'inprogress',l:'In Progress'},{v:'done',l:'Done'}].map(s=>`<option value="${s.v}"${(t?t.status:defSt)===s.v?' selected':''}>${s.l}</option>`).join('')}
-      </select></div>
-    </div>
-    <div class="ir2">
-      <div class="fg"><label>Priority</label><select id="tk-pri" class="fi">
-        ${['high','medium','low'].map(p=>`<option value="${p}"${t&&t.priority===p?' selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Due Date</label><input type="date" id="tk-due" class="fi" value="${t?t.due||'':''}"></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="tk-notes" class="fi" rows="3">${t?t.notes||'':''}</textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveTask('${id||''}')">Save Task</button>
-    </div>
-  </div>`);
-}
-function saveTask(id){
-  const title=document.getElementById('tk-title').value.trim();
-  if(!title)return alert('Please enter a title.');
-  const data={title,assignee:document.getElementById('tk-ass').value,status:document.getElementById('tk-st').value,priority:document.getElementById('tk-pri').value,due:document.getElementById('tk-due').value,notes:document.getElementById('tk-notes').value.trim()};
-  if(id){const t=DB.tasks.find(x=>x.id===id);if(t)Object.assign(t,data);}
-  else{DB.tasks.unshift({id:uid(),ref:null,type:'general',...data});}
-  addAct('◻',`Task ${id?'updated':'created'}: ${title}`);save();closeModal();renderView();
-}
 
-/* ── LIFECYCLE ───────────────────────────────────────────────── */
-function rLifecycle(c){
-  const pf=S.tab.lcPartner||''; const cf=S.tab.lcCountry||''; const sf=S.tab.lcSol||'';
-  let opps=(DB.opportunities||[]).filter(o=>{
-    if(pf&&o.partner!==pf) return false;
-    if(cf&&o.country!==cf) return false;
-    if(sf&&o.solution!==sf) return false;
-    return true;
-  });
-  const allP=[...new Set((DB.opportunities||[]).map(o=>o.partner).filter(Boolean))];
-  const allC=[...new Set((DB.opportunities||[]).map(o=>o.country).filter(Boolean))];
-  const totalVal=opps.filter(o=>o.stage!=='Closed Won').reduce((s,o)=>s+o.value,0);
-  const wonVal=opps.filter(o=>o.stage==='Closed Won').reduce((s,o)=>s+o.value,0);
-  const hasFilter=pf||cf||sf;
-
-  // Stage display config — merge "Mentee Identified" and "Proposal Sent" into one column
-  const DISPLAY_STAGES=[
-    {key:'Lead',label:'Prospect / Lead',num:1,desc:'Initial enquiry or warm introduction'},
-    {key:'Qualified',label:'Qualified Opportunity',num:2,desc:'Need confirmed and budget indicated'},
-    {key:'Mentee Identified',label:'Mentee Identified / Proposal Sent',num:3,desc:'Mentee confirmed and proposal delivered',keys:['Mentee Identified','Proposal Sent']},
-    {key:'Proposal Accepted',label:'Proposal Accepted',num:4,desc:'Client has agreed to proceed'},
-    {key:'Client Intro',label:'Client Intro',num:5,desc:'Introduction meetings completed'},
-    {key:'Contracting',label:'Contracting',num:6,desc:'Contract under review and signature'},
-    {key:'Closed Won',label:'Closed Won',num:7,desc:'Engagement live and active'},
-  ];
-
+function rEntityAutoInvoice(c,entity){
+  const label={gmg:'GMG',mer:'MER',cmi:'CMI'}[entity];
+  const invoices=DB.clientInvoices||[];
+  const unsyncedInv=invoices.filter(i=>!i.xeroSynced);
   c.innerHTML=`
-  <div class="phdr">
-    <div><h2>Lifecycle</h2><p>Track every opportunity from first contact to closed engagement</p></div>
-    <div style="display:flex;gap:12px;align-items:center">
-      <span style="font-size:12px;color:var(--muted)">Open pipeline: <strong style="color:var(--venetian)">${fmt(totalVal)}</strong></span>
-      <span style="font-size:12px;color:var(--muted)">Closed: <strong style="color:var(--success)">${fmt(wonVal)}</strong></span>
+  <div style="margin-top:16px">
+  <div class="g3" style="margin-bottom:20px">
+    <div class="kpi"><div class="kpi-label">Total Invoices</div><div class="kpi-val">${invoices.length}</div><div class="kpi-sub">all time</div></div>
+    <div class="kpi accent"><div class="kpi-label">Unsynced</div><div class="kpi-val">${unsyncedInv.length}</div><div class="kpi-sub">pending Xero push</div></div>
+    <div class="kpi gold"><div class="kpi-label">Invoiced (Paid)</div><div class="kpi-val">${fmt(invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0))}</div><div class="kpi-sub">collected revenue</div></div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h3>${label} — Auto-Invoice Schedule</h3>
+      <button class="btn btn-primary" onclick="runEntityAutoInvoice('${entity}')">▶ Run Auto-Invoice for ${label}</button>
+    </div>
+    <div class="card-body">
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Auto-invoicing generates and pushes scheduled client invoices based on engagement billing rules (Chair: per session · Executive: quarterly · Team: ad-hoc).</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+        ${['chair','executive','team'].map(type=>{
+          const typeInvs=invoices.filter(i=>i.type===type);
+          const pending=typeInvs.filter(i=>i.status==='draft'||i.status==='sent');
+          return`<div class="card" style="padding:14px;border:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px">${type} mentoring</div>
+            <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;margin-bottom:4px">${typeInvs.length}</div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${pending.length} active · ${fmt(typeInvs.reduce((s,i)=>s+i.amount,0))} total</div>
+            <button class="btn btn-sm btn-outline" style="width:100%;justify-content:center" onclick="S.tab.cost='invoices';nav(document.querySelector('[data-v=finance]'))">View invoices</button>
+          </div>`;
+        }).join('')}
+      </div>
     </div>
   </div>
-  <div class="filter-row" style="margin-bottom:14px">
-    <select onchange="S.tab.lcPartner=this.value;renderView()">
-      <option value="">All Partners</option>
-      ${allP.map(p=>`<option value="${p}" ${pf===p?'selected':''}>${p}</option>`).join('')}
-    </select>
-    <select onchange="S.tab.lcCountry=this.value;renderView()">
-      <option value="">All Countries</option>
-      ${allC.map(p=>`<option value="${p}" ${cf===p?'selected':''}>${p}</option>`).join('')}
-    </select>
-    <select onchange="S.tab.lcSol=this.value;renderView()">
-      <option value="">All Solutions</option>
-      <option value="chair" ${sf==='chair'?'selected':''}>Chair Mentoring</option>
-      <option value="executive" ${sf==='executive'?'selected':''}>Executive Mentoring</option>
-      <option value="team" ${sf==='team'?'selected':''}>Team Engagement</option>
-    </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.tab.lcPartner='';S.tab.lcCountry='';S.tab.lcSol='';renderView()">✕ Clear</button>`:''}
-    <span style="font-size:11px;color:var(--muted)">${opps.length} opportunit${opps.length!==1?'ies':'y'}</span>
+  <div class="card">
+    <div class="card-hdr"><h3>${label} — Recent Invoices</h3>
+      <button class="btn btn-sm btn-xero" onclick="pushAllXero()">Push All to Xero</button>
+    </div>
+    <div class="card-body" style="padding:0">
+      <table class="tbl"><thead><tr><th>Client</th><th>Type</th><th>Period</th><th>Amount</th><th>Status</th><th>Xero</th><th>Actions</th></tr></thead>
+      <tbody>${invoices.slice(0,8).map(inv=>{
+        const cl=DB.contacts.find(x=>x.id===inv.clientId);
+        const sb=inv.status==='paid'?'b-green':inv.status==='sent'?'b-blue':'b-grey';
+        return`<tr>
+          <td style="font-weight:600;font-size:12px">${cl?.name||'—'}</td>
+          <td><span class="badge ${{chair:'type-chair',executive:'type-executive',team:'type-team'}[inv.type]||'b-grey'}">${inv.type}</span></td>
+          <td style="font-size:11px">${inv.period||'—'}</td>
+          <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(inv.amount)}</td>
+          <td><span class="badge ${sb}">${inv.status}</span></td>
+          <td>${inv.xeroSynced?`<span class="badge b-blue">Synced</span>`:`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">→ Xero</button>`}</td>
+          <td><div class="acts">
+            ${inv.status==='draft'?`<button class="btn btn-sm btn-warn" onclick="sendInvoice('${inv.id}')">Send</button>`:''}
+            ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">Mark Paid</button>`:''}
+          </div></td>
+        </tr>`;
+      }).join('')}
+      ${invoices.length===0?`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted)">No invoices yet.</td></tr>`:''}</tbody></table>
+    </div>
   </div>
-  <div class="lc-board">
-    ${DISPLAY_STAGES.map((stage,idx)=>{
-      const stageKeys=stage.keys||[stage.key];
-      const stageOpps=opps.filter(o=>stageKeys.includes(o.stage));
-      const stageVal=stageOpps.reduce((s,o)=>s+o.value,0);
-      const isWon=stage.key==='Closed Won';
-      return`<div class="lc-stage${stageOpps.length?' active-stage':''}">
-        <div class="lc-stage-hdr">
-          <div class="lc-stage-num" style="background:${isWon?'var(--success)':'var(--venetian)'}">${stage.num}</div>
-          <div class="lc-stage-name">${stage.label}</div>
-          <div class="lc-stage-count">${stageOpps.length} · ${stageVal?fmt(stageVal):''}</div>
-        </div>
-        <div class="lc-cards">
-          ${stageOpps.map(o=>{
-            const solBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[o.solution]||'b-grey';
-            return`<div class="lc-card" onclick="openOppDetail('${o.id}')">
-              <div class="lc-card-name">${o.name}</div>
-              <div class="lc-card-meta">${o.partner||''} · ${o.country||''}</div>
-              <div class="lc-card-val">${fmt(o.value)}</div>
-              <div class="lc-card-tags"><span class="badge ${solBadge}" style="font-size:9px">${o.solution}</span></div>
-            </div>`;
-          }).join('')}
-        </div>
-        <button class="lc-add" onclick="openOppModal(null,'${stage.key}')">+ Add</button>
-      </div>`;
-    }).join('')}
   </div>`;
 }
 
-function openOppDetail(id){
-  const o=(DB.opportunities||[]).find(x=>x.id===id); if(!o) return;
-  const sb={chair:'type-chair',executive:'type-executive',team:'type-team'}[o.solution]||'b-grey';
-  const DISPLAY_STAGES=[
-    {key:'Lead',label:'1 · Prospect / Lead'},{key:'Qualified',label:'2 · Qualified'},
-    {key:'Mentee Identified',label:'3 · Mentee Identified'},{key:'Proposal Sent',label:'3 · Proposal Sent'},
-    {key:'Proposal Accepted',label:'4 · Proposal Accepted'},{key:'Client Intro',label:'5 · Client Intro'},
-    {key:'Contracting',label:'6 · Contracting'},{key:'Closed Won',label:'7 · Closed Won'},
+function runEntityAutoBill(entity){
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending');
+  if(pending.length===0)return alert('No pending payments to consolidate.');
+  const total=pending.reduce((s,p)=>s+p.amount,0);
+  const mentors=[...new Set(pending.map(p=>p.mentorId))];
+  const month=new Date().toLocaleString('en-GB',{month:'long',year:'numeric'});
+  const bill={id:uid(),entity,month,total,mentorCount:mentors.length,xeroSynced:false,ts:today()};
+  if(!DB.autoBills) DB.autoBills=[];
+  DB.autoBills.push(bill);
+  pending.forEach(p=>{p.status='paid';p.paidDate=today();});
+  addAct('◐',`Auto-bill run (${entity.toUpperCase()}): ${month} — ${fmt(total)} to ${mentors.length} mentor${mentors.length>1?'s':''}`);
+  save();renderView();
+}
+function runEntityAutoInvoice(entity){
+  const execs=DB.engagements.filter(e=>e.type==='executive'&&e.status==='active');
+  if(execs.length===0)return alert('No active Executive engagements to invoice.');
+  let count=0;
+  execs.forEach(e=>{
+    const client=DB.contacts.find(x=>x.id===e.clientId);
+    const exists=DB.clientInvoices.find(i=>i.engId===e.id&&i.status==='draft');
+    if(!exists){
+      DB.clientInvoices.push({id:uid(),engId:e.id,clientId:e.clientId,type:'executive',amount:Math.round((e.value||0)/4),status:'draft',period:`Q${Math.ceil((new Date().getMonth()+1)/3)} ${new Date().getFullYear()}`,xeroSynced:false,entity});
+      count++;
+    }
+  });
+  addAct('◎',`Auto-invoice run (${entity.toUpperCase()}): ${count} invoice${count!==1?'s':''} generated`);
+  save();renderView();
+}
+function syncBillXero(id){
+  if(!DB.autoBills) return;
+  const b=DB.autoBills.find(x=>x.id===id);
+  if(b){b.xeroSynced=true;addAct('◐',`Bill run pushed to Xero: ${b.month} — ${fmt(b.total)}`);save();renderView();}
+}
+
+/* ── REPORTS ─────────────────────────────────────────────────── */
+function rReports(c){
+  const rpt=S.tab.rptType||'';
+  const modules=[
+    {key:'pipeline',label:'Pipeline',icon:'◆',desc:'Deal values, stages, win rates, partner breakdown'},
+    {key:'engagements',label:'Engagements',icon:'◈',desc:'Active programmes, session completion, mentor utilisation'},
+    {key:'finance',label:'Finance',icon:'◐',desc:'Revenue, invoiced amounts, mentor costs, Xero sync status'},
+    {key:'quoting',label:'Quoting',icon:'◎',desc:'Quote values, approval rates, partner performance'},
+    {key:'tasks',label:'Tasks',icon:'◻',desc:'Open tasks, overdue items, assignee workload'},
+    {key:'projects',label:'Projects',icon:'▦',desc:'Project status, session progress, delivery health'},
   ];
-  showModal(`<div class="mhdr"><h3>Opportunity Detail</h3><button class="mclose" onclick="closeModal()">✕</button></div>
-  <div class="mbody">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-      <div>
-        <h3 style="font-family:Georgia,serif;font-size:15px;margin-bottom:4px">${o.name}</h3>
-        <span class="badge ${sb}">${o.solution}</span>
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-sm btn-outline" onclick="closeModal();openOppModal('${o.id}')">✏ Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteOpp('${o.id}')">Delete</button>
-      </div>
-    </div>
-    <div class="ir"><span class="lbl">Stage</span><span class="val"><span class="badge b-black">${o.stage}</span></span></div>
-    <div class="ir"><span class="lbl">Client</span><span class="val">${o.client}</span></div>
-    <div class="ir"><span class="lbl">Value</span><span class="val" style="font-family:Georgia,serif;font-size:15px;color:var(--cadmium)">${fmt(o.value)}</span></div>
-    <div class="ir"><span class="lbl">Partner</span><span class="val">${o.partner||'—'}</span></div>
-    <div class="ir"><span class="lbl">Country</span><span class="val">${o.country||'—'}</span></div>
-    <div class="ir"><span class="lbl">Created</span><span class="val">${o.created||'—'}</span></div>
-    ${o.notes?`<div style="margin-top:12px;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${o.notes}</div>`:''}
-    <div style="margin-top:16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Move to Stage</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${DISPLAY_STAGES.filter(s=>s.key!==o.stage).map(s=>`<button class="btn btn-sm btn-outline" onclick="moveOpp('${o.id}','${s.key}')">${s.label}</button>`).join('')}
-      </div>
-    </div>
-  </div>`);
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Reports</h2><p>Build and view reports across all platform data</p></div></div>
+  ${!rpt?`
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px">
+    ${modules.map(m=>`
+      <div class="card" style="padding:20px;cursor:pointer;transition:.15s" onmouseover="this.style.borderColor='var(--venetian)'" onmouseout="this.style.borderColor=''" onclick="S.tab.rptType='${m.key}';renderView()">
+        <div style="font-size:22px;margin-bottom:10px;color:var(--venetian)">${m.icon}</div>
+        <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;margin-bottom:6px">${m.label}</div>
+        <div style="font-size:12px;color:var(--muted)">${m.desc}</div>
+        <div style="margin-top:14px"><span class="badge b-red" style="cursor:pointer">View Report →</span></div>
+      </div>`).join('')}
+  </div>`:`
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
+    <button class="btn btn-outline btn-sm" onclick="S.tab.rptType='';renderView()">← All Reports</button>
+    <span style="font-size:13px;font-weight:600">${modules.find(m=>m.key===rpt)?.label||rpt} Report</span>
+  </div>
+  ${buildReport(rpt)}`}`;
 }
 
-function moveOpp(id,stage){
-  const o=(DB.opportunities||[]).find(x=>x.id===id);
-  if(o){o.stage=stage;addAct('◎',`Opportunity "${o.name}" moved to ${stage}`);save();closeModal();renderView();}
-}
-function deleteOpp(id){
-  if(!confirm('Delete this opportunity?')) return;
-  DB.opportunities=(DB.opportunities||[]).filter(x=>x.id!==id);
-  save();closeModal();renderView();
-}
-
-function openOppModal(id,defaultStage){
-  const o=id?(DB.opportunities||[]).find(x=>x.id===id):null;
-  const ALL_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
-  showModal(`<div class="mhdr"><h3>${o?'Edit Opportunity':'New Opportunity'}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
-  <div class="mbody">
-    <div class="fgrow">
-      <div class="fg" style="grid-column:1/-1"><label>Opportunity Name *</label><input id="of-name" value="${o?.name||''}" placeholder="Company — Programme Type"></div>
-      <div class="fg"><label>Client / Organisation *</label><input id="of-client" value="${o?.client||''}" placeholder="Organisation name"></div>
-      <div class="fg"><label>Solution</label><select id="of-sol">
-        <option value="chair" ${o?.solution==='chair'?'selected':''}>Chair Mentoring</option>
-        <option value="executive" ${o?.solution==='executive'?'selected':''}>Executive Mentoring</option>
-        <option value="team" ${o?.solution==='team'?'selected':''}>Team Engagement</option>
-      </select></div>
-      <div class="fg"><label>Partner</label><select id="of-partner">
-        <option value="">— Select —</option>
-        ${PARTNERS.map(p=>`<option value="${p}" ${o?.partner===p?'selected':''}>${p}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Country</label><select id="of-country">
-        <option v
+function buildReport(type){
+  if(type==='pipeline'){
+    const deals=DB.pipeline;
+    const byStage={};
+    deals.forEach(d=>{byStage[d.stage]=(byStage[d.stage]||0)+d.value;});
+    const byPartner={};
+    deals.forEach(d=>{if(d.partner)byPartner[d.partner]=(byPartner[d.partner]||0)+d.value;});
+    const won=deals.filter(d=>d.stage==='Closed Won');
+    const total=deals.reduce((s,d)=>s+d.value,0);
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Total Pipeline</div><div class="kpi-val">${fmt(total)}</div></div>
+      <div class="kpi gold"><div class="kpi-label">Weighted Value</div><div class="kpi-val">${fmt(deals.reduce((s,d)=>s+(d.value*(d.prob||50)/100),0))}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Deals</div><div class="kpi-val">${deals.length}</div></div>
+      <div class="kpi"><div class="kpi-label">Closed Won</div><div class="kpi-val">${won.length}</div><div class="kpi-sub">${fmt(won.reduce((s,d)=>s+d.value,0))}</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><h3>Value by Stage</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Stage</th><th>Deals</th><th>Value</th></tr></thead><tbody>
+        ${Object.entries(byStage).map(([s,v])=>`<tr><td>${s}</td><td>${deals.filter(d=>d.stage===s).length}</td><td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(v)}</td></tr>`).join('')}
+        </tbody></table></div></div>
+      <div class="card"><div class="card-hdr"><h3>Value by Partner</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Partner</th><th>Deals</th><th>Value</th></tr></thead><tbody>
+        ${Object.entries(byPartner).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<tr><td>${p}</td><td>${deals.filter(d=>d.partner===p).length}</td><td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(v)}</td></tr>`).join('')}
+        </tbody></table></div></div>
+    </div>`;
+  }
+  if(type==='engagements'){
+    const engs=DB.engagements;
+    const byType={chair:0,executive:0,team:0};
+    engs.forEach(e=>{if(byType[e.type]!==undefined)byType[e.type]++;});
+    const allSess=DB.sessions;
+    const compSess=allSess.filter(s=>s.status==='completed');
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi"><div class="kpi-label">Total Engagements</div><div class="kpi-val">${engs.length}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Active</div><div class="kpi-val">${engs.filter(e=>e.status==='active').length}</div></div>
+      <div class="kpi gold"><div class="kpi-label">Sessions Completed</div><div class="kpi-val">${compSess.length}</div><div class="kpi-sub">of ${allSess.length} total</div></div>
+      <div class="kpi"><div class="kpi-label">Completion Rate</div><div class="kpi-val">${allSess.length?Math.round(compSess.length/allSess.length*100):0}%</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><h3>Engagements by Type</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Type</th><th>Count</th><th>Active</th></tr></thead><tbody>
+        ${Object.entries(byType).map(([t,n])=>`<tr><td><span class="badge type-${t}">${t}</span></td><td>${n}</td><td>${engs.filter(e=>e.type===t&&e.status==='active').length}</td></tr>`).join('')}
+        </tbody></table></div></div>
+      <div class="card"><div class="card-hdr"><h3>Engagements by Partner</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Partner</th><th>Engagements</th><th>Active</th></tr></thead><tbody>
+        ${PARTNERS.map(p=>{const pe=engs.filter(e=>e.partner===p);return pe.length?`<tr><td>${p}</td><td>${pe.length}</td><td>${pe.filter(e=>e.status==='active').length}</td></tr>`:''}).join('')}
+        </tbody></table></div></div>
+    </div>`;
+  }
+  if(type==='finance'){
+    const invs=DB.clientInvoices||[];
+    const pays=DB.mentorPayments||[];
+    const paid=invs.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+    const outstanding=invs.filter(i=>i.status!=='paid').reduce((s,i)=>s+i.amount,0);
+    const mentorPaid=pays.filter(p=>p.status==='paid').reduce((s,p)=>s+p.amount,0);
+    const mentorPending=pays.filter(p=>p.status==='pending').reduce((s,p)=>s+p.amount,0);
+    return`<div class="kpi-grid" style="margin-bottom:20px">
+      <div class="kpi gold"><div class="kpi-label">Revenue Collected</div><div class="kpi-val">${fmt(paid)}</div></div>
+      <div class="kpi accent"><div class="kpi-label">Outstanding</div><div class="kpi-val">${fmt(outstanding)}</div></div>
+      <div class="kpi"><div class="kpi-label">Mentor Costs Paid</div><div class="kpi-val">${fmt(mentorPaid)}</div></div>
+      <div class="kpi"><div class="kpi-label">Mentor Costs Pending</div><div class="kpi-val">${fmt(mentorPending)}</div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-hdr"><h3>Invoices by Status</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Status</th><th>Count</th><th>Value</th></tr></thead><tbody>
+        ${['draft','sent','paid'].map(st=>{const si=invs.filter(i=>i.status===st);return`<tr><td><span class="badge ${st==='paid'?'b-green':st==='sent'?'b-blue':'b-grey'}">${st}</span></td><td>${si.length}</td><td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(si.reduce((s,i)=>s+i.amount,0))}</td></tr>`}).join('')}
+        </tbody></table></div></div>
+      <div class="card"><div class="card-hdr"><h3>Revenue by Engagement Type</h3></div><div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Type</th><th>Invoices</th><th>Value</th></tr></thead><tbody>
+        ${['chair','executive','team'].map(t=>{const ti=invs.filter(i=>i.type===t);return`<tr><td><span class="badge type-${t}">${t}</span></td><td>${ti.length}</td><td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(ti.reduce((s,i)=>s+i.amount,0))}</td></tr>`}).join('')}
+        </tbody></table></div></div>
+    </div>`;
+  }
+  if(type==='quoting'){
+    if(!DB.quotes) DB.quotes=[];
+    const quotes=DB.quotes;
+    const approved=quotes.filter(q=>q.status==='approved');
+    const sent=quotes.filter(q=>q.status==='sent');
+    return`<div class="kpi-grid" style="
