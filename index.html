@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMG Platform — Global Mentors Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --venetian:#CE2702; --burnt:#5E1100; --narrow:#E2DED1; --nearblack:#111111;
+  --cadmium:#B95300; --halfnarrow:#F2F1EE; --bgblack:#1A1A1A;
+  --white:#FFFFFF; --muted:#7a7a7a; --border:#E2DED1;
+  --success:#2d7a3a; --warn:#B95300; --info:#1a5a8a;
+  --sidebar:248px; --topbar:56px; --radius:8px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Aptos','Segoe UI',system-ui,sans-serif;background:var(--halfnarrow);color:var(--nearblack);min-height:100vh}
+h1,h2,h3,h4,.serif{font-family:Georgia,'Times New Roman',serif}
+button{cursor:pointer;border:none;font-family:inherit}
+input,select,textarea{font-family:inherit;outline:none}
+
+/* Layout */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar);background:var(--nearblack);color:#fff;position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+#main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+#topbar{height:var(--topbar);background:var(--white);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:0 1px 0 var(--border)}
+#content{padding:28px;flex:1}
+
+/* Sidebar */
+.sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px}
+.sb-icon{width:36px;height:36px;flex-shrink:0}
+.sb-brand strong{display:block;font-family:Georgia,serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.sb-brand span{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.8px;text-transform:uppercase}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.sb-section{padding:8px 16px 2px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:1px 8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.65);transition:.15s}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-item.active{background:var(--venetian);color:#fff}
+.sb-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sb-item .nb{margin-left:auto;background:var(--venetian);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.sb-item.active .nb{background:rgba(255,255,255,.25)}
+.sb-bottom{padding:12px 14px;border-top:1px solid rgba(255,255,255,.1)}
+.sb-user{display:flex;align-items:center;gap:10px}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--venetian);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.sb-uinfo strong{font-size:12px;font-weight:600;display:block;color:#fff}
+.sb-uinfo span{font-size:10px;color:rgba(255,255,255,.4)}
+
+/* Topbar */
+.tb-title{font-family:Georgia,serif;font-size:16px;font-weight:700;color:var(--nearblack);flex:1}
+.tb-search{display:flex;align-items:center;gap:8px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:6px;padding:5px 10px;width:220px}
+.tb-search input{border:none;background:transparent;font-size:12px;color:var(--nearblack);width:100%}
+.tb-search input::placeholder{color:var(--muted)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;transition:.15s;cursor:pointer;border:none}
+.btn-primary{background:var(--venetian);color:#fff}.btn-primary:hover{background:var(--burnt)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--nearblack)}.btn-outline:hover{background:var(--halfnarrow)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:5px}
+.btn-success{background:var(--success);color:#fff}
+.btn-warn{background:var(--cadmium);color:#fff}
+.btn-xero{background:#13B5EA;color:#fff;font-weight:700}
+.btn-xero:hover{background:#0d8ab5}
+.btn-danger{background:#b91c1c;color:#fff}
+
+/* Cards */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-hdr h3{font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--nearblack)}
+.card-body{padding:18px}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi-val{font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--nearblack);line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.kpi-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;background:var(--venetian);border-radius:2px}
+.kpi.accent .kpi-val{color:var(--venetian)}
+.kpi.gold .kpi-val{color:var(--cadmium)}
+
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--border);background:var(--halfnarrow)}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafaf8}
+.tbl .acts{display:flex;gap:5px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.b-red{background:rgba(206,39,2,.1);color:var(--venetian)}
+.b-green{background:rgba(45,122,58,.1);color:var(--success)}
+.b-amber{background:rgba(185,83,0,.12);color:var(--cadmium)}
+.b-grey{background:rgba(0,0,0,.07);color:var(--muted)}
+.b-blue{background:rgba(26,90,138,.1);color:var(--info)}
+.b-black{background:var(--nearblack);color:#fff}
+.b-xero{background:#13B5EA;color:#fff}
+
+/* Page header */
+.phdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.phdr h2{font-family:Georgia,serif;font-size:19px;font-weight:700;color:var(--nearblack)}
+.phdr p{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--halfnarrow);border-radius:6px;padding:3px;margin-bottom:18px;width:fit-content;border:1px solid var(--border)}
+.tab{padding:5px 14px;border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:.15s}
+.tab.active{background:var(--white);color:var(--nearblack);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* Engagement type chips */
+.type-chair{background:rgba(94,17,0,.1);color:var(--burnt);font-weight:700}
+.type-executive{background:rgba(206,39,2,.1);color:var(--venetian);font-weight:700}
+.type-team{background:rgba(185,83,0,.12);color:var(--cadmium);font-weight:700}
+
+/* Progress */
+.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:4px 0}
+.prog-fill{height:100%;background:var(--venetian);border-radius:3px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal{background:var(--white);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;animation:fu .2s ease}
+.modal-lg{max-width:720px}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mhdr h3{font-family:Georgia,serif;font-size:15px;font-weight:700}
+.mbody{padding:22px}
+.mfoot{padding:14px 22px;border-bottom-left-radius:10px;border-bottom-right-radius:10px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--halfnarrow)}
+.mclose{width:28px;height:28px;border-radius:50%;background:var(--halfnarrow);border:none;cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.mclose:hover{background:var(--border)}
+
+/* Forms */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--nearblack);text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select,.fg textarea{border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--nearblack);background:var(--halfnarrow);transition:.15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--venetian);background:#fff;box-shadow:0 0 0 3px rgba(206,39,2,.08)}
+.fg textarea{resize:vertical;min-height:70px}
+.fgrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fsep{border:none;border-top:1px solid var(--border);margin:10px 0}
+.fstitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:8px 0 6px}
+
+/* Finance items */
+.fin-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:12px}
+.fin-item:last-child{border-bottom:none}
+.fin-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fin-info{flex:1}
+.fin-info strong{font-size:12px;font-weight:600;display:block}
+.fin-info span{font-size:11px;color:var(--muted)}
+.fin-amount{font-family:Georgia,serif;font-size:14px;font-weight:700}
+
+/* Xero banner */
+.xero-banner{background:linear-gradient(135deg,#0e8ab0,#13B5EA);border-radius:8px;padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.xero-banner h4{font-size:13px;font-weight:700;margin-bottom:2px}
+.xero-banner p{font-size:11px;opacity:.85}
+
+/* Activity */
+.act-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:var(--halfnarrow)}
+
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:40px;opacity:.35;margin-bottom:10px}
+
+/* Login */
+#login{position:fixed;inset:0;background:var(--nearblack);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:var(--white);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.login-logo svg{width:32px;height:32px}
+.login-logo span{font-family:Georgia,serif;font-size:17px;font-weight:700}
+.login-card h2{font-family:Georgia,serif;font-size:18px;margin-bottom:4px}
+.login-card p{font-size:12px;color:var(--muted);margin-bottom:20px}
+
+/* Lifecycle stages */
+.lc-board{display:flex;gap:0;overflow-x:auto;padding-bottom:16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--white);box-shadow:var(--shadow)}
+.lc-stage{flex:1;min-width:160px;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.lc-stage:last-child{border-right:none}
+.lc-stage-hdr{padding:12px 10px;text-align:center;border-bottom:1px solid var(--border);position:relative}
+.lc-stage-num{width:22px;height:22px;border-radius:50%;background:var(--venetian);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px}
+.lc-stage-name{font-size:10px;font-weight:700;color:var(--nearblack);line-height:1.3;text-align:center}
+.lc-stage-count{font-size:10px;color:var(--muted);margin-top:3px}
+.lc-stage.active-stage .lc-stage-hdr{background:rgba(206,39,2,.04)}
+.lc-cards{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;min-height:120px}
+.lc-card{background:var(--halfnarrow);border:1px solid var(--border);border-radius:6px;padding:10px;cursor:pointer;transition:.15s;border-left:3px solid var(--venetian)}
+.lc-card:hover{border-color:var(--venetian);box-shadow:0 2px 8px rgba(206,39,2,.12);transform:translateY(-1px)}
+.lc-card-name{font-size:11px;font-weight:700;color:var(--nearblack);margin-bottom:4px;line-height:1.3}
+.lc-card-meta{font-size:10px;color:var(--muted);line-height:1.5}
+.lc-card-val{font-family:Georgia,serif;font-size:12px;font-weight:700;color:var(--cadmium);margin-top:5px}
+.lc-card-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+.lc-add{margin:6px 8px;padding:5px;border:1.5px dashed var(--border);border-radius:5px;background:none;font-size:10px;color:var(--muted);cursor:pointer;width:calc(100% - 16px);transition:.15s}
+.lc-add:hover{border-color:var(--venetian);color:var(--venetian)}
+
+/* Filter row */
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-row select{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;background:var(--white);color:var(--nearblack);cursor:pointer}
+.filter-row select:focus{border-color:var(--venetian);outline:none}
+.filter-clear{font-size:11px;color:var(--venetian);cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(206,39,2,.07);border:none;font-weight:600}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Info row */
+.ir{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.ir:last-child{border-bottom:none}
+.ir .lbl{color:var(--muted)}
+.ir .val{font-weight:600}
+
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+<div class="login-card">
+  <div class="login-logo">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="8" r="3.5" fill="#CE2702"/>
+      <circle cx="20" cy="32" r="3.5" fill="#CE2702"/>
+      <circle cx="8" cy="20" r="3.5" fill="#CE2702"/>
+      <circle cx="32" cy="20" r="3.5" fill="#CE2702"/>
+      <circle cx="11.5" cy="11.5" r="3" fill="#CE2702"/>
+      <circle cx="28.5" cy="28.5" r="3" fill="#CE2702"/>
+      <circle cx="28.5" cy="11.5" r="3" fill="#CE2702"/>
+      <circle cx="11.5" cy="28.5" r="3" fill="#CE2702"/>
+    </svg>
+    <span>Global Mentors Group</span>
+  </div>
+  <h2>GMG Platform</h2>
+  <p>Internal operations &amp; client management</p>
+  <div class="fg"><label>Your Name</label><input id="ln" type="text" value="Matt Hand"></div>
+  <div class="fg"><label>Role</label>
+    <select id="lr">
+      <option value="leadership">Senior Leadership</option>
+      <option value="rm" selected>Relationship Manager</option>
+      <option value="finance">Finance</option>
+      <option value="ops">Operations</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" style="width:100%;margin-top:6px;padding:10px" onclick="doLogin()">Enter Platform</button>
+  <p style="font-size:10px;color:var(--muted);text-align:center;margin-top:12px">Internal use only — Global Mentors Group</p>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<nav id="sidebar">
+  <div class="sb-logo">
+    <svg class="sb-icon" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="7" r="3.5" fill="#CE2702"/>
+      <circle cx="20" cy="33" r="3.5" fill="#CE2702"/>
+      <circle cx="7" cy="20" r="3.5" fill="#CE2702"/>
+      <circle cx="33" cy="20" r="3.5" fill="#CE2702"/>
+      <circle cx="11" cy="11" r="3" fill="#CE2702"/>
+      <circle cx="29" cy="29" r="3" fill="#CE2702"/>
+      <circle cx="29" cy="11" r="3" fill="#CE2702"/>
+      <circle cx="11" cy="29" r="3" fill="#CE2702"/>
+    </svg>
+    <div class="sb-brand"><strong>Global Mentors Group</strong><span>Operations Platform</span></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
+    <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
+    <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
+    <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
+    <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
+    <div class="sb-item" data-v="costmgmt" onclick="nav(this)"><span class="ic">◐</span>Cost Management</div>
+    <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-av" id="sav">M</div>
+      <div class="sb-uinfo"><strong id="sun">Matt Hand</strong><span id="sur">Relationship Manager</span></div>
+    </div>
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <div class="tb-title" id="tbt">Dashboard</div>
+    <div class="tb-search"><span>⌕</span><input type="text" placeholder="Search…" oninput="gSearch(this.value)"></div>
+    <button class="btn btn-primary" id="tba" style="display:none" onclick="topAction()">+ Add</button>
+  </div>
+  <div id="content"></div>
+</div>
+</div>
+<div id="mc"></div>
+
+<script>
+/* ── BRAND SEED DATA ─────────────────────────────────────────── */
+const SEED = {
+contacts:[
+  {id:'m1',type:'mentor',name:'Marcus Thompson',org:'Independent (ex-McKinsey)',email:'m.thompson@gmg.co.uk',phone:'+44 7700 900456',status:'active',notes:'Strategy specialist. 12 years C-suite coaching.'},
+  {id:'m2',type:'mentor',name:'Dr. Priya Sharma',org:'Imperial College London',email:'p.sharma@imperial.ac.uk',phone:'+44 7700 900123',status:'active',notes:'Tech & innovation leadership.'},
+  {id:'m3',type:'mentor',name:'Aisha Okonkwo',org:'Independent (ex-Goldman)',email:'a.okonkwo@gmg.co.uk',phone:'+44 7700 900789',status:'active',notes:'Finance & diversity leadership.'},
+  {id:'m4',type:'mentor',name:'Sir Robert Caldwell',org:'Former FTSE 100 Chair',email:'r.caldwell@gmg.co.uk',phone:'+44 7700 900321',status:'active',notes:'Chair-level mentoring specialist.'},
+  {id:'c1',type:'client',name:'Deloitte UK',org:'Deloitte',email:'leadership@deloitte.co.uk',phone:'+44 20 7936 3000',status:'active',notes:'Key enterprise client. Annual renewal Oct.'},
+  {id:'c2',type:'client',name:'HSBC Group',org:'HSBC',email:'talent@hsbc.com',phone:'+44 20 7991 8888',status:'active',notes:'Executive programme client since 2024.'},
+  {id:'c3',type:'client',name:'Cabinet Office',org:'HM Government',email:'leaders@cabinetoffice.gov.uk',phone:'+44 20 7276 0000',status:'active',notes:'Senior Civil Service programme.'},
+  {id:'c4',type:'client',name:'Barclays Plc',org:'Barclays',email:'talent@barclays.com',phone:'+44 20 7116 1000',status:'active',notes:'New client — June 2026 start.'},
+  {id:'c5',type:'client',name:'Unilever',org:'Unilever Plc',email:'leadership@unilever.com',phone:'+44 20 7822 5252',status:'prospect',notes:'RFP in progress.'},
+],
+engagements:[
+  {id:'e1',type:'chair',name:'Deloitte — Chair Mentoring: Sarah Okonkwo',clientId:'c1',mentorId:'m4',status:'active',startDate:'2026-01-15',endDate:'2026-12-31',coordinator:'Matt Hand',
+   partner:'Matt Hand',country:'United Kingdom',
+   annualFee:48000,sessionsIncluded:12,sessionRate:4000,sessionsUsed:4,notes:'Annual chair mentoring for Deloitte CFO.',createdAt:'2025-12-01'},
+  {id:'e2',type:'executive',name:'HSBC — Executive Mentoring: James Thornton',clientId:'c2',mentorId:'m1',status:'active',startDate:'2026-01-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
+   partner:'Sarah Chen',country:'United Kingdom',
+   quarterlyFee:18000,annualFee:72000,notes:'Quarterly invoicing. Marcus leads.',createdAt:'2025-11-15'},
+  {id:'e3',type:'executive',name:'Cabinet Office — Senior Civil Service',clientId:'c3',mentorId:'m2',status:'active',startDate:'2026-03-01',endDate:'2026-08-31',coordinator:'Matt Hand',
+   partner:'Matt Hand',country:'United Kingdom',
+   quarterlyFee:15000,annualFee:30000,notes:'6-month programme. Dr Sharma leads.',createdAt:'2026-02-01'},
+  {id:'e4',type:'team',name:'Barclays — Leadership Transition Workshop',clientId:'c4',mentorId:'m3',status:'active',startDate:'2026-06-15',endDate:'2026-09-15',coordinator:'James Okafor',
+   partner:'James Okafor',country:'United Kingdom',
+   totalFee:85000,mentorFee:28000,notes:'Team engagement for 12 senior leaders.',createdAt:'2026-04-20'},
+  {id:'e5',type:'chair',name:'Cabinet Office — Chair Mentoring: Dame C. Walsh',clientId:'c3',mentorId:'m4',status:'active',startDate:'2026-04-01',endDate:'2027-03-31',coordinator:'Matt Hand',
+   partner:'Matt Hand',country:'United Kingdom',
+   annualFee:52000,sessionsIncluded:10,sessionRate:5200,sessionsUsed:2,notes:'Second GMG chair engagement at Cabinet Office.',createdAt:'2026-03-10'},
+  {id:'e6',type:'executive',name:'Deloitte — Executive Mentoring: R. Mehta',clientId:'c1',mentorId:'m1',status:'planning',startDate:'2026-07-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
+   partner:'Sarah Chen',country:'United Kingdom',
+   quarterlyFee:9000,annualFee:18000,notes:'Awaiting sign-off from Deloitte HR.',createdAt:'2026-05-01'},
+],
+sessions:[
+  {id:'s1',engId:'e1',date:'2026-02-10',duration:90,notes:'Explored board dynamics and succession.',status:'completed',mentorPaid:false},
+  {id:'s2',engId:'e1',date:'2026-03-05',duration:90,notes:'Strategy review and stakeholder management.',status:'completed',mentorPaid:true},
+  {id:'s3',engId:'e1',date:'2026-04-12',duration:90,notes:'Crisis leadership case study.',status:'completed',mentorPaid:true},
+  {id:'s4',engId:'e1',date:'2026-05-20',duration:90,notes:'Governance and chair responsibilities.',status:'completed',mentorPaid:true},
+  {id:'s5',engId:'e1',date:'2026-07-01',duration:90,notes:'',status:'scheduled',mentorPaid:false},
+  {id:'s6',engId:'e5',date:'2026-04-18',duration:90,notes:'Initial session — priorities and context.',status:'completed',mentorPaid:true},
+  {id:'s7',engId:'e5',date:'2026-05-22',duration:90,notes:'Policy challenges and leadership style.',status:'completed',mentorPaid:true},
+  {id:'s8',engId:'e5',date:'2026-07-10',duration:90,notes:'',status:'scheduled',mentorPaid:false},
+],
+clientInvoices:[
+  {id:'i1',engId:'e1',clientId:'c1',amount:48000,type:'chair-annual',period:'2026 Annual',status:'paid',xeroSynced:true,issued:'2026-01-15',due:'2026-02-14',notes:'Annual Chair Mentoring fee.'},
+  {id:'i2',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q1 2026',status:'paid',xeroSynced:true,issued:'2026-01-01',due:'2026-01-31',notes:'Executive Mentoring Q1 advance.'},
+  {id:'i3',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q2 2026',status:'paid',xeroSynced:true,issued:'2026-04-01',due:'2026-04-30',notes:'Executive Mentoring Q2 advance.'},
+  {id:'i4',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q3 2026',status:'sent',xeroSynced:true,issued:'2026-07-01',due:'2026-07-31',notes:'Executive Mentoring Q3 advance.'},
+  {id:'i5',engId:'e3',clientId:'c3',amount:15000,type:'exec-quarterly',period:'Q1 2026',status:'paid',xeroSynced:true,issued:'2026-03-01',due:'2026-03-31',notes:'Cabinet Office Q1.'},
+  {id:'i6',engId:'e3',clientId:'c3',amount:15000,type:'exec-quarterly',period:'Q2 2026',status:'sent',xeroSynced:false,issued:'2026-06-01',due:'2026-06-30',notes:'Cabinet Office Q2.'},
+  {id:'i7',engId:'e4',clientId:'c4',amount:85000,type:'team-adhoc',period:'Jun 2026',status:'draft',xeroSynced:false,issued:'2026-06-01',due:'2026-06-30',notes:'Team Engagement — full programme fee.'},
+  {id:'i8',engId:'e5',clientId:'c3',amount:52000,type:'chair-annual',period:'2026–27 Annual',status:'sent',xeroSynced:true,issued:'2026-04-01',due:'2026-05-01',notes:'Annual Chair fee — Dame C. Walsh.'},
+],
+mentorPayments:[
+  {id:'mp1',mentorId:'m4',engId:'e1',sessionId:'s2',amount:4000,type:'chair-session',period:'Mar 2026',status:'paid',autoBillId:'ab1',xeroSynced:true,created:'2026-03-05'},
+  {id:'mp2',mentorId:'m4',engId:'e1',sessionId:'s3',amount:4000,type:'chair-session',period:'Apr 2026',status:'paid',autoBillId:'ab2',xeroSynced:true,created:'2026-04-12'},
+  {id:'mp3',mentorId:'m4',engId:'e1',sessionId:'s4',amount:4000,type:'chair-session',period:'May 2026',status:'paid',autoBillId:'ab3',xeroSynced:true,created:'2026-05-20'},
+  {id:'mp4',mentorId:'m4',engId:'e5',sessionId:'s6',amount:5200,type:'chair-session',period:'Apr 2026',status:'paid',autoBillId:'ab2',xeroSynced:true,created:'2026-04-18'},
+  {id:'mp5',mentorId:'m4',engId:'e5',sessionId:'s7',amount:5200,type:'chair-session',period:'May 2026',status:'paid',autoBillId:'ab3',xeroSynced:true,created:'2026-05-22'},
+  {id:'mp6',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'Jan 2026',status:'paid',autoBillId:'ab1',xeroSynced:true,created:'2026-01-31'},
+  {id:'mp7',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'Feb 2026',status:'paid',autoBillId:'ab1',xeroSynced:true,created:'2026-02-28'},
+  {id:'mp8',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'Mar 2026',status:'paid',autoBillId:'ab1',xeroSynced:true,created:'2026-03-31'},
+  {id:'mp9',mentorId:'m2',engId:'e3',amount:2000,type:'exec-monthly',period:'Mar 2026',status:'paid',autoBillId:'ab1',xeroSynced:true,created:'2026-03-31'},
+  {id:'mp10',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'Apr 2026',status:'paid',autoBillId:'ab2',xeroSynced:true,created:'2026-04-30'},
+  {id:'mp11',mentorId:'m2',engId:'e3',amount:2000,type:'exec-monthly',period:'Apr 2026',status:'paid',autoBillId:'ab2',xeroSynced:true,created:'2026-04-30'},
+  {id:'mp12',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'May 2026',status:'paid',autoBillId:'ab3',xeroSynced:true,created:'2026-05-31'},
+  {id:'mp13',mentorId:'m2',engId:'e3',amount:2000,type:'exec-monthly',period:'May 2026',status:'paid',autoBillId:'ab3',xeroSynced:true,created:'2026-05-31'},
+  {id:'mp14',mentorId:'m1',engId:'e2',amount:2400,type:'exec-monthly',period:'Jun 2026',status:'pending',autoBillId:null,xeroSynced:false,created:'2026-06-01'},
+  {id:'mp15',mentorId:'m2',engId:'e3',amount:2000,type:'exec-monthly',period:'Jun 2026',status:'pending',autoBillId:null,xeroSynced:false,created:'2026-06-01'},
+  {id:'mp16',mentorId:'m3',engId:'e4',amount:28000,type:'team-bespoke',period:'Jun 2026',status:'pending',autoBillId:null,xeroSynced:false,created:'2026-06-01'},
+],
+autoBills:[
+  {id:'ab1',period:'2026-03',payments:['mp1','mp6','mp7','mp8','mp9'],totalAmount:17000,status:'paid',xeroSynced:true,created:'2026-03-31'},
+  {id:'ab2',period:'2026-04',payments:['mp2','mp4','mp10','mp11'],totalAmount:13600,status:'paid',xeroSynced:true,created:'2026-04-30'},
+  {id:'ab3',period:'2026-05',payments:['mp3','mp5','mp12','mp13'],totalAmount:13600,status:'paid',xeroSynced:true,created:'2026-05-31'},
+],
+pipeline:[
+  {id:'p1',name:'Unilever — Global Grad Programme',clientId:'c5',value:210000,stage:'Proposal',prob:55,owner:'Sarah Chen',partner:'Sarah Chen',country:'United Kingdom',solution:'executive',closeDate:'2026-08-15',notes:'Multi-region RFP. Strong pitch delivered.'},
+  {id:'p2',name:'Amazon UK — Leadership Cohort',clientId:null,client:'Amazon UK',value:95000,stage:'Qualified',prob:40,owner:'Matt Hand',partner:'Matt Hand',country:'United Kingdom',solution:'executive',closeDate:'2026-09-30',notes:'Intro call done. Case studies sent.'},
+  {id:'p3',name:'Rolls-Royce — Engineering Leaders',clientId:null,client:'Rolls-Royce',value:72000,stage:'Prospect',prob:20,owner:'James Okafor',partner:'James Okafor',country:'United Kingdom',solution:'chair',closeDate:'2026-11-30',notes:'Warm intro from Deloitte contact.'},
+  {id:'p4',name:'PwC — Associate Mentoring Pilot',clientId:null,client:'PwC',value:38000,stage:'Closed Won',prob:100,owner:'Matt Hand',partner:'Matt Hand',country:'United Kingdom',solution:'executive',closeDate:'2026-05-01',notes:'Signed May 2026.'},
+],
+opportunities:[
+  {id:'o1',name:'Deloitte UK — Chair Programme 2026',client:'Deloitte UK',solution:'chair',partner:'Matt Hand',country:'United Kingdom',value:48000,stage:'Closed Won',notes:'Signed Jan 2026. Now an active engagement.',created:'2025-11-01'},
+  {id:'o2',name:'HSBC — Executive Mentoring',client:'HSBC Group',solution:'executive',partner:'Sarah Chen',country:'United Kingdom',value:72000,stage:'Closed Won',notes:'Signed Dec 2025.',created:'2025-10-15'},
+  {id:'o3',name:'Cabinet Office — Senior Leaders',client:'Cabinet Office',solution:'executive',partner:'Matt Hand',country:'United Kingdom',value:30000,stage:'Closed Won',notes:'6-month programme. Active.',created:'2026-01-10'},
+  {id:'o4',name:'Barclays — Leadership Transition',client:'Barclays Plc',solution:'team',partner:'James Okafor',country:'United Kingdom',value:85000,stage:'Contracting',notes:'Contract in final review. Kick-off June 15.',created:'2026-04-05'},
+  {id:'o5',name:'Unilever — Global Grad Programme',client:'Unilever',solution:'executive',partner:'Sarah Chen',country:'United Kingdom',value:210000,stage:'Proposal Sent',notes:'Multi-region RFP. Strong pitch delivered 28 May.',created:'2026-03-10'},
+  {id:'o6',name:'Amazon UK — Leadership Cohort',client:'Amazon UK',solution:'executive',partner:'Matt Hand',country:'United Kingdom',value:95000,stage:'Qualified',notes:'Intro call done. Case studies and credentials sent.',created:'2026-05-01'},
+  {id:'o7',name:'Rolls-Royce — Engineering Leaders',client:'Rolls-Royce',solution:'chair',partner:'James Okafor',country:'United Kingdom',value:72000,stage:'Lead',notes:'Warm intro from Deloitte contact. First call booked.',created:'2026-05-28'},
+  {id:'o8',name:'Deutsche Bank — MD Mentoring',client:'Deutsche Bank',solution:'executive',partner:'Sarah Chen',country:'Germany',value:64000,stage:'Lead',notes:'Inbound enquiry. Initial discovery call 10 Jun.',created:'2026-06-01'},
+  {id:'o9',name:'Singapore Airlines — Board Mentoring',client:'Singapore Airlines',solution:'chair',partner:'Matt Hand',country:'Singapore',value:88000,stage:'Qualified',notes:'Referred by existing HSBC contact. Positive first meeting.',created:'2026-05-15'},
+  {id:'o10',name:'Macquarie Group — Executive Prog.',client:'Macquarie Group',solution:'executive',partner:'James Okafor',country:'Australia',value:55000,stage:'Proposal Accepted',notes:'Verbal approval received. Contracts being drafted.',created:'2026-04-20'},
+  {id:'o11',name:'ADNOC — Leadership Development',client:'ADNOC',solution:'team',partner:'Matt Hand',country:'UAE',value:140000,stage:'Client Intro',notes:'C-suite intro meeting completed. Very positive.',created:'2026-05-05'},
+  {id:'o12',name:'RBC Capital — Chair Mentoring',client:'Royal Bank of Canada',solution:'chair',partner:'Sarah Chen',country:'Canada',value:52000,stage:'Mentee Identified',notes:'Mentee confirmed. Mentor matching in progress.',created:'2026-04-28'},
+],
+tasks:[
+  {id:'t1',title:'Send Q3 invoice — HSBC Executive Mentoring',ref:'e2',type:'finance',assignee:'Matt Hand',status:'todo',priority:'high',due:'2026-07-01',notes:'Raise i4 and push to Xero.'},
+  {id:'t2',title:'Push Cabinet Office Q2 invoice to Xero',ref:'i6',type:'finance',assignee:'Matt Hand',status:'todo',priority:'high',due:'2026-06-10',notes:'Invoice i6 drafted — sync pending.'},
+  {id:'t3',title:'Run June auto-bill for mentor payments',ref:null,type:'finance',assignee:'Matt Hand',status:'todo',priority:'high',due:'2026-06-30',notes:'mp14, mp15, mp16 pending.'},
+  {id:'t4',title:'Raise Barclays team engagement invoice',ref:'e4',type:'finance',assignee:'James Okafor',status:'todo',priority:'medium',due:'2026-06-15',notes:'i7 is in draft — send to client.'},
+  {id:'t5',title:'Log session s5 — Deloitte Chair',ref:'e1',type:'sessions',assignee:'Matt Hand',status:'todo',priority:'medium',due:'2026-07-02',notes:'Session scheduled 1 Jul — log after.'},
+  {id:'t6',title:'Confirm Unilever RFP submission date',ref:'p1',type:'pipeline',assignee:'Sarah Chen',status:'inprogress',priority:'high',due:'2026-06-12',notes:''},
+  {id:'t7',title:'Onboard Barclays engagement coordinator',ref:'e4',type:'engagement',assignee:'James Okafor',status:'inprogress',priority:'medium',due:'2026-06-14',notes:'Intro call with Barclays HR booked.'},
+],
+quotes:[
+  {id:'q1',name:'Unilever Global Graduate Programme',clientId:'c5',solution:'executive',value:210000,status:'sent',date:'2026-05-20',partner:'Sarah Chen',country:'United Kingdom',notes:'Multi-region programme. 12 mentors over 18 months.',validUntil:'2026-07-20'},
+  {id:'q2',name:'KPMG Senior Leadership Development',clientId:'c3',solution:'chair',value:95000,status:'approved',date:'2026-04-15',partner:'Matt Hand',country:'United Kingdom',notes:'Chair Mentoring for 5 senior partners.',validUntil:'2026-06-30'},
+  {id:'q3',name:'PwC Associate Mentoring Pilot',clientId:'c6',solution:'executive',value:38000,status:'approved',date:'2026-03-01',partner:'Matt Hand',country:'United Kingdom',notes:'Pilot cohort of 8 associates.',validUntil:'2026-05-01'},
+  {id:'q4',name:'NHS Leadership Cohort',clientId:'c7',solution:'team',value:55000,status:'draft',date:'2026-06-01',partner:'Emma Richards',country:'United Kingdom',notes:'Team engagement across 3 trusts.',validUntil:'2026-08-01'},
+],
+activities:[
+  {id:'a1',icon:'◈',text:'New engagement created: Barclays — Leadership Transition Workshop','ts':'2026-06-01 10:32'},
+  {id:'a2',icon:'◎',text:'Invoice raised: Cabinet Office Q2 — £15,000','ts':'2026-06-01 09:15'},
+  {id:'a3',icon:'◐',text:'Auto-bill run completed: May 2026 — £13,600 to Xero','ts':'2026-05-31 17:00'},
+  {id:'a4',icon:'◷',text:'Session completed: Deloitte Chair — S. Okonkwo (Session 4)','ts':'2026-05-20 14:00'},
+  {id:'a5',icon:'◆',text:'Deal closed: PwC — Associate Mentoring Pilot (£38,000)','ts':'2026-05-01 11:30'},
+]
+};
+
+const SK = 'gmg_v2';
+function load(){try{return JSON.parse(localStorage.getItem(SK))||null}catch{return null}}
+function save(){localStorage.setItem(SK,JSON.stringify(DB))}
+let DB = load()||JSON.parse(JSON.stringify(SEED));
+
+const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''}};
+const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',projects:'Project Management',quoting:'Quoting',costmgmt:'Cost Management',tasks:'Tasks'};
+const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',quoting:'+ New Quote',tasks:'+ New Task'};
+const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
+const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
+const PARTNERS=['Matt Hand','Sarah Chen','James Okafor','Will Chidlow','Emma Richards','Tom Ashworth'];
+const COUNTRIES=['United Kingdom','United States','Germany','France','Australia','Singapore','UAE','Canada','Switzerland','Netherlands','Sweden','Hong Kong','Japan','South Africa','India','Brazil','Spain','Italy','Belgium','Ireland'];
+
+function uid(){return '_'+Math.random().toString(36).slice(2,9)}
+function today(){return new Date().toISOString().split('T')[0]}
+function fmt(n){return '£'+Number(n).toLocaleString('en-GB',{minimumFractionDigits:0})}
+function initials(n){return n.split(' ').map(x=>x[0]).join('').toUpperCase().slice(0,2)}
+function addAct(icon,text){DB.activities.unshift({id:uid(),icon,text,ts:new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',','')});save()}
+
+function doLogin(){
+  const name=document.getElementById('ln').value.trim()||'User';
+  const role=document.getElementById('lr').value;
+  S.user={name,role};
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('sun').textContent=name;
+  document.getElementById('sur').textContent=ROLES[role];
+  document.getElementById('sav').textContent=name.charAt(0).toUpperCase();
+  nav(document.querySelector('[data-v="dashboard"]'));
+}
+
+function nav(el){
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  const v=el.dataset.v; S.view=v;
+  document.getElementById('tbt').textContent=VIEWS[v]||v;
+  const ab=document.getElementById('tba');
+  if(TOPACT[v]){ab.textContent=TOPACT[v];ab.style.display='inline-flex'}else ab.style.display='none';
+  renderView();
+}
+function topAction(){
+  const m={engagements:openEngModal,pipeline:openDealModal,quoting:openQuoteModal,tasks:openTaskModal};
+  if(m[S.view]) m[S.view]();
+}
+function gSearch(v){S.search=v}
+function renderView(){
+  const c=document.getElementById('content');
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,projects:rProjects,quoting:rQuoting,costmgmt:rCostMgmt,tasks:rTasks};
+  if(r[S.view]) r[S.view](c);
+}
+
+/* ── DASHBOARD ───────────────────────────────────────────────── */
+function rDashboard(c){
+  const activeEngs=DB.engagements.filter(e=>e.status==='active');
+  const pendingPay=DB.mentorPayments.filter(p=>p.status==='pending');
+  const pendingPayVal=pendingPay.reduce((s,p)=>s+p.amount,0);
+  const unsyncedInv=DB.clientInvoices.filter(i=>!i.xeroSynced);
+  const overdueT=DB.tasks.filter(t=>t.status!=='done'&&t.due<today());
+  const todoT=DB.tasks.filter(t=>t.status==='todo');
+  const ytdInv=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+  const fyTarget=520000;
+  const pipelineVal=DB.pipeline.filter(p=>!['Closed Won','Closed Lost'].includes(p.stage)).reduce((s,p)=>s+p.value,0);
+  const wonVal=DB.pipeline.filter(p=>p.stage==='Closed Won').reduce((s,p)=>s+p.value,0);
+  const ytdPct=Math.round(ytdInv/fyTarget*100);
+
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Dashboard</h2><p>Good morning, ${S.user.name.split(' ')[0]}. Here's your operational overview.</p></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:11px;color:var(--muted)">Friday 5 June 2026</span>
+    ${unsyncedInv.length?`<span class="badge b-amber">⚠ ${unsyncedInv.length} unsynced to Xero</span>`:''}
+  </div></div>
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdInv)}</div>
+      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${ytdPct}%"></div></div>
+      <div class="kpi-sub">${ytdPct}% of ${fmt(fyTarget)} FY target</div></div>
+    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
+      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
+    <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
+      <div class="kpi-sub">${pendingPay.length} payments · next run end of month</div></div>
+    <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
+      <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-hdr"><h3>Outstanding Tasks <span class="badge b-red" style="margin-left:6px">${overdueT.length} overdue</span></h3>
+        <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=engagements]'))">View all</button></div>
+      <div class="card-body" style="padding:0">
+        <table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>
+        ${todoT.concat(DB.tasks.filter(t=>t.status==='inprogress')).slice(0,6).map(t=>{
+          const ov=t.due<today()&&t.status!=='done';
+          return`<tr><td><span style="font-weight:600">${t.title}</span><div style="font-size:10px;color:var(--muted)">${t.assignee}</div></td>
+          <td><span class="badge b-grey">${t.type}</span></td>
+          <td style="color:${ov?'var(--venetian)':'inherit'};font-weight:${ov?700:400}">${t.due}${ov?' ⚠':''}</td>
+          <td><span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span></td></tr>`;
+        }).join('')}
+        </tbody></table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Active Engagements</h3></div>
+      <div class="card-body" style="padding:0">
+        ${activeEngs.map(e=>{
+          const client=DB.contacts.find(c=>c.id===e.clientId);
+          const mentor=DB.contacts.find(m=>m.id===e.mentorId);
+          const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+          return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
+            <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'…':e.name}</div>
+            <div style="font-size:10px;color:var(--muted)">${mentor?.name||'—'} · ${e.coordinator}</div></div>
+            <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-hdr"><h3>Finance — Pending Actions</h3></div>
+      <div class="card-body" style="padding:0 18px">
+        ${unsyncedInv.length===0&&pendingPay.length===0?'<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced ✓</p>':''}
+        ${unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
+          return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
+          <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
+          <button class="btn btn-sm b-xero btn-xero" onclick="pushInvXero('${inv.id}')">→ Xero</button></div>`;
+        }).join('')}
+        ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);
+          const e=DB.engagements.find(x=>x.id===p.engId);
+          return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]||''} · ${p.type}</span></div>
+          <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
+          <span class="badge b-amber">pending</span></div>`;
+        }).join('')}
+        ${pendingPay.length>3?`<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+${pendingPay.length-3} more pending — <a href="#" onclick="S.tab.cost='autobill';nav(document.querySelector('[data-v=costmgmt]'));return false" style="color:var(--venetian)">Run auto-bill</a></div>`:''}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Recent Activity</h3></div>
+      <div class="card-body" style="padding:0 18px">
+        ${DB.activities.slice(0,6).map(a=>`
+          <div class="act-item"><div class="act-dot">${a.icon}</div>
+          <div style="flex:1"><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${a.ts}</div></div></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ── ENGAGEMENTS ─────────────────────────────────────────────── */
+function rEngagements(c){
+  const tab=S.tab.eng||'all';
+  const pf=S.engFilters.partner; const cf=S.engFilters.country; const sf=S.engFilters.solution;
+  let engs=DB.engagements.filter(e=>{
+    if(tab!=='all'&&e.type!==tab&&e.status!==tab) return false;
+    if(pf&&e.partner!==pf) return false;
+    if(cf&&e.country!==cf) return false;
+    if(sf&&e.type!==sf) return false;
+    return true;
+  });
+  const allPartners=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
+  const allCountries=[...new Set(DB.engagements.map(e=>e.country).filter(Boolean))];
+  const hasFilter=pf||cf||sf;
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active engagements across all types</p></div></div>
+  <div class="tabs">
+    ${['all','chair','executive','team','active','planning','completed'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.eng='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.engagements.length:DB.engagements.filter(e=>e.type===t||e.status===t).length})</div>`).join('')}
+  </div>
+  <div class="filter-row">
+    <select onchange="S.engFilters.partner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${allPartners.map(p=>`<option value="${p}" ${pf===p?'selected':''}>${p}</option>`).join('')}
+    </select>
+    <select onchange="S.engFilters.country=this.value;renderView()">
+      <option value="">All Countries</option>
+      ${allCountries.map(p=>`<option value="${p}" ${cf===p?'selected':''}>${p}</option>`).join('')}
+    </select>
+    <select onchange="S.engFilters.solution=this.value;renderView()">
+      <option value="">All Solutions</option>
+      <option value="chair" ${sf==='chair'?'selected':''}>Chair Mentoring</option>
+      <option value="executive" ${sf==='executive'?'selected':''}>Executive Mentoring</option>
+      <option value="team" ${sf==='team'?'selected':''}>Team Engagement</option>
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.engFilters={partner:'',country:'',solution:''};renderView()">✕ Clear filters</button>`:''}
+    <span style="font-size:11px;color:var(--muted);margin-left:4px">${engs.length} result${engs.length!==1?'s':''}</span>
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Engagement</th><th>Solution</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Country</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${engs.length?engs.map(e=>{
+      const cl=DB.contacts.find(x=>x.id===e.clientId);
+      const mn=DB.contacts.find(x=>x.id===e.mentorId);
+      const val=e.type==='chair'?e.annualFee:e.type==='executive'?e.annualFee:e.totalFee;
+      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
+      const sb={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
+      return`<tr><td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.coordinator} · ${e.startDate}</div></td>
+      <td><span class="badge ${tb}">${e.type}</span></td>
+      <td style="font-size:12px">${cl?.name||'—'}</td>
+      <td style="font-size:12px">${mn?.name||'—'}</td>
+      <td style="font-size:12px">${e.partner||'—'}</td>
+      <td style="font-size:12px">${e.country||'—'}</td>
+      <td style="font-family:Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val||0)}</td>
+      <td><span class="badge ${sb}">${e.status}</span></td>
+      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button><button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></div></td></tr>`;
+    }).join(''):`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">No engagements match the selected filters.</td></tr>`}</tbody></table>
+  </div>`;
+}
+
+function openEngDetail(id){
+  const e=DB.engagements.find(x=>x.id===id); if(!e) return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  const mn=DB.contacts.find(m=>m.id===e.mentorId);
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
+  const sb={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
+  const enSess=DB.sessions.filter(s=>s.engId===id);
+  const enInv=DB.clientInvoices.filter(i=>i.engId===id);
+  const enPay=DB.mentorPayments.filter(p=>p.engId===id);
+
+  let typeInfo='';
+  if(e.type==='chair') typeInfo=`<div class="ir"><span class="lbl">Annual Fee</span><span class="val" style="color:var(--cadmium)">${fmt(e.annualFee)}</span></div>
+    <div class="ir"><span class="lbl">Sessions Included</span><span class="val">${e.sessionsIncluded}</span></div>
+    <div class="ir"><span class="lbl">Sessions Used</span><span class="val">${e.sessionsUsed} / ${e.sessionsIncluded}</span></div>
+    <div class="ir"><span class="lbl">Rate per Session</span><span class="val">${fmt(e.sessionRate)}</span></div>`;
+  else if(e.type==='executive') typeInfo=`<div class="ir"><span class="lbl">Quarterly Fee (client)</span><span class="val" style="color:var(--cadmium)">${fmt(e.quarterlyFee)}</span></div>
+    <div class="ir"><span class="lbl">Annual Value</span><span class="val">${fmt(e.annualFee)}</span></div>
+    <div class="ir"><span class="lbl">Mentor Monthly (40%)</span><span class="val">${fmt(Math.round(e.quarterlyFee/3*0.4))}</span></div>
+    <div class="ir"><span class="lbl">Xero Push</span><span class="val">Monthly (1/3 quarterly)</span></div>`;
+  else typeInfo=`<div class="ir"><span class="lbl">Total Programme Fee</span><span class="val" style="color:var(--cadmium)">${fmt(e.totalFee)}</span></div>
+    <div class="ir"><span class="lbl">Agreed Mentor Fee</span><span class="val">${fmt(e.mentorFee)}</span></div>
+    <div class="ir"><span class="lbl">Invoicing</span><span class="val">Ad-hoc</span></div>`;
+
+  showModal(`<div class="mhdr"><h3>${e.name}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div style="display:flex;gap:8px;margin-bottom:14px"><span class="badge ${tb}">${e.type}</span><span class="badge ${sb}">${e.status}</span></div>
+    <div class="fstitle">Engagement Details</div>
+    <div class="ir"><span class="lbl">Client</span><span class="val">${cl?.name||'—'}</span></div>
+    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?.name||'—'}</span></div>
+    <div class="ir"><span class="lbl">Coordinator</span><span class="val">${e.coordinator}</span></div>
+    <div class="ir"><span class="lbl">Partner</span><span class="val">${e.partner||'—'}</span></div>
+    <div class="ir"><span class="lbl">Country</span><span class="val">${e.country||'—'}</span></div>
+    <div class="ir"><span class="lbl">Dates</span><span class="val">${e.startDate} → ${e.endDate}</span></div>
+    <div class="fstitle" style="margin-top:12px">Financial Terms</div>
+    ${typeInfo}
+    ${e.notes?`<div style="margin:12px 0;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${e.notes}</div>`:''}
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px">
+      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
+        <div style="font-family:Georgia,serif;font-size:18px;font-weight:700">${enSess.length}</div>
+        <div style="font-size:10px;color:var(--muted)">Sessions</div></div>
+      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
+        <div style="font-family:Georgia,serif;font-size:18px;font-weight:700">${enInv.length}</div>
+        <div style="font-size:10px;color:var(--muted)">Invoices</div></div>
+      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
+        <div style="font-family:Georgia,serif;font-size:18px;font-weight:700">${enPay.length}</div>
+        <div style="font-size:10px;color:var(--muted)">Payments</div></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline" onclick="closeModal();openEngModal('${e.id}')">✏ Edit</button>
+      ${e.type==='chair'?`<button class="btn btn-sm btn-outline" onclick="closeModal();openSessionModal('${e.id}')">+ Log Session</button>`:''}
+      <button class="btn btn-sm btn-outline" onclick="closeModal();openInvoiceModal(null,'${e.id}')">+ Invoice</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteEng('${e.id}')">Delete</button>
+    </div>
+  </div>`,true);
+}
+
+function deleteEng(id){
+  if(!confirm('Delete this engagement? This cannot be undone.')) return;
+  DB.engagements=DB.engagements.filter(e=>e.id!==id);
+  save(); closeModal(); renderView();
+}
+
+/* ── SESSIONS ────────────────────────────────────────────────── */
+function rSessions(c){
+  const tab=S.tab.sess||'all';
+  let sess=DB.sessions;
+  if(tab!=='all') sess=sess.filter(s=>s.status===tab);
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Sessions</h2><p>Chair mentoring sessions — completed sessions trigger auto mentor payment</p></div></div>
+  <div class="tabs">
+    ${['all','scheduled','completed','cancelled'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.sess='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.sessions.length:DB.sessions.filter(s=>s.status===t).length})</div>`).join('')}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Engagement</th><th>Date</th><th>Duration</th><th>Status</th><th>Mentor Payment</th><th>Actions</th></tr></thead>
+    <tbody>${sess.map(s=>{
+      const e=DB.engagements.find(x=>x.id===s.engId);
+      const mn=e?DB.contacts.find(m=>m.id===e.mentorId):null;
+      const sb={scheduled:'b-blue',completed:'b-green',cancelled:'b-grey'}[s.status];
+      return`<tr><td><div style="font-weight:600;font-size:12px">${e?.name||'—'}</div><div style="font-size:10px;color:var(--muted)">${mn?.name||'—'}</div></td>
+      <td style="font-size:12px">${s.date}</td>
+      <td style="font-size:12px">${s.duration} min</td>
+      <td><span class="badge ${sb}">${s.status}</span></td>
+      <td>${s.status==='completed'?`<span class="badge ${s.mentorPaid?'b-green':'b-amber'}">${s.mentorPaid?'✓ paid':'pending'}</span>`:'<span class="badge b-grey">n/a</span>'}</td>
+      <td><div class="acts">
+        ${s.status==='scheduled'?`<button class="btn btn-sm btn-success" onclick="completeSession('${s.id}')">✓ Complete</button>`:''}
+        ${s.status==='completed'&&!s.mentorPaid?`<button class="btn btn-sm btn-warn" onclick="paySession('${s.id}')">Pay Mentor</button>`:''}
+        <button class="btn btn-sm btn-outline" onclick="viewSession('${s.id}')">View</button>
+      </div></td></tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+
+function completeSession(id){
+  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
+  const e=DB.engagements.find(x=>x.id===s.engId);
+  s.status='completed';
+  if(e){e.sessionsUsed=(e.sessionsUsed||0)+1;}
+  // Auto-generate mentor payment
+  DB.mentorPayments.push({id:uid(),mentorId:e?.mentorId,engId:s.engId,sessionId:id,
+    amount:e?.sessionRate||0,type:'chair-session',period:s.date.slice(0,7),
+    status:'pending',autoBillId:null,xeroSynced:false,created:today()});
+  addAct('◷',`Session completed: ${e?.name?.split('—')[0]||''} — mentor payment auto-generated (${fmt(e?.sessionRate||0)})`);
+  save(); renderView();
+}
+
+function paySession(id){
+  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
+  const mp=DB.mentorPayments.find(p=>p.sessionId===id);
+  if(mp){mp.status='paid';mp.xeroSynced=true;}
+  s.mentorPaid=true;
+  save(); renderView();
+}
+
+function viewSession(id){
+  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
+  const e=DB.engagements.find(x=>x.id===s.engId);
+  const mn=e?DB.contacts.find(m=>m.id===e.mentorId):null;
+  showModal(`<div class="mhdr"><h3>Session Detail</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div class="ir"><span class="lbl">Engagement</span><span class="val">${e?.name||'—'}</span></div>
+    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?.name||'—'}</span></div>
+    <div class="ir"><span class="lbl">Date</span><span class="val">${s.date}</span></div>
+    <div class="ir"><span class="lbl">Duration</span><span class="val">${s.duration} minutes</span></div>
+    <div class="ir"><span class="lbl">Status</span><span class="val"><span class="badge ${s.status==='completed'?'b-green':s.status==='scheduled'?'b-blue':'b-grey'}">${s.status}</span></span></div>
+    <div class="ir"><span class="lbl">Mentor Rate</span><span class="val">${fmt(e?.sessionRate||0)}</span></div>
+    <div class="ir"><span class="lbl">Payment</span><span class="val"><span class="badge ${s.mentorPaid?'b-green':'b-amber'}">${s.mentorPaid?'Paid':'Pending'}</span></span></div>
+    ${s.notes?`<div style="margin-top:12px;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${s.notes}</div>`:''}
+  </div>`);
+}
+
+/* ── CLIENT INVOICES ─────────────────────────────────────────── */
+function rInvoices(c){
+  const tab=S.tab.inv||'all';
+  let invs=DB.clientInvoices;
+  if(tab!=='all') invs=invs.filter(i=>i.status===tab||(!i.xeroSynced&&tab==='unsynced'));
+  const totalOut=DB.clientInvoices.filter(i=>i.status==='sent').reduce((s,i)=>s+i.amount,0);
+  const totalPaid=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Client Invoices</h2></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span style="font-size:12px;color:var(--muted)">Outstanding: <strong style="color:var(--venetian)">${fmt(totalOut)}</strong></span>
+      <span style="font-size:12px;color:var(--muted)">Paid: <strong style="color:var(--success)">${fmt(totalPaid)}</strong></span>
+    </div>
+  </div>
+  ${DB.clientInvoices.filter(i=>!i.xeroSynced).length?`<div class="xero-banner"><div><h4>Xero Sync Required</h4><p>${DB.clientInvoices.filter(i=>!i.xeroSynced).length} invoices not yet pushed to Xero</p></div>
+    <button class="btn btn-sm" style="background:#fff;color:#13B5EA;font-weight:700" onclick="pushAllXero()">Push All to Xero →</button></div>`:''}
+  <div class="tabs">
+    ${['all','draft','sent','paid','unsynced'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.inv='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.clientInvoices.length:t==='unsynced'?DB.clientInvoices.filter(i=>!i.xeroSynced).length:DB.clientInvoices.filter(i=>i.status===t).length})</div>`).join('')}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Invoice</th><th>Type</th><th>Client</th><th>Period</th><th>Amount</th><th>Due</th><th>Status</th><th>Xero</th><th>Actions</th></tr></thead>
+    <tbody>${invs.map(inv=>{
+      const cl=DB.contacts.find(c=>c.id===inv.clientId);
+      const e=DB.engagements.find(x=>x.id===inv.engId);
+      const sb={draft:'b-grey',sent:'b-blue',paid:'b-green'}[inv.status]||'b-grey';
+      const tb={chair_annual:'type-chair','chair-annual':'type-chair','exec-quarterly':'type-executive','team-adhoc':'type-team'}[inv.type]||'b-grey';
+      return`<tr><td><div style="font-weight:600;font-size:11px">${inv.id.toUpperCase()}</div><div style="font-size:10px;color:var(--muted)">${e?.name?.split('—')[0]?.trim()||'—'}</div></td>
+      <td><span class="badge ${tb}" style="font-size:9px">${inv.type}</span></td>
+      <td style="font-size:12px">${cl?.name||'—'}</td>
+      <td style="font-size:11px">${inv.period}</td>
+      <td style="font-family:Georgia,serif;font-weight:700">${fmt(inv.amount)}</td>
+      <td style="font-size:11px;color:${inv.due<today()&&inv.status!=='paid'?'var(--venetian)':'inherit'}">${inv.due}</td>
+      <td><span class="badge ${sb}">${inv.status}</span></td>
+      <td><span class="badge ${inv.xeroSynced?'b-xero':'b-amber'}">${inv.xeroSynced?'✓ synced':'pending'}</span></td>
+      <td><div class="acts">
+        ${inv.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendInvoice('${inv.id}')">Send</button>`:''}
+        ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">✓ Paid</button>`:''}
+        ${!inv.xeroSynced?`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">→ Xero</button>`:''}
+      </div></td></tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+
+function sendInvoice(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.status='sent';addAct('◎',`Invoice sent: ${fmt(i.amount)} — ${i.period}`);save();renderView();}}
+function markPaid(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.status='paid';save();renderView();}}
+function pushInvXero(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.xeroSynced=true;addAct('◎',`Invoice pushed to Xero: ${fmt(i.amount)}`);save();renderView();}}
+function pushAllXero(){DB.clientInvoices.forEach(i=>{if(!i.xeroSynced)i.xeroSynced=true});addAct('◎','All pending invoices pushed to Xero');save();renderView();}
+
+/* ── MENTOR PAYMENTS ─────────────────────────────────────────── */
+function rPayments(c){
+  const tab=S.tab.pay||'all';
+  let pays=DB.mentorPayments;
+  if(tab!=='all') pays=pays.filter(p=>p.status===tab);
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending');
+  const pendVal=pending.reduce((s,p)=>s+p.amount,0);
+
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Mentor Payments</h2><p>${pending.length} payments pending · ${fmt(pendVal)} due this month-end</p></div>
+    <button class="btn btn-primary" onclick="nav(document.querySelector('[data-v=autobill]'))">Run Auto-Bill →</button>
+  </div>
+  <div class="tabs">
+    ${['all','pending','paid'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.pay='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.mentorPayments.length:DB.mentorPayments.filter(p=>p.status===t).length})</div>`).join('')}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Mentor</th><th>Engagement</th><th>Type</th><th>Period</th><th>Amount</th><th>Status</th><th>Auto-Bill</th><th>Xero</th></tr></thead>
+    <tbody>${pays.map(p=>{
+      const m=DB.contacts.find(x=>x.id===p.mentorId);
+      const e=DB.engagements.find(x=>x.id===p.engId);
+      const tb={chair_session:'type-chair','chair-session':'type-chair','exec-monthly':'type-executive','team-bespoke':'type-team'}[p.type]||'b-grey';
+      return`<tr><td style="font-weight:600;font-size:12px">${m?.name||'—'}</td>
+      <td style="font-size:11px">${e?.name?.split('—')[0]?.trim()||'—'}</td>
+      <td><span class="badge ${tb}" style="font-size:9px">${p.type}</span></td>
+      <td style="font-size:11px">${p.period}</td>
+      <td style="font-family:Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(p.amount)}</td>
+      <td><span class="badge ${p.status==='paid'?'b-green':'b-amber'}">${p.status}</span></td>
+      <td style="font-size:11px">${p.autoBillId||'<span style="color:var(--muted)">unassigned</span>'}</td>
+      <td><span class="badge ${p.xeroSynced?'b-xero':'b-amber'}">${p.xeroSynced?'✓':'pending'}</span></td></tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+
+/* ── AUTO-BILL & XERO ────────────────────────────────────────── */
+function rAutoBill(c){
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
+  const byMentor={};
+  pending.forEach(p=>{if(!byMentor[p.mentorId]) byMentor[p.mentorId]=[];byMentor[p.mentorId].push(p);});
+  const pendTotal=pending.reduce((s,p)=>s+p.amount,0);
+  const currentPeriod='2026-06';
+
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Auto-Bill &amp; Xero</h2><p>Consolidate mentor payments and push to Xero at month-end</p></div></div>
+  <div class="xero-banner" style="margin-bottom:20px">
+    <div><h4>🔗 Xero Integration Active</h4><p>Auto-bills are pushed as individual supplier bills per mentor. Executive &amp; Team fees consolidated into one bill per mentor per month.</p></div>
+    <div style="text-align:right"><div style="font-size:18px;font-weight:700">${fmt(pendTotal)}</div><div style="font-size:10px;opacity:.8">pending this month</div></div>
+  </div>
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="card-hdr"><h3>June 2026 — Pending Payments</h3>
+        ${Object.keys(byMentor).length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill →</button>`:'<span class="badge b-green">✓ All processed</span>'}
+      </div>
+      <div class="card-body" style="padding:0">
+        ${Object.keys(byMentor).length===0?`<div class="empty"><div class="ei">✓</div><p>No pending payments for this period</p></div>`:''}
+        ${Object.entries(byMentor).map(([mid,pays])=>{
+          const m=DB.contacts.find(x=>x.id===mid);
+          const total=pays.reduce((s,p)=>s+p.amount,0);
+          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div><strong style="font-size:13px">${m?.name||'Unknown Mentor'}</strong>
+              <span class="badge b-amber" style="margin-left:8px">${pays.length} payment${pays.length>1?'s':''}</span></div>
+              <strong style="font-family:Georgia,serif;font-size:14px;color:var(--cadmium)">${fmt(total)}</strong>
+            </div>
+            ${pays.map(p=>{const e=DB.engagements.find(x=>x.id===p.engId);
+              return`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0">
+                <span>${e?.name?.split('—')[0]?.trim()||'—'} · <span class="badge ${p.type==='chair-session'?'type-chair':p.type==='exec-monthly'?'type-executive':'type-team'}" style="font-size:9px">${p.type}</span></span>
+                <span>${fmt(p.amount)}</span></div>`;}).join('')}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Previous Auto-Bill Runs</h3></div>
+      <div class="card-body" style="padding:0">
+        ${DB.autoBills.map(ab=>{
+          const pays=ab.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
+          const mentorIds=[...new Set(pays.map(p=>p.mentorId))];
+          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <div style="flex:1"><strong style="font-size:12px">Auto-Bill ${ab.id.toUpperCase()} — ${ab.period}</strong>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${mentorIds.length} mentor${mentorIds.length>1?'s':''} · ${ab.payments.length} payments</div></div>
+            <div style="text-align:right"><div style="font-family:Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(ab.totalAmount)}</div>
+            <span class="badge ${ab.xeroSynced?'b-xero':'b-amber'}">${ab.xeroSynced?'✓ Xero':'pending'}</span></div>
+          </div>`;
+        }).reverse().join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Billing Rules Summary</h3></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        <div style="background:rgba(94,17,0,.05);border:1px solid rgba(94,17,0,.15);border-radius:8px;padding:14px">
+          <div class="badge type-chair" style="margin-bottom:8px">Chair Mentoring</div>
+          <div style="font-size:11px;color:var(--nearblack);line-height:1.6"><strong>Client:</strong> Single annual invoice at engagement start<br><strong>Mentor:</strong> Per-session payment upon completion<br><strong>Xero:</strong> Auto-bill raised per session immediately</div>
+        </div>
+        <div style="background:rgba(206,39,2,.04);border:1px solid rgba(206,39,2,.15);border-radius:8px;padding:14px">
+          <div class="badge type-executive" style="margin-bottom:8px">Executive Mentoring</div>
+          <div style="font-size:11px;color:var(--nearblack);line-height:1.6"><strong>Client:</strong> Quarterly invoices in advance<br><strong>Xero:</strong> Pushed monthly (⅓ of quarterly)<br><strong>Mentor:</strong> 40% of client fee, monthly<br><strong>Billing:</strong> Consolidated end-of-month auto-bill</div>
+        </div>
+        <div style="background:rgba(185,83,0,.05);border:1px solid rgba(185,83,0,.15);border-radius:8px;padding:14px">
+          <div class="badge type-team" style="margin-bottom:8px">Team Engagement</div>
+          <div style="font-size:11px;color:var(--nearblack);line-height:1.6"><strong>Client:</strong> Ad-hoc invoice (full amount)<br><strong>Mentor:</strong> Agreed bespoke fee<br><strong>Billing:</strong> Added to end-of-month auto-bill<br><strong>Xero:</strong> Via monthly consolidated bill</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function runAutoBill(){
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
+  if(!pending.length){alert('No pending payments to process.');return;}
+  const id=uid();
+  const total=pending.reduce((s,p)=>s+p.amount,0);
+  pending.forEach(p=>{p.autoBillId=id;p.status='paid';p.xeroSynced=true;});
+  DB.autoBills.push({id,period:'2026-06',payments:pending.map(p=>p.id),totalAmount:total,status:'paid',xeroSynced:true,created:today()});
+  addAct('◐',`Auto-bill run completed: June 2026 — ${fmt(total)} pushed to Xero`);
+  save(); renderView();
+  alert(`✓ Auto-bill run complete.\n${pending.length} payments totalling ${fmt(total)} pushed to Xero.`);
+}
+
+/* ── CONTACTS ────────────────────────────────────────────────── */
+function rContacts(c){
+  const tab=S.tab.con||'all';
+  let cons=DB.contacts.filter(x=>tab==='all'||x.type===tab);
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Contacts</h2><p>${DB.contacts.filter(c=>c.type==='mentor').length} mentors · ${DB.contacts.filter(c=>c.type==='client').length} clients</p></div></div>
+  <div class="tabs">
+    ${['all','mentor','client'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.con='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.contacts.length:DB.contacts.filter(c=>c.type===t).length})</div>`).join('')}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Name</th><th>Type</th><th>Organisation</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${cons.map(ct=>{
+      const tb=ct.type==='mentor'?'type-chair':'b-black';
+      const sb=ct.status==='active'?'b-green':ct.status==='prospect'?'b-amber':'b-grey';
+      return`<tr><td><div style="font-weight:600;font-size:12px">${ct.name}</div></td>
+      <td><span class="badge ${tb}">${ct.type}</span></td>
+      <td style="font-size:12px">${ct.org||'—'}</td>
+      <td style="font-size:11px;color:var(--muted)">${ct.email}</td>
+      <td><span class="badge ${sb}">${ct.status}</span></td>
+      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openContactModal('${ct.id}')">Edit</button>
+      <button class="btn btn-sm btn-danger" onclick="deleteCon('${ct.id}')">×</button></div></td></tr>`;
+    }).join('')}</tbody></table>
+  </div>`;
+}
+function deleteCon(id){if(!confirm('Delete contact?'))return;DB.contacts=DB.contacts.filter(c=>c.id!==id);save();renderView();}
+
+/* ── PROJECT MANAGEMENT ──────────────────────────────────────── */
+function rProjects(c){
+  const statusFilter=S.tab.projStatus||'all';
+  const partnerFilter=S.tab.projPartner||'';
+  let engs=DB.engagements.filter(e=>{
+    if(statusFilter!=='all'&&e.status!==statusFilter) return false;
+    if(partnerFilter&&e.partner!==partnerFilter) return false;
+    return true;
+  });
+  const hasFilter=statusFilter!=='all'||partnerFilter;
+  const partnerOpts=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active projects · ${DB.engagements.length} total</p></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+    <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${['active','planning','completed'].map(s=>`<option value="${s}"${statusFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="S.tab.projPartner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${partnerOpts.map(p=>`<option value="${p}"${partnerFilter===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.projStatus='';S.tab.projPartner='';renderView()">✕ Clear</button>`:''}
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+    ${engs.map(e=>{
+      const client=DB.contacts.find(x=>x.id===e.clientId);
+      const mentor=DB.contacts.find(x=>x.id===e.mentorId);
+      const engSess=DB.sessions.filter(s=>s.engId===e.id);
+      const done=engSess.filter(s=>s.status==='completed').length;
+      const total=e.sessionsPlanned||engSess.length||1;
+      const pct=Math.min(100,Math.round((done/total)*100));
+      const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
+      const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+      const engTasks=DB.tasks.filter(t=>t.ref===e.id);
+      const openTasks=engTasks.filter(t=>t.status!=='done').length;
+      return`<div class="card" style="padding:18px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+          <div style="flex:1">
+            <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} · ${mentor?mentor.name:'No mentor'}</div>
+          </div>
+          <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+          <span class="badge ${typeBadge}">${e.type}</span>
+          ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
+          ${e.country?`<span class="badge b-grey">🌍 ${e.country}</span>`:''}
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+            <span>Sessions</span><span>${done} / ${total} completed</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} open task${openTasks>1?'s':''}</span>`:'No open tasks'}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
+            <button class="btn btn-sm btn-outline" onclick="openProjTaskModal('${e.id}')">+ Task</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects match the selected filters.</div>`:''}
+  </div>`;
+}
+function openProjTaskModal(engId){
+  const e=DB.engagements.find(x=>x.id===engId);
+  showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div class="fg"><label>Task Title</label><input id="pt-title" class="fi" placeholder="e.g. Send Q3 invoice"></div>
+    <div class="fg"><label>Assignee</label><select id="pt-assignee" class="fi">
+      ${PARTNERS.map(p=>`<option value="${p}">${p}</option>`).join('')}
+    </select></div>
+    <div class="ir2">
+      <div class="fg"><label>Priority</label><select id="pt-pri" class="fi">
+        <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+      </select></div>
+      <div class="fg"><label>Due Date</label><input type="date" id="pt-due" class="fi" value="${today()}"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="pt-notes" class="fi" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProjTask('${engId}')">Save Task</button>
+    </div>
+  </div>`);
+}
+function saveProjTask(engId){
+  const title=document.getElementById('pt-title').value.trim();
+  if(!title)return alert('Please enter a title.');
+  const t={id:uid(),title,ref:engId,type:'engagement',assignee:document.getElementById('pt-assignee').value,status:'todo',priority:document.getElementById('pt-pri').value,due:document.getElementById('pt-due').value,notes:document.getElementById('pt-notes').value.trim()};
+  DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
+}
+
+/* ── QUOTING ─────────────────────────────────────────────────── */
+function rQuoting(c){
+  const stFilter=S.tab.quoteSt||'all';
+  const partFilter=S.tab.quotePart||'';
+  if(!DB.quotes) DB.quotes=[];
+  let quotes=DB.quotes.filter(q=>{
+    if(stFilter!=='all'&&q.status!==stFilter) return false;
+    if(partFilter&&q.partner!==partFilter) return false;
+    return true;
+  });
+  const hasFilter=stFilter!=='all'||partFilter;
+  const totalVal=DB.quotes.reduce((s,q)=>s+q.value,0);
+  const approvedVal=DB.quotes.filter(q=>q.status==='approved').reduce((s,q)=>s+q.value,0);
+  const stBadgeMap={draft:'b-grey',sent:'b-blue',approved:'b-green',declined:'b-red'};
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Quoting</h2><p>${DB.quotes.length} quotes · ${fmt(approvedVal)} approved value</p></div></div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+    ${[
+      {label:'Total Quotes',val:DB.quotes.length,sub:'all time'},
+      {label:'Total Value',val:fmt(totalVal),sub:'pipeline'},
+      {label:'Approved',val:DB.quotes.filter(q=>q.status==='approved').length,sub:fmt(approvedVal)+' value',cls:'accent'},
+      {label:'Awaiting Response',val:DB.quotes.filter(q=>q.status==='sent').length,sub:'sent quotes',cls:'gold'},
+    ].map(k=>`<div class="kpi${k.cls?' '+k.cls:''}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('')}
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+    <select class="filter-sel" onchange="S.tab.quoteSt=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${['draft','sent','approved','declined'].map(s=>`<option value="${s}"${stFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="S.tab.quotePart=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${PARTNERS.map(p=>`<option value="${p}"${partFilter===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.quoteSt='';S.tab.quotePart='';renderView()">✕ Clear</button>`:''}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Quote Name</th><th>Client</th><th>Solution</th><th>Value</th><th>Partner</th><th>Date</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${quotes.map(q=>{
+      const client=DB.contacts.find(x=>x.id===q.clientId);
+      const sb=stBadgeMap[q.status]||'b-grey';
+      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[q.solution]||'b-grey';
+      return`<tr>
+        <td><div style="font-weight:600;font-size:12px">${q.name}</div>${q.notes?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${q.notes.slice(0,60)}${q.notes.length>60?'…':''}</div>`:''}</td>
+        <td style="font-size:12px">${client?client.name:'—'}</td>
+        <td><span class="badge ${tb}">${q.solution}</span></td>
+        <td style="font-family:Georgia,serif;font-size:13px;color:var(--cadmium)">${fmt(q.value)}</td>
+        <td style="font-size:12px">${q.partner||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${q.date||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${q.validUntil||'—'}</td>
+        <td><span class="badge ${sb}">${q.status}</span></td>
+        <td><div class="acts">
+          <button class="btn btn-sm btn-outline" onclick="openQuoteModal('${q.id}')">Edit</button>
+          ${q.status==='draft'?`<button class="btn btn-sm btn-warn" onclick="sendQuote('${q.id}')">Send</button>`:''}
+          ${q.status==='sent'?`<button class="btn btn-sm btn-success" onclick="approveQuote('${q.id}')">Approve</button>`:''}
+          <button class="btn btn-sm btn-danger" onclick="deleteQuote('${q.id}')">×</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+    ${quotes.length===0?`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">No quotes found.</td></tr>`:''}</tbody></table>
+  </div>`;
+}
+function openQuoteModal(id){
+  if(!DB.quotes) DB.quotes=[];
+  const q=id?DB.quotes.find(x=>x.id===id):null;
+  const clients=DB.contacts.filter(x=>x.type==='client');
+  showModal(`<div class="mhdr"><h3>${q?'Edit Quote':'New Quote'}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div class="fg"><label>Quote Name</label><input id="q-name" class="fi" placeholder="e.g. Unilever Leadership Programme" value="${q?q.name:''}"></div>
+    <div class="ir2">
+      <div class="fg"><label>Client</label><select id="q-client" class="fi">
+        <option value="">— Select Client —</option>
+        ${clients.map(cl=>`<option value="${cl.id}"${q&&q.clientId===cl.id?' selected':''}>${cl.name}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Solution</label><select id="q-sol" class="fi">
+        ${['chair','executive','team'].map(s=>`<option value="${s}"${q&&q.solution===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)} Mentoring</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="ir2">
+      <div class="fg"><label>Value (£)</label><input type="number" id="q-val" class="fi" value="${q?q.value:''}" placeholder="0"></div>
+      <div class="fg"><label>Partner</label><select id="q-partner" class="fi">
+        <option value="">— Select Partner —</option>
+        ${PARTNERS.map(p=>`<option value="${p}"${q&&q.partner===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="ir2">
+      <div class="fg"><label>Country</label><select id="q-country" class="fi">
+        <option value="">— Select Country —</option>
+        ${COUNTRIES.map(co=>`<option value="${co}"${q&&q.country===co?' selected':''}>${co}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Valid Until</label><input type="date" id="q-valid" class="fi" value="${q?q.validUntil:''}"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="q-notes" class="fi" rows="3">${q?q.notes:''}</textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuote('${id||''}')">Save Quote</button>
+    </div>
+  </div>`,true);
+}
+function saveQuote(id){
+  if(!DB.quotes) DB.quotes=[];
+  const name=document.getElementById('q-name').value.trim();
+  if(!name)return alert('Please enter a name.');
+  const data={name,clientId:document.getElementById('q-client').value,solution:document.getElementById('q-sol').value,value:parseFloat(document.getElementById('q-val').value)||0,partner:document.getElementById('q-partner').value,country:document.getElementById('q-country').value,validUntil:document.getElementById('q-valid').value,notes:document.getElementById('q-notes').value.trim()};
+  if(id){const q=DB.quotes.find(x=>x.id===id);if(q)Object.assign(q,data);}
+  else{DB.quotes.unshift({id:uid(),date:today(),status:'draft',...data});}
+  addAct('◎',`Quote ${id?'updated':'created'}: ${name}`);save();closeModal();renderView();
+}
+function sendQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='sent';addAct('◎',`Quote sent: ${q.name}`);save();renderView();}}
+function approveQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='approved';addAct('◎',`Quote approved: ${q.name} — ${fmt(q.value)}`);save();renderView();}}
+function deleteQuote(id){if(!confirm('Delete this quote?'))return;DB.quotes=DB.quotes.filter(x=>x.id!==id);save();renderView();}
+
+/* ── COST MANAGEMENT ─────────────────────────────────────────── */
+function rCostMgmt(c){
+  const tab=S.tab.cost||'payments';
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Cost Management</h2><p>Mentor payments, billing runs &amp; Xero sync</p></div></div>
+  <div class="tabs" style="margin-bottom:0">
+    <div class="tab${tab==='payments'?' active':''}" onclick="S.tab.cost='payments';renderView()">Mentor Payments</div>
+    <div class="tab${tab==='autobill'?' active':''}" onclick="S.tab.cost='autobill';renderView()">Auto-Bill &amp; Xero</div>
+    <div class="tab${tab==='invoices'?' active':''}" onclick="S.tab.cost='invoices';renderView()">Client Invoices</div>
+  </div>`;
+  const sub=document.createElement('div');
+  c.appendChild(sub);
+  if(tab==='payments') rPayments(sub);
+  else if(tab==='autobill') rAutoBill(sub);
+  else rInvoices(sub);
+}
+
+/* ── TASKS ───────────────────────────────────────────────────── */
+function rTasks(c){
+  const viewMode=S.tab.taskView||'list';
+  const prFilter=S.tab.taskPri||'';
+  const assFilter=S.tab.taskAss||'';
+  const stFilter=S.tab.taskSt||'all';
+  let tasks=DB.tasks.filter(t=>{
+    if(stFilter==='active'&&t.status==='done') return false;
+    if(stFilter==='done'&&t.status!=='done') return false;
+    if(prFilter&&t.priority!==prFilter) return false;
+    if(assFilter&&t.assignee!==assFilter) return false;
+    return true;
+  });
+  const overdue=DB.tasks.filter(t=>t.status!=='done'&&t.due&&t.due<today()).length;
+  const hasFilter=prFilter||assFilter||stFilter!=='all';
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Tasks</h2><p>${DB.tasks.filter(t=>t.status!=='done').length} open · ${overdue>0?`<span style="color:var(--venetian)">${overdue} overdue</span>`:'none overdue'}</p></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+    <select class="filter-sel" onchange="S.tab.taskSt=this.value;renderView()">
+      <option value="all"${stFilter==='all'?' selected':''}>All Tasks</option>
+      <option value="active"${stFilter==='active'?' selected':''}>Open</option>
+      <option value="done"${stFilter==='done'?' selected':''}>Completed</option>
+    </select>
+    <select class="filter-sel" onchange="S.tab.taskPri=this.value;renderView()">
+      <option value="">All Priorities</option>
+      ${['high','medium','low'].map(p=>`<option value="${p}"${prFilter===p?' selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="S.tab.taskAss=this.value;renderView()">
+      <option value="">All Assignees</option>
+      ${PARTNERS.map(p=>`<option value="${p}"${assFilter===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.taskPri='';S.tab.taskAss='';S.tab.taskSt='all';renderView()">✕ Clear</button>`:''}
+    <div style="margin-left:auto;display:flex;gap:4px">
+      <button class="btn btn-sm${viewMode==='list'?' btn-primary':' btn-outline'}" onclick="S.tab.taskView='list';renderView()">☰ List</button>
+      <button class="btn btn-sm${viewMode==='board'?' btn-primary':' btn-outline'}" onclick="S.tab.taskView='board';renderView()">▦ Board</button>
+    </div>
+  </div>
+  ${viewMode==='board'?taskBoard(tasks):taskList(tasks)}`;
+}
+function taskList(tasks){
+  const priBadge={high:'b-red',medium:'b-amber',low:'b-grey'};
+  return`<div class="card">
+    <table class="tbl"><thead><tr><th style="width:32px"></th><th>Task</th><th>Priority</th><th>Assignee</th><th>Due</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${tasks.map(t=>{
+      const pb=priBadge[t.priority]||'b-grey';
+      const overdue=t.status!=='done'&&t.due&&t.due<today();
+      return`<tr style="${t.status==='done'?'opacity:.55':''}">
+        <td><input type="checkbox" ${t.status==='done'?'checked':''} onchange="toggleTask('${t.id}',this.checked)" style="cursor:pointer;width:16px;height:16px;accent-color:var(--venetian)"></td>
+        <td><div style="font-weight:600;font-size:12px;${t.status==='done'?'text-decoration:line-through;color:var(--muted)':''}">${t.title}</div>
+          ${t.notes?`<div style="font-size:10px;color:var(--muted);margin-top:1px">${t.notes.slice(0,70)}${t.notes.length>70?'…':''}</div>`:''}</td>
+        <td><span class="badge ${pb}">${t.priority}</span></td>
+        <td style="font-size:11px">${t.assignee||'—'}</td>
+        <td style="font-size:11px;${overdue?'color:var(--venetian);font-weight:700':''}">${t.due||'—'}${overdue?' ⚠':''}</td>
+        <td><span class="badge ${t.status==='done'?'b-green':t.status==='inprogress'?'b-blue':'b-grey'}">${t.status==='inprogress'?'In Progress':t.status==='done'?'Done':'To Do'}</span></td>
+        <td><div class="acts">
+          <button class="btn btn-sm btn-outline" onclick="openTaskModal('${t.id}')">Edit</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteTask('${t.id}')">×</button>
+        </div></td>
+      </tr>`;
+    }).join('')}
+    ${tasks.length===0?`<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted)">No tasks found.</td></tr>`:''}</tbody></table>
+  </div>`;
+}
+function taskBoard(tasks){
+  const cols=[{key:'todo',label:'To Do',badge:'b-grey'},{key:'inprogress',label:'In Progress',badge:'b-blue'},{key:'done',label:'Done',badge:'b-green'}];
+  const priBadge={high:'b-red',medium:'b-amber',low:'b-grey'};
+  return`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+    ${cols.map(col=>{
+      const colTasks=tasks.filter(t=>t.status===col.key);
+      return`<div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span class="badge ${col.badge}">${col.label}</span>
+          <span style="font-size:11px;color:var(--muted)">${colTasks.length}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${colTasks.map(t=>{
+            const pb=priBadge[t.priority]||'b-grey';
+            const overdue=col.key!=='done'&&t.due&&t.due<today();
+            return`<div class="card" style="padding:12px;cursor:pointer" onclick="openTaskModal('${t.id}')">
+              <div style="font-weight:600;font-size:12px;margin-bottom:6px">${t.title}</div>
+              ${t.notes?`<div style="font-size:10px;color:var(--muted);margin-bottom:6px">${t.notes.slice(0,60)}…</div>`:''}
+              <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">
+                <span class="badge ${pb}">${t.priority}</span>
+                ${t.due?`<span style="font-size:10px;color:${overdue?'var(--venetian)':'var(--muted)'}">${t.due}${overdue?' ⚠':''}</span>`:''}
+              </div>
+              ${t.assignee?`<div style="font-size:10px;color:var(--muted);margin-top:6px">👤 ${t.assignee}</div>`:''}
+            </div>`;
+          }).join('')}
+          <button class="btn btn-sm btn-outline" style="width:100%;justify-content:center" onclick="openTaskModal(null,'${col.key}')">+ Add task</button>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function toggleTask(id,checked){const t=DB.tasks.find(x=>x.id===id);if(t){t.status=checked?'done':'todo';save();renderView();}}
+function deleteTask(id){if(!confirm('Delete task?'))return;DB.tasks=DB.tasks.filter(x=>x.id!==id);save();renderView();}
+function openTaskModal(id,defaultStatus){
+  const t=id?DB.tasks.find(x=>x.id===id):null;
+  const defSt=defaultStatus||'todo';
+  showModal(`<div class="mhdr"><h3>${t?'Edit Task':'New Task'}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div class="fg"><label>Title</label><input id="tk-title" class="fi" placeholder="Task title" value="${t?t.title:''}"></div>
+    <div class="ir2">
+      <div class="fg"><label>Assignee</label><select id="tk-ass" class="fi">
+        <option value="">— Unassigned —</option>
+        ${PARTNERS.map(p=>`<option value="${p}"${t&&t.assignee===p?' selected':''}>${p}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Status</label><select id="tk-st" class="fi">
+        ${[{v:'todo',l:'To Do'},{v:'inprogress',l:'In Progress'},{v:'done',l:'Done'}].map(s=>`<option value="${s.v}"${(t?t.status:defSt)===s.v?' selected':''}>${s.l}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="ir2">
+      <div class="fg"><label>Priority</label><select id="tk-pri" class="fi">
+        ${['high','medium','low'].map(p=>`<option value="${p}"${t&&t.priority===p?' selected':''}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Due Date</label><input type="date" id="tk-due" class="fi" value="${t?t.due||'':''}"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="tk-notes" class="fi" rows="3">${t?t.notes||'':''}</textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask('${id||''}')">Save Task</button>
+    </div>
+  </div>`);
+}
+function saveTask(id){
+  const title=document.getElementById('tk-title').value.trim();
+  if(!title)return alert('Please enter a title.');
+  const data={title,assignee:document.getElementById('tk-ass').value,status:document.getElementById('tk-st').value,priority:document.getElementById('tk-pri').value,due:document.getElementById('tk-due').value,notes:document.getElementById('tk-notes').value.trim()};
+  if(id){const t=DB.tasks.find(x=>x.id===id);if(t)Object.assign(t,data);}
+  else{DB.tasks.unshift({id:uid(),ref:null,type:'general',...data});}
+  addAct('◻',`Task ${id?'updated':'created'}: ${title}`);save();closeModal();renderView();
+}
+
+/* ── LIFECYCLE ───────────────────────────────────────────────── */
+function rLifecycle(c){
+  const pf=S.tab.lcPartner||''; const cf=S.tab.lcCountry||''; const sf=S.tab.lcSol||'';
+  let opps=(DB.opportunities||[]).filter(o=>{
+    if(pf&&o.partner!==pf) return false;
+    if(cf&&o.country!==cf) return false;
+    if(sf&&o.solution!==sf) return false;
+    return true;
+  });
+  const allP=[...new Set((DB.opportunities||[]).map(o=>o.partner).filter(Boolean))];
+  const allC=[...new Set((DB.opportunities||[]).map(o=>o.country).filter(Boolean))];
+  const totalVal=opps.filter(o=>o.stage!=='Closed Won').reduce((s,o)=>s+o.value,0);
+  const wonVal=opps.filter(o=>o.stage==='Closed Won').reduce((s,o)=>s+o.value,0);
+  const hasFilter=pf||cf||sf;
+
+  // Stage display config — merge "Mentee Identified" and "Proposal Sent" into one column
+  const DISPLAY_STAGES=[
+    {key:'Lead',label:'Prospect / Lead',num:1,desc:'Initial enquiry or warm introduction'},
+    {key:'Qualified',label:'Qualified Opportunity',num:2,desc:'Need confirmed and budget indicated'},
+    {key:'Mentee Identified',label:'Mentee Identified / Proposal Sent',num:3,desc:'Mentee confirmed and proposal delivered',keys:['Mentee Identified','Proposal Sent']},
+    {key:'Proposal Accepted',label:'Proposal Accepted',num:4,desc:'Client has agreed to proceed'},
+    {key:'Client Intro',label:'Client Intro',num:5,desc:'Introduction meetings completed'},
+    {key:'Contracting',label:'Contracting',num:6,desc:'Contract under review and signature'},
+    {key:'Closed Won',label:'Closed Won',num:7,desc:'Engagement live and active'},
+  ];
+
+  c.innerHTML=`
+  <div class="phdr">
+    <div><h2>Lifecycle</h2><p>Track every opportunity from first contact to closed engagement</p></div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span style="font-size:12px;color:var(--muted)">Open pipeline: <strong style="color:var(--venetian)">${fmt(totalVal)}</strong></span>
+      <span style="font-size:12px;color:var(--muted)">Closed: <strong style="color:var(--success)">${fmt(wonVal)}</strong></span>
+    </div>
+  </div>
+  <div class="filter-row" style="margin-bottom:14px">
+    <select onchange="S.tab.lcPartner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${allP.map(p=>`<option value="${p}" ${pf===p?'selected':''}>${p}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.lcCountry=this.value;renderView()">
+      <option value="">All Countries</option>
+      ${allC.map(p=>`<option value="${p}" ${cf===p?'selected':''}>${p}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.lcSol=this.value;renderView()">
+      <option value="">All Solutions</option>
+      <option value="chair" ${sf==='chair'?'selected':''}>Chair Mentoring</option>
+      <option value="executive" ${sf==='executive'?'selected':''}>Executive Mentoring</option>
+      <option value="team" ${sf==='team'?'selected':''}>Team Engagement</option>
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.lcPartner='';S.tab.lcCountry='';S.tab.lcSol='';renderView()">✕ Clear</button>`:''}
+    <span style="font-size:11px;color:var(--muted)">${opps.length} opportunit${opps.length!==1?'ies':'y'}</span>
+  </div>
+  <div class="lc-board">
+    ${DISPLAY_STAGES.map((stage,idx)=>{
+      const stageKeys=stage.keys||[stage.key];
+      const stageOpps=opps.filter(o=>stageKeys.includes(o.stage));
+      const stageVal=stageOpps.reduce((s,o)=>s+o.value,0);
+      const isWon=stage.key==='Closed Won';
+      return`<div class="lc-stage${stageOpps.length?' active-stage':''}">
+        <div class="lc-stage-hdr">
+          <div class="lc-stage-num" style="background:${isWon?'var(--success)':'var(--venetian)'}">${stage.num}</div>
+          <div class="lc-stage-name">${stage.label}</div>
+          <div class="lc-stage-count">${stageOpps.length} · ${stageVal?fmt(stageVal):''}</div>
+        </div>
+        <div class="lc-cards">
+          ${stageOpps.map(o=>{
+            const solBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[o.solution]||'b-grey';
+            return`<div class="lc-card" onclick="openOppDetail('${o.id}')">
+              <div class="lc-card-name">${o.name}</div>
+              <div class="lc-card-meta">${o.partner||''} · ${o.country||''}</div>
+              <div class="lc-card-val">${fmt(o.value)}</div>
+              <div class="lc-card-tags"><span class="badge ${solBadge}" style="font-size:9px">${o.solution}</span></div>
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="lc-add" onclick="openOppModal(null,'${stage.key}')">+ Add</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function openOppDetail(id){
+  const o=(DB.opportunities||[]).find(x=>x.id===id); if(!o) return;
+  const sb={chair:'type-chair',executive:'type-executive',team:'type-team'}[o.solution]||'b-grey';
+  const DISPLAY_STAGES=[
+    {key:'Lead',label:'1 · Prospect / Lead'},{key:'Qualified',label:'2 · Qualified'},
+    {key:'Mentee Identified',label:'3 · Mentee Identified'},{key:'Proposal Sent',label:'3 · Proposal Sent'},
+    {key:'Proposal Accepted',label:'4 · Proposal Accepted'},{key:'Client Intro',label:'5 · Client Intro'},
+    {key:'Contracting',label:'6 · Contracting'},{key:'Closed Won',label:'7 · Closed Won'},
+  ];
+  showModal(`<div class="mhdr"><h3>Opportunity Detail</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <h3 style="font-family:Georgia,serif;font-size:15px;margin-bottom:4px">${o.name}</h3>
+        <span class="badge ${sb}">${o.solution}</span>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="closeModal();openOppModal('${o.id}')">✏ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteOpp('${o.id}')">Delete</button>
+      </div>
+    </div>
+    <div class="ir"><span class="lbl">Stage</span><span class="val"><span class="badge b-black">${o.stage}</span></span></div>
+    <div class="ir"><span class="lbl">Client</span><span class="val">${o.client}</span></div>
+    <div class="ir"><span class="lbl">Value</span><span class="val" style="font-family:Georgia,serif;font-size:15px;color:var(--cadmium)">${fmt(o.value)}</span></div>
+    <div class="ir"><span class="lbl">Partner</span><span class="val">${o.partner||'—'}</span></div>
+    <div class="ir"><span class="lbl">Country</span><span class="val">${o.country||'—'}</span></div>
+    <div class="ir"><span class="lbl">Created</span><span class="val">${o.created||'—'}</span></div>
+    ${o.notes?`<div style="margin-top:12px;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${o.notes}</div>`:''}
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Move to Stage</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${DISPLAY_STAGES.filter(s=>s.key!==o.stage).map(s=>`<button class="btn btn-sm btn-outline" onclick="moveOpp('${o.id}','${s.key}')">${s.label}</button>`).join('')}
+      </div>
+    </div>
+  </div>`);
+}
+
+function moveOpp(id,stage){
+  const o=(DB.opportunities||[]).find(x=>x.id===id);
+  if(o){o.stage=stage;addAct('◎',`Opportunity "${o.name}" moved to ${stage}`);save();closeModal();renderView();}
+}
+function deleteOpp(id){
+  if(!confirm('Delete this opportunity?')) return;
+  DB.opportunities=(DB.opportunities||[]).filter(x=>x.id!==id);
+  save();closeModal();renderView();
+}
+
+function openOppModal(id,defaultStage){
+  const o=id?(DB.opportunities||[]).find(x=>x.id===id):null;
+  const ALL_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
+  showModal(`<div class="mhdr"><h3>${o?'Edit Opportunity':'New Opportunity'}</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody">
+    <div class="fgrow">
+      <div class="fg" style="grid-column:1/-1"><label>Opportunity Name *</label><input id="of-name" value="${o?.name||''}" placeholder="Company — Programme Type"></div>
+      <div class="fg"><label>Client / Organisation *</label><input id="of-client" value="${o?.client||''}" placeholder="Organisation name"></div>
+      <div class="fg"><label>Solution</label><select id="of-sol">
+        <option value="chair" ${o?.solution==='chair'?'selected':''}>Chair Mentoring</option>
+        <option value="executive" ${o?.solution==='executive'?'selected':''}>Executive Mentoring</option>
+        <option value="team" ${o?.solution==='team'?'selected':''}>Team Engagement</option>
+      </select></div>
+      <div class="fg"><label>Partner</label><select id="of-partner">
+        <option value="">— Select —</option>
+        ${PARTNERS.map(p=>`<option value="${p}" ${o?.partner===p?'selected':''}>${p}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Country</label><select id="of-country">
+        <option v
