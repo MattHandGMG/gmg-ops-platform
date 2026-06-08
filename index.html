@@ -376,15 +376,718 @@ const SB_TABLES={contacts:'contacts',engagements:'engagements',sessions:'session
 /* ── BRAND SEED DATA ─────────────────────────────────────────── */
 const SEED = {
 contacts:[
-  {id:'m1',type:'mentor',name:'Marcus Thompson',org:'Independent (ex-McKinsey)',email:'m.thompson@gmg.co.uk',phone:'+44 7700 900456',status:'active',notes:'Strategy specialist. 12 years C-suite coaching.'},
-  {id:'m2',type:'mentor',name:'Dr. Priya Sharma',org:'Imperial College London',email:'p.sharma@imperial.ac.uk',phone:'+44 7700 900123',status:'active',notes:'Tech & innovation leadership.'},
-  {id:'m3',type:'mentor',name:'Aisha Okonkwo',org:'Independent (ex-Goldman)',email:'a.okonkwo@gmg.co.uk',phone:'+44 7700 900789',status:'active',notes:'Finance & diversity leadership.'},
-  {id:'m4',type:'mentor',name:'Sir Robert Caldwell',org:'Former FTSE 100 Chair',email:'r.caldwell@gmg.co.uk',phone:'+44 7700 900321',status:'active',notes:'Chair-level mentoring specialist.'},
-  {id:'c1',type:'client',name:'Deloitte UK',org:'Deloitte',email:'leadership@deloitte.co.uk',phone:'+44 20 7936 3000',status:'active',notes:'Key enterprise client. Annual renewal Oct.'},
-  {id:'c2',type:'client',name:'HSBC Group',org:'HSBC',email:'talent@hsbc.com',phone:'+44 20 7991 8888',status:'active',notes:'Executive programme client since 2024.'},
-  {id:'c3',type:'client',name:'Cabinet Office',org:'HM Government',email:'leaders@cabinetoffice.gov.uk',phone:'+44 20 7276 0000',status:'active',notes:'Senior Civil Service programme.'},
-  {id:'c4',type:'client',name:'Barclays Plc',org:'Barclays',email:'talent@barclays.com',phone:'+44 20 7116 1000',status:'active',notes:'New client — June 2026 start.'},
-  {id:'c5',type:'client',name:'Unilever',org:'Unilever Plc',email:'leadership@unilever.com',phone:'+44 20 7822 5252',status:'prospect',notes:'RFP in progress.'},
+  {
+    "id": "gm001",
+    "type": "mentor",
+    "name": "Peju Adebajo",
+    "title": "Former CEO; Non-Executive Director",
+    "org": "Ibstock plc / Wolseley Group",
+    "community": "Merryck",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Experienced former CEO and Non-Executive Director with international expertise across industrials, renewable energy, agriculture and financial services. A Harvard-educated leader with deep African and European experience, with a strong track record of delivering sustainable growth, complex transformations and turnarounds in both private and public sectors.",
+    "sectors": [
+      "Industrial Manufacturing",
+      "Energy & Natural Resources",
+      "Financial Services",
+      "Agriculture",
+      "Renewable Energy"
+    ],
+    "career_highlights": [
+      "CEO, Lumos Global (solar home systems)",
+      "MD, Lafarge Africa plc (FTSE-listed)",
+      "CEO, Mouka Ltd (PE-backed; led exit)",
+      "CEO, UTC Nigeria plc",
+      "NED, Ibstock plc (FTSE-listed)",
+      "NED, Wolseley Group (PE-backed)",
+      "Commissioner for Agriculture, Ogun State (World Bank $250m programme)",
+      "World Economic Forum Global Future Council Member"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/peju-adebajo/"
+  },
+  {
+    "id": "gm002",
+    "type": "mentor",
+    "name": "Mutlaq H. Al-Morished",
+    "title": "Former CEO; Chair",
+    "org": "TASNEE / Citigroup Saudi Arabia",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Distinguished Saudi industrialist with a career in petrochemicals and diversified industry spanning more than four decades across multiple continents. Led far-reaching restructuring at TASNEE that returned the business to profitability, and orchestrated the Cristal/Tronox merger.",
+    "sectors": [
+      "Energy & Natural Resources",
+      "Industrial Manufacturing",
+      "Financial Services",
+      "Petrochemicals"
+    ],
+    "career_highlights": [
+      "CEO, TASNEE (major restructuring and return to profitability)",
+      "EVP / CFO, SABIC",
+      "Chair, YANSAB",
+      "Chair, SABIC Capital Netherlands",
+      "Chair, Citigroup Saudi Arabia",
+      "Orchestrated Cristal/Tronox titanium merger"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/mutlaq-h-al-morished/"
+  },
+  {
+    "id": "gm003",
+    "type": "mentor",
+    "name": "Lord Charles Allen of Kensington, CBE",
+    "title": "Non-Executive Group Chair",
+    "org": "Balfour Beatty plc / THG plc",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "One of the most seasoned and versatile business leaders in the UK, with a career spanning media, infrastructure, consumer services and financial services. Led EMI Music through restructuring, formed ITV plc as CEO, and chaired the 2002 Manchester Commonwealth Games and the Invictus Games Foundation.",
+    "sectors": [
+      "Media & Entertainment",
+      "Infrastructure",
+      "Leisure & Hospitality",
+      "Consumer Services"
+    ],
+    "career_highlights": [
+      "Group Chair, Balfour Beatty plc (since 2021)",
+      "Chair, THG plc (since 2022)",
+      "CEO, ITV plc (2003-2007)",
+      "Executive Chair, EMI Music (2008-2010)",
+      "CEO/COO, Granada Group",
+      "Vice-Chair, London 2012 Olympic Bid",
+      "Chair, Invictus Games Foundation",
+      "Life Peer (2013); Knighted 2012"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/charles-allen/"
+  },
+  {
+    "id": "gm004",
+    "type": "mentor",
+    "name": "Thomas Thune Andersen",
+    "title": "Chair",
+    "org": "Lloyd's Register Group / VKR Holding A/S",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Chair of Lloyd's Register Group and Lloyd's Register Foundation (since 2012). From 2016 to 2024 chaired Orsted A/S, overseeing its transformation from a fossil-fuel utility into a global leader in renewable energy. Spent over three decades at A.P. Moller-Maersk Group.",
+    "sectors": [
+      "Energy & Natural Resources",
+      "Renewable Energy",
+      "Maritime",
+      "Industrial Manufacturing"
+    ],
+    "career_highlights": [
+      "Chair, Orsted AS (2016-2024; landmark transformation to global renewable energy leader)",
+      "Chair, Lloyd's Register Group Ltd and Foundation",
+      "CEO, Maersk Oil",
+      "President & CEO, Maersk Inc.",
+      "Member, Energy Transitions Commission",
+      "Member, Danish Committee on Corporate Governance"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/thomas-thune-andersen/"
+  },
+  {
+    "id": "gm005",
+    "type": "mentor",
+    "name": "Nick Anderson",
+    "title": "Former Group CEO; Non-Executive Director",
+    "org": "Spirax-Sarco Engineering / BAE Systems / Weir Group",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Non-Executive Director of BAE Systems plc and Weir Group plc. Served as Group CEO of Spirax-Sarco plc (2014-2024), a FTSE 100 leader in steam and thermal management, overseeing a decade of strong organic growth, international expansion and strategic acquisitions. Fluent in four languages.",
+    "sectors": [
+      "Industrial Manufacturing",
+      "Aerospace & Defence",
+      "Energy & Natural Resources"
+    ],
+    "career_highlights": [
+      "Group CEO, Spirax-Sarco Engineering plc (2014-2024; FTSE 100)",
+      "NED, BAE Systems plc",
+      "NED, Weir Group plc",
+      "President, John Crane Inc. Latin America",
+      "Led integration of Chromalox and Gestra acquisitions",
+      "Positioned Spirax-Sarco in energy efficiency and industrial decarbonisation"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/nick-anderson/"
+  },
+  {
+    "id": "gm006",
+    "type": "mentor",
+    "name": "Helen Ashton",
+    "title": "Former CEO/CFO; Non-Executive Director",
+    "org": "ITV plc / Entain plc / JLA Group",
+    "community": "Merryck",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Over 30 years of international experience across multiple industries and ownership structures. Executive career includes CFO at ASOS plc where the business doubled in size, CEO at Capquest Group delivering comprehensive transformation and trade exit, and CEO of JLA Ltd. Holds a Master in Executive Coaching from Ashridge Business School.",
+    "sectors": [
+      "Financial Services",
+      "Retail",
+      "Media & Entertainment",
+      "Leisure & Hospitality"
+    ],
+    "career_highlights": [
+      "CEO, JLA Group (Cinven-owned; strategy, digital/data, acquisitions)",
+      "CEO, Capquest Group (PE-backed; transformation and trade exit)",
+      "CFO, ASOS plc (business doubled in size)",
+      "NED, ITV plc",
+      "Audit & Risk Committee Chair, Entain plc",
+      "NED / Interim Chair, JD Sports plc",
+      "Retail Finance Director, ASDA"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/helen-ashton/"
+  },
+  {
+    "id": "gm007",
+    "type": "mentor",
+    "name": "Jan Babiak",
+    "title": "Independent Board Director; Audit Chair; Executive Coach",
+    "org": "Bank of Montreal / Walgreens Boots Alliance",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Globally experienced board director, audit chair and strategic adviser with over three decades spanning technology, risk, sustainability and governance. Spent 28 years with Ernst & Young in global leadership roles. Named Top 20 Value-Creating Directors in America by Corporate Board Member magazine.",
+    "sectors": [
+      "Financial Services",
+      "Digital Technology",
+      "Professional Services",
+      "Retail"
+    ],
+    "career_highlights": [
+      "Board Director & Governance Committee Member, Bank of Montreal",
+      "Audit Committee Chair, Walgreens Boots Alliance (US$140bn+ revenue)",
+      "SID, Euromoney Institutional Investor plc",
+      "NED, GlobalLogic (sold to Hitachi for $9.6bn)",
+      "NED, Royal Mail (through IPO to FTSE 100)",
+      "Managing Partner, Climate Change & Sustainability Services, EY",
+      "NACD Directorship 100 Most Influential People in the Boardroom"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/jan-babiak/"
+  },
+  {
+    "id": "gm008",
+    "type": "mentor",
+    "name": "Mike Baird",
+    "title": "Former Premier of New South Wales; CEO",
+    "org": "McKinnon / HammondCare",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Purpose- and values-driven CEO with 30 years experience across banking and financial services, aged care and the public sector. Currently CEO of McKinnon improving Australia public administration. Served as the 44th Premier of New South Wales (2014-2017) and NSW Treasurer (2011-2014).",
+    "sectors": [
+      "Financial Services",
+      "Health & Pharmaceutical",
+      "Professional Services",
+      "Public Sector"
+    ],
+    "career_highlights": [
+      "44th Premier of New South Wales (2014-2017)",
+      "Treasurer, New South Wales Government (2011-2014)",
+      "CEO, McKinnon (improving Australia's public administration)",
+      "CEO, HammondCare (aged care and health)",
+      "Chief Customer Officer, National Australia Bank",
+      "Chair, Cricket Australia"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/mike-baird/"
+  },
+  {
+    "id": "gm009",
+    "type": "mentor",
+    "name": "Dominic Barton",
+    "title": "Chair",
+    "org": "Rio Tinto plc / LeapFrog Investments",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Chair of Rio Tinto plc (since 2022) and Chair of LeapFrog Investments. Served as Global Managing Partner of McKinsey & Company (2009-2018), leading 30,000+ professionals in 60+ countries. Served as Canada's Ambassador to the People's Republic of China (2019-2021).",
+    "sectors": [
+      "Energy & Natural Resources",
+      "Financial Services",
+      "Professional Services"
+    ],
+    "career_highlights": [
+      "Chair, Rio Tinto plc (since 2022)",
+      "Global Managing Partner, McKinsey & Company (2009-2018)",
+      "Chair, LeapFrog Investments (emerging markets PE)",
+      "Canada's Ambassador to China (2019-2021)",
+      "Chair, Teck Resources",
+      "Chancellor, University of Waterloo (2018-2024)",
+      "Chair, Canada's Advisory Council on Economic Growth"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/dominic-barton/"
+  },
+  {
+    "id": "gm010",
+    "type": "mentor",
+    "name": "Sir Peter Bazalgette",
+    "title": "Chair; Creative Media Leader",
+    "org": "Royal College of Art / Creative Industries Council",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Brings a rare blend of creative insight and governance experience at the intersection of media, culture and public policy. Founded Bazal Productions, led Endemol UK and became Chief Creative Officer of Endemol Group globally. Author of The Empathy Instinct. Knighted 2012.",
+    "sectors": [
+      "Media & Entertainment",
+      "Publishing & Education",
+      "Professional Services"
+    ],
+    "career_highlights": [
+      "Chair, ITV plc (2016-2022)",
+      "Chair, Arts Council England (2013-2017)",
+      "Pro-Chancellor and Chair of Council, Royal College of Art",
+      "Co-Chair, Creative Industries Council",
+      "Founder, Bazal Productions (Ready Steady Cook, Ground Force)",
+      "Chief Creative Officer, Endemol Group",
+      "Chair, UK Holocaust Memorial Foundation",
+      "Knighted 2012"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/peter-bazalgette/"
+  },
+  {
+    "id": "gm011",
+    "type": "mentor",
+    "name": "Wendy Becker",
+    "title": "Chair; Former CEO",
+    "org": "Sony Group Corporation / GSK plc",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Chair of Sony Group Corporation (since 2025) and NED at GSK plc. Executive career spans CEO of Jack Wills Ltd, Group CMO at Vodafone Group plc, MD of TalkTalk Telecom, and Partner at McKinsey & Company. Sits on the Council of Oxford University.",
+    "sectors": [
+      "Media & Entertainment",
+      "Digital Technology",
+      "Health & Pharmaceutical",
+      "Consumer Services"
+    ],
+    "career_highlights": [
+      "Chair, Sony Group Corporation (since 2025)",
+      "NED and Remuneration Committee Chair, GSK plc",
+      "Chair, Logitech International SA (2019-2025)",
+      "CEO, Jack Wills Ltd",
+      "Group CMO, Vodafone Group plc",
+      "MD, TalkTalk Telecom",
+      "Partner, McKinsey & Company",
+      "Chair, British Heart Foundation",
+      "Council member, University of Oxford"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/wendy-becker/"
+  },
+  {
+    "id": "gm012",
+    "type": "mentor",
+    "name": "Dick Boer",
+    "title": "Former President/CEO; Senior Independent Director",
+    "org": "Ahold Delhaize / Shell plc / Nestle",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Deputy Chair and Senior Independent Director at Shell plc (since 2023) and Lead Independent Vice Chair at Nestle. Was CEO of Ahold (2011-2016), then President and CEO of Ahold Delhaize (2016-2018) following the 9.3 billion euro merger with Delhaize. Led digital transformation and omnichannel expansion across a global grocery portfolio.",
+    "sectors": [
+      "FMCG",
+      "Retail",
+      "Energy & Natural Resources"
+    ],
+    "career_highlights": [
+      "Deputy Chair / SID, Shell plc (since 2023)",
+      "Lead Independent Vice Chair, Nestle",
+      "President/CEO, Ahold Delhaize (2016-2018; post EUR 9.3bn merger)",
+      "CEO, Royal Ahold (2011-2016)",
+      "CEO, Albert Heijn BV",
+      "Supervisory Board Chair, Just Eat Takeaway",
+      "Senior Adviser, McKinsey"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/dick-boer/"
+  },
+  {
+    "id": "gm013",
+    "type": "mentor",
+    "name": "Sir Peter Bonfield CBE FREng",
+    "title": "Former CEO; Founding Chair",
+    "org": "NXP Semiconductors / BT Group / TSMC",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "Founding Chair of NXP Semiconductors plc (2006-2023). Served as CEO of BT Group (1996-2002) and CEO of ICL plc (1981-1995). Career at Texas Instruments (1966-1981) in semiconductor process innovation. Fellow of the Royal Academy of Engineering. Knighted 1996; CBE 1988.",
+    "sectors": [
+      "Digital Technology",
+      "Industrial Manufacturing",
+      "Professional Services",
+      "Telecommunications"
+    ],
+    "career_highlights": [
+      "Founding Chair, NXP Semiconductors NV (2006-2023; spin-out from Philips)",
+      "CEO, BT plc (1996-2002; deregulation and internet era)",
+      "CEO/Chair, ICL plc (1981-1995)",
+      "Independent Director, TSMC (23 years)",
+      "SID, AstraZeneca plc",
+      "NED, Darktrace plc",
+      "FT Outstanding Director Award 2019",
+      "Fellow, Royal Academy of Engineering; Knighted 1996"
+    ],
+    "profile_url": "https://globalmentorsgroup.com/mentor/peter-bonfield/"
+  },
+  {
+    "id": "gm014",
+    "type": "mentor",
+    "name": "Douglas Baker",
+    "title": "Former CEO; Board Chair",
+    "org": "Ecolab Inc.",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Industrial Manufacturing",
+      "Consumer Services",
+      "Energy & Natural Resources"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/douglas-doug-baker/"
+  },
+  {
+    "id": "gm015",
+    "type": "mentor",
+    "name": "Vindi Banga",
+    "title": "Partner; Board Director",
+    "org": "Clayton, Dubilier & Rice",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "FMCG",
+      "Financial Services",
+      "Retail"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/vindi-banga/"
+  },
+  {
+    "id": "gm016",
+    "type": "mentor",
+    "name": "Samantha Barber",
+    "title": "Executive Coach & Mentor",
+    "org": "Independent",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Professional Services"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/samantha-barber/"
+  },
+  {
+    "id": "gm017",
+    "type": "mentor",
+    "name": "Frederic Baudry",
+    "title": "Senior Executive; Board Director",
+    "org": "Independent",
+    "community": "Merryck",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/frdric-baudry/"
+  },
+  {
+    "id": "gm018",
+    "type": "mentor",
+    "name": "Chris Beer",
+    "title": "Senior Executive",
+    "org": "Independent",
+    "community": "Merryck",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/chris-beer/"
+  },
+  {
+    "id": "gm019",
+    "type": "mentor",
+    "name": "Anne Berner",
+    "title": "Former Minister; CEO; Board Director",
+    "org": "Independent / Finland",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Public Sector",
+      "Professional Services"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/anne-berner/"
+  },
+  {
+    "id": "gm020",
+    "type": "mentor",
+    "name": "Melika Betley",
+    "title": "Senior Executive; Mentor",
+    "org": "Independent",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/melika-mel-betley/"
+  },
+  {
+    "id": "gm021",
+    "type": "mentor",
+    "name": "Dr Svein Richard Brandtzaeg",
+    "title": "Former CEO; Chair",
+    "org": "Norsk Hydro ASA",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Industrial Manufacturing",
+      "Energy & Natural Resources",
+      "Renewable Energy"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/svein-richard-brandtzg/"
+  },
+  {
+    "id": "gm022",
+    "type": "mentor",
+    "name": "Sigve Brekke",
+    "title": "Former President & CEO",
+    "org": "Telenor Group",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Telecommunications",
+      "Digital Technology"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/sigve-brekke/"
+  },
+  {
+    "id": "gm023",
+    "type": "mentor",
+    "name": "Beth Brooke",
+    "title": "Former Global Vice Chair; Senior Adviser",
+    "org": "EY / Accenture",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Professional Services",
+      "Financial Services"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/beth-brooke/"
+  },
+  {
+    "id": "gm024",
+    "type": "mentor",
+    "name": "Derek Browne",
+    "title": "Senior Executive; Mentor",
+    "org": "Independent",
+    "community": "Merryck",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/derek-browne/"
+  },
+  {
+    "id": "gm025",
+    "type": "mentor",
+    "name": "Thomas Buberl",
+    "title": "CEO",
+    "org": "AXA Group",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Financial Services"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/thomas-buberl/"
+  },
+  {
+    "id": "gm026",
+    "type": "mentor",
+    "name": "Ton Buchner",
+    "title": "Former CEO; Chair",
+    "org": "AkzoNobel / ABB Ltd",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Industrial Manufacturing",
+      "Energy & Natural Resources"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/ton-bchner/"
+  },
+  {
+    "id": "gm027",
+    "type": "mentor",
+    "name": "David Buckley",
+    "title": "Senior Executive; Mentor",
+    "org": "Independent",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/david-buckley/"
+  },
+  {
+    "id": "gm028",
+    "type": "mentor",
+    "name": "Paul Bulcke",
+    "title": "Former CEO; Chair",
+    "org": "Nestle / LafargeHolcim",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "FMCG",
+      "Industrial Manufacturing"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/paul-bulcke/"
+  },
+  {
+    "id": "gm029",
+    "type": "mentor",
+    "name": "Gordon Cairns",
+    "title": "Chair; Former CEO",
+    "org": "Origin Energy / Woolworths Group",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Energy & Natural Resources",
+      "Retail",
+      "FMCG"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/gordon-cairns/"
+  },
+  {
+    "id": "gm030",
+    "type": "mentor",
+    "name": "Nick Candler",
+    "title": "Senior Executive; Mentor",
+    "org": "Independent",
+    "community": "GMG",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/nick-candler/"
+  },
+  {
+    "id": "gm031",
+    "type": "mentor",
+    "name": "Sir Roger Carr",
+    "title": "Chair; Former CEO",
+    "org": "BAE Systems / Centrica / Cadbury",
+    "community": "CMi",
+    "email": "",
+    "phone": "",
+    "status": "active",
+    "bio": "",
+    "sectors": [
+      "Aerospace & Defence",
+      "Energy & Natural Resources",
+      "FMCG"
+    ],
+    "career_highlights": [],
+    "profile_url": "https://globalmentorsgroup.com/mentor/roger-carr/"
+  },
+  {
+    "id": "c1",
+    "type": "client",
+    "name": "Sarah Mitchell",
+    "org": "Apex Capital Partners",
+    "email": "s.mitchell@apexcp.com",
+    "phone": "+44 20 7946 0100",
+    "status": "active",
+    "notes": "Key account. Chair programme."
+  },
+  {
+    "id": "c2",
+    "type": "client",
+    "name": "James Harrington",
+    "org": "Sterling Industries plc",
+    "email": "j.harrington@sterling.co.uk",
+    "phone": "+44 20 7946 0200",
+    "status": "active",
+    "notes": "Executive mentoring - CEO."
+  },
+  {
+    "id": "c3",
+    "type": "client",
+    "name": "Amara Osei",
+    "org": "Nordic Ventures",
+    "email": "a.osei@nordicventures.com",
+    "phone": "+44 20 7946 0300",
+    "status": "prospect",
+    "notes": "Proposal stage."
+  },
+  {
+    "id": "c4",
+    "type": "client",
+    "name": "Unilever Leadership Team",
+    "org": "Unilever plc",
+    "email": "leadership@unilever.com",
+    "phone": "+44 20 7822 5252",
+    "status": "prospect",
+    "notes": "RFP in progress."
+  }
 ],
 engagements:[
   {id:'e1',type:'chair',name:'Deloitte — Chair Mentoring: Sarah Okonkwo',clientId:'c1',mentorId:'m4',status:'active',startDate:'2026-01-15',endDate:'2026-12-31',coordinator:'Matt Hand',
@@ -2265,80 +2968,123 @@ function buildReport(type){
 
 /* ── MENTORS ─────────────────────────────────────────────────── */
 function rMentors(c){
-  const tab=S.tab.mentorCat||'chair';
   const allMentors=DB.contacts.filter(x=>x.type==='mentor');
+  const q=(S.search||'').toLowerCase();
+  const filterSector=S.mentorSector||'';
+  const filterCom=S.mentorCom||'';
 
-  // Derive primary category from engagements; default to 'emerging'
-  function mentorCat(m){
-    const engs=DB.engagements.filter(e=>e.mentorId===m.id);
-    if(!engs.length) return 'emerging';
-    const types=engs.map(e=>e.type);
-    if(types.includes('chair')) return 'chair';
-    if(types.includes('executive')) return 'executive';
-    return 'emerging';
-  }
+  let shown=allMentors.filter(m=>{
+    if(q){
+      const hay=(m.name+' '+(m.title||'')+' '+(m.org||'')+' '+(m.bio||'')+(m.sectors||[]).join(' ')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    if(filterSector && !(m.sectors||[]).some(s=>s===filterSector)) return false;
+    if(filterCom && (m.community||'')!==filterCom) return false;
+    return true;
+  });
 
-  const chairs=allMentors.filter(m=>mentorCat(m)==='chair');
-  const executives=allMentors.filter(m=>mentorCat(m)==='executive');
-  const emerging=allMentors.filter(m=>mentorCat(m)==='emerging');
-  const shown=tab==='chair'?chairs:tab==='executive'?executives:emerging;
+  // Collect all sectors for dropdown
+  const allSectors=[...new Set(allMentors.flatMap(m=>m.sectors||[]))].sort();
+  const allComs=[...new Set(allMentors.map(m=>m.community||'').filter(Boolean))].sort();
 
-  const sectionMeta={
-    chair:{label:'Chair Mentors',badge:'type-chair',desc:'Senior leaders specialising in board-level and chair mentoring'},
-    executive:{label:'Executive Mentors',badge:'type-executive',desc:'C-suite and senior executive mentoring specialists'},
-    emerging:{label:'Emerging Leaders Mentors',badge:'b-blue',desc:'Coaches supporting high-potential and emerging leaders'}
-  };
+  const communityBadge={CMi:'b-black',Merryck:'type-executive',GMG:'b-blue'};
 
   c.innerHTML=`
-  <div class="phdr"><div><h2>Mentor Library</h2><p>${allMentors.length} mentors · ${chairs.length} Chair · ${executives.length} Executive · ${emerging.length} Emerging Leaders</p></div>
-  <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button></div>
-  <div class="tabs">
-    <div class="tab${tab==='chair'?' active':''}" onclick="S.tab.mentorCat='chair';renderView()">
-      Chair Mentors <span style="font-size:10px;opacity:.7">(${chairs.length})</span>
-    </div>
-    <div class="tab${tab==='executive'?' active':''}" onclick="S.tab.mentorCat='executive';renderView()">
-      Executive Mentors <span style="font-size:10px;opacity:.7">(${executives.length})</span>
-    </div>
-    <div class="tab${tab==='emerging'?' active':''}" onclick="S.tab.mentorCat='emerging';renderView()">
-      Emerging Leaders <span style="font-size:10px;opacity:.7">(${emerging.length})</span>
-    </div>
+  <div class="phdr">
+    <div><h2>Mentor Library</h2><p>${allMentors.length} mentors</p></div>
+    <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button>
   </div>
-  <div style="background:var(--white);border:1px solid var(--border);border-radius:8px;padding:12px 18px;margin-bottom:16px;font-size:12px;color:var(--muted)">
-    ${sectionMeta[tab].desc}
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px;position:relative">
+      <input id="mentor-search" class="inp" placeholder="Search mentors by name, sector, background…" value="${S.search||''}"
+        oninput="S.search=this.value;renderView()" style="padding-left:32px;width:100%;box-sizing:border-box">
+      <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px">&#128269;</span>
+    </div>
+    <select class="inp" style="min-width:160px" onchange="S.mentorSector=this.value;renderView()">
+      <option value="">All Sectors</option>
+      ${allSectors.map(s=>`<option value="${s}"${filterSector===s?' selected':''}>${s}</option>`).join('')}
+    </select>
+    <select class="inp" style="min-width:140px" onchange="S.mentorCom=this.value;renderView()">
+      <option value="">All Communities</option>
+      ${allComs.map(c=>`<option value="${c}"${filterCom===c?' selected':''}>${c}</option>`).join('')}
+    </select>
+    ${(filterSector||filterCom||q)?`<button class="btn btn-sm btn-outline" onclick="S.search='';S.mentorSector='';S.mentorCom='';renderView()">Clear filters</button>`:''}
   </div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${shown.length} mentor${shown.length!==1?'s':''} shown</div>
   <div class="mentor-grid">
-    ${shown.map(m=>{
-      const engCount=DB.engagements.filter(e=>e.mentorId===m.id).length;
-      const sb=m.status==='active'?'b-green':'b-amber';
-      const catBadge=sectionMeta[tab].badge;
-      return`<div class="mentor-card">
-        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
+    ${shown.length===0?`<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">No mentors match your search.</div>`:
+    shown.map(m=>{
+      const comBadge=communityBadge[m.community]||'b-grey';
+      const hasProfile=!!(m.bio||m.career_highlights?.length);
+      return`<div class="mentor-card" style="cursor:pointer" onclick="viewContact('${m.id}')">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
           <div class="mentor-av">${initials(m.name)}</div>
-          <div style="flex:1">
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700"><a href="#" onclick="event.preventDefault();viewContact('${m.id}')" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${m.name}</a></div>
-            <div style="font-size:11px;color:var(--muted)">${m.org||'—'}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;line-height:1.3">${m.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4">${m.title||''}</div>
           </div>
-          <span class="badge ${sb}">${m.status}</span>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">
-          <div>${m.email}</div>
-          <div>${m.phone||'—'}</div>
-        </div>
-        ${m.notes?`<div style="font-size:11px;padding:8px;background:var(--halfnarrow);border-radius:5px;margin-bottom:10px;color:var(--nearblack)">${m.notes}</div>`:''}
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <div style="display:flex;gap:6px;align-items:center">
-            <span class="badge ${catBadge}" style="font-size:9px">${sectionMeta[tab].label.split(' ')[0]}</span>
-            <span style="font-size:11px;color:var(--muted)">${engCount} engagement${engCount!==1?'s':''}</span>
-          </div>
-          <button class="btn btn-sm btn-outline" onclick="openContactModal('${m.id}')">Edit</button>
+        <div style="font-size:11px;color:var(--nearblack);margin-bottom:8px;font-weight:500">${m.org||'—'}</div>
+        ${(m.sectors||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(m.sectors||[]).slice(0,3).map(s=>`<span style="font-size:9px;font-weight:600;padding:2px 7px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;color:var(--nearblack)">${s}</span>`).join('')}${(m.sectors||[]).length>3?`<span style="font-size:9px;color:var(--muted);padding:2px 4px">+${m.sectors.length-3}</span>`:''}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
+          ${m.community?`<span class="badge ${comBadge}" style="font-size:9px">${m.community}</span>`:'<span></span>'}
+          <span style="font-size:10px;color:var(--muted)">${hasProfile?'View profile →':'No profile yet'}</span>
         </div>
       </div>`;
     }).join('')}
-    ${shown.length===0?`<div class="empty" style="grid-column:1/-1"><div class="ei">◉</div><p>No ${sectionMeta[tab].label.toLowerCase()} added yet</p><button class="btn btn-outline" style="margin-top:12px" onclick="openContactModal(null,'mentor')">+ Add Mentor</button></div>`:''}
   </div>`;
 }
 
-/* ── MODAL FORMS ─────────────────────────────────────────────── */
+
+function viewContact(id){
+  const m=DB.contacts.find(c=>c.id===id);
+  if(!m) return;
+  const comBadge={CMi:'b-black',Merryck:'type-executive',GMG:'b-blue'};
+  const cb=comBadge[m.community]||'b-grey';
+  const engCount=DB.engagements.filter(e=>e.mentorId===m.id||( e.mentorIds&&e.mentorIds.includes(m.id))).length;
+  openModal(`
+    <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px">
+      <div class="mentor-av" style="width:62px;height:62px;font-size:22px;flex-shrink:0">${initials(m.name)}</div>
+      <div style="flex:1">
+        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700;line-height:1.2">${m.name}</div>
+        ${m.title?`<div style="font-size:13px;color:var(--muted);margin-top:4px">${m.title}</div>`:''}
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+          ${m.community?`<span class="badge ${cb}">${m.community}</span>`:''}
+          ${m.status?`<span class="badge ${m.status==='active'?'b-green':'b-amber'}">${m.status}</span>`:''}
+          ${engCount?`<span class="badge b-grey">${engCount} engagement${engCount!==1?'s':''}</span>`:''}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <button class="btn btn-sm btn-outline" onclick="openContactModal('${m.id}')">Edit</button>
+        ${m.profile_url?`<a href="${m.profile_url}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none;text-align:center">GMG Profile ↗</a>`:''}
+      </div>
+    </div>
+    ${m.org?`<div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--nearblack)">${m.org}</div>`:''}
+    ${(m.sectors||[]).length?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Sectors</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">${(m.sectors||[]).map(s=>`<span style="font-size:11px;font-weight:600;padding:3px 10px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:12px">${s}</span>`).join('')}</div>
+    </div>`:''}
+    ${m.bio?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Biography</div>
+      <div style="font-size:13px;line-height:1.65;color:var(--nearblack)">${m.bio}</div>
+    </div>`:''}
+    ${(m.career_highlights||[]).length?`
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Career Highlights</div>
+      <ul style="margin:0;padding-left:18px;list-style:disc">${(m.career_highlights||[]).map(h=>`<li style="font-size:12px;line-height:1.6;color:var(--nearblack);margin-bottom:3px">${h}</li>`).join('')}</ul>
+    </div>`:''}
+    ${(m.email||m.phone||m.notes)?`
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Contact</div>
+      ${m.email?`<div style="font-size:12px;margin-bottom:4px">&#9993; ${m.email}</div>`:''}
+      ${m.phone?`<div style="font-size:12px;margin-bottom:4px">&#9990; ${m.phone}</div>`:''}
+      ${m.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px;font-style:italic">${m.notes}</div>`:''}
+    </div>`:''}
+  `,true);
+}
+
 function openEngModal(id){
   const e=id?DB.engagements.find(x=>x.id===id):null;
   const clients=DB.contacts.filter(c=>c.type==='client');
