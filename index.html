@@ -871,6 +871,8 @@ function openEngDetail(id){
       <button class="btn btn-sm btn-outline" onclick="closeModal();openEngModal('${e.id}')">&#9999; Edit</button>
       ${e.type==='chair'?`<button class="btn btn-sm btn-outline" onclick="closeModal();openSessionModal('${e.id}')">+ Log Session</button>`:''}
       <button class="btn btn-sm btn-outline" onclick="closeModal();openInvoiceModal(null,'${e.id}')">+ Invoice</button>
+      ${(e.type==='executive'||e.type==='team')&&mn?`<button class="btn btn-sm btn-outline" style="border-color:#A0191A;color:#A0191A" onclick="generateMentorFee('${e.id}','${mn.id}')">&#128196; Fee Summary</button>`:''}
+      ${(e.type==='executive'||e.type==='team')?`<button class="btn btn-sm btn-outline" style="border-color:#5E1100;color:#5E1100" onclick="generateSOW('${e.id}')">&#128221; SOW</button>`:''}
       <button class="btn btn-sm btn-danger" onclick="deleteEng('${e.id}')">Delete</button>
     </div>
   </div>`,true);
@@ -880,6 +882,98 @@ function deleteEng(id){
   if(!confirm('Delete this engagement? This cannot be undone.')) return;
   DB.engagements=DB.engagements.filter(e=>e.id!==id);
   save(); closeModal(); renderView();
+}
+
+function generateMentorFee(engId, mentorId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const mentor=DB.contacts.find(c=>c.id===mentorId); if(!mentor) return;
+  const client=DB.contacts.find(c=>c.id===e.clientId);
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const fmt2=n=>'£'+Math.round(n||0).toLocaleString('en-GB');
+  const dateLabel=d=>{if(!d) return 'TBC'; const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});};
+
+  let feeSectionHTML='';
+  if(e.type==='executive'){
+    const qMentorFee=Math.round((e.quarterlyFee||0)*0.4);
+    const startDt=e.startDate?new Date(e.startDate):null;
+    const quarters=['Q1','Q2','Q3','Q4'].map((q,i)=>{
+      let dStr='TBC';
+      if(startDt&&!isNaN(startDt)){const d=new Date(startDt);d.setMonth(d.getMonth()+i*3);dStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+      return`<tr><td style="padding:9px 14px">${q}</td><td style="padding:9px 14px">${dStr}</td><td style="padding:9px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#A0191A">${fmt2(qMentorFee)}</td></tr>`;
+    }).join('');
+    feeSectionHTML=`<div style="margin-bottom:24px">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;margin-bottom:4px">Executive Mentoring Programme</div>
+      <div style="font-size:11px;color:#666;margin-bottom:14px">Programme Period: ${dateLabel(e.startDate)} &ndash; ${dateLabel(e.endDate)}</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.3px">Quarter</th><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Due Date</th><th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600">Mentor Fee</th></tr></thead>
+        <tbody>${quarters}</tbody>
+        <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:10px 14px;font-weight:700;font-size:12px">Annual Total</td><td style="padding:10px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:#A0191A">${fmt2(qMentorFee*4)}</td></tr></tfoot>
+      </table>
+      <div style="margin-top:8px;font-size:10px;color:#999">Mentor fees represent 40% of the quarterly client fee of ${fmt2(e.quarterlyFee||0)}</div>
+      ${e.retreatFee?`<div style="margin-top:20px;background:#f8f6f3;border-radius:6px;padding:14px"><div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;margin-bottom:10px">Retreat</div><table style="width:100%;border-collapse:collapse"><tr><td style="padding:5px 0;font-size:12px;color:#666;width:160px">Date</td><td style="padding:5px 0;font-size:12px;font-weight:600">${dateLabel(e.retreatDate)}</td></tr><tr><td style="padding:5px 0;font-size:12px;color:#666">Retreat Fee</td><td style="padding:5px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#A0191A">${fmt2(e.retreatFee)}</td></tr></table></div>`:''}
+    </div>`;
+  } else if(e.type==='team'){
+    const stages=e.stages||[];
+    const mentorStages=stages.map(st=>{const mf=(st.mentorFees||[]).find(f=>f.mentorId===mentorId);return{...st,mFee:mf?mf.fee:0};});
+    const total=mentorStages.reduce((s,st)=>s+(st.mFee||0),0);
+    const stBadge={completed:'#16a34a',active:'#d97706',planning:'#9ca3af'};
+    const stRows=mentorStages.length>0?mentorStages.map(st=>`<tr style="border-bottom:1px solid #eee"><td style="padding:9px 14px;font-size:12px;font-weight:600">${st.name}</td><td style="padding:9px 14px"><span style="font-size:11px;font-weight:600;color:${stBadge[st.status]||'#9ca3af'}">${(st.status||'pending').charAt(0).toUpperCase()+(st.status||'pending').slice(1)}</span></td><td style="padding:9px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:${st.mFee>0?'#A0191A':'#999'}">${fmt2(st.mFee)}</td></tr>`).join(''):`<tr><td colspan="3" style="padding:18px 14px;text-align:center;color:#999;font-size:12px">No stages defined for this engagement</td></tr>`;
+    feeSectionHTML=`<div style="margin-bottom:24px">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;margin-bottom:4px">Team Engagement — Stage Fees</div>
+      <div style="font-size:11px;color:#666;margin-bottom:14px">Programme Period: ${dateLabel(e.startDate)} &ndash; ${dateLabel(e.endDate)}</div>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Stage</th><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Status</th><th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600">Mentor Fee</th></tr></thead>
+        <tbody>${stRows}</tbody>
+        <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:10px 14px;font-weight:700;font-size:12px">Total Fees</td><td style="padding:10px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:#A0191A">${fmt2(total)}</td></tr></tfoot>
+      </table>
+      <div style="margin-top:8px;font-size:10px;color:#999">Fees are released upon stage completion and client invoice settlement</div>
+    </div>`;
+  }
+
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Mentor Fee Summary &#8212; ${mentor.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:#1a1a1a;background:#fff;font-size:13px;line-height:1.6}
+.page{max-width:720px;margin:0 auto;padding:48px 48px 64px}
+@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.page{padding:24px 32px 40px}}
+</style></head>
+<body>
+<div class="no-print" style="background:#1a1a1a;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
+  <span style="color:#fff;font-size:12px;font-family:'Inter',sans-serif">Mentor Fee Summary &mdash; Click &ldquo;Save as PDF&rdquo; or Ctrl+P to save</span>
+  <button onclick="window.print()" style="background:#A0191A;color:#fff;border:none;border-radius:5px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#128196; Save as PDF / Print</button>
+</div>
+<div class="page">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:20px;border-bottom:2.5px solid #A0191A">
+    <div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#A0191A;letter-spacing:-0.5px">Global<span style="color:#1a1a1a">Mentors</span>Group</div>
+      <div style="font-size:10px;color:#999;margin-top:2px;font-weight:500;letter-spacing:.3px">MENTORING &amp; LEADERSHIP ADVISORY</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700">Mentor Fee Summary</div>
+      <div style="font-size:10px;font-weight:700;color:#A0191A;letter-spacing:.5px;margin-top:2px">CONFIDENTIAL</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">Generated: ${today}</div>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;padding:18px;background:#f8f6f3;border-left:3px solid #A0191A;border-radius:0 6px 6px 0">
+    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Prepared For</div><div style="font-size:14px;font-weight:700">${mentor.name}</div></div>
+    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Engagement</div><div style="font-size:13px;font-weight:600">${e.name}</div></div>
+    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Client</div><div style="font-size:13px;font-weight:600">${client?client.name:'—'}</div></div>
+    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Programme Type</div><div style="font-size:13px;font-weight:600">${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Mentoring</div></div>
+  </div>
+  ${feeSectionHTML}
+  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#999">
+    <span>Global Mentors Group &middot; Mentor Fee Summary &middot; ${today}</span>
+    <span style="color:#A0191A;font-weight:700">Confidential &mdash; For Recipient Only</span>
+  </div>
+</div>
+</body></html>`;
+
+  const win=window.open('','_blank');
+  if(!win){alert('Please allow pop-ups to generate the fee summary PDF.');return;}
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(),900);
 }
 
 /* ── SESSIONS ────────────────────────────────────────────────── */
@@ -1250,6 +1344,195 @@ function saveProjTask(engId){
   DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
 }
 
+function generateSOW(engId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const client=DB.contacts.find(c=>c.id===e.clientId);
+  const mentor=DB.contacts.find(c=>c.id===e.mentorId);
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const refNo='SOW-'+e.id.slice(-6).toUpperCase()+'-'+new Date().getFullYear();
+  const fmt2=n=>'£'+Math.round(n||0).toLocaleString('en-GB');
+  const dateLabel=d=>{if(!d) return 'TBC'; const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});};
+
+  let scopeHTML='', feeHTML='', deliverableHTML='';
+
+  if(e.type==='executive'){
+    const qMentorFee=Math.round((e.quarterlyFee||0)*0.4);
+    const startDt=e.startDate?new Date(e.startDate):null;
+    const qRows=['Q1','Q2','Q3','Q4'].map((q,i)=>{
+      let dStr='TBC';
+      if(startDt&&!isNaN(startDt)){const d=new Date(startDt);d.setMonth(d.getMonth()+i*3);dStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
+      return`<tr><td style="padding:8px 14px">${q}</td><td style="padding:8px 14px">${dStr}</td><td style="padding:8px 14px;text-align:right;font-weight:700;color:#A0191A">${fmt2(e.quarterlyFee||0)}</td><td style="padding:8px 14px;text-align:center"><span style="font-size:11px;color:#9ca3af">Pending</span></td></tr>`;
+    }).join('');
+    scopeHTML=`<p>This Statement of Work covers the delivery of a structured Executive Mentoring Programme by Global Mentors Group (GMG) for ${client?client.name:'the Client'}. The Programme is designed to support the professional development, strategic thinking, and leadership effectiveness of the designated Executive Mentee.</p>
+      <p style="margin-top:10px">The programme will be led by <strong>${mentor?mentor.name:'the assigned Mentor'}</strong> and delivered over the period specified below. GMG will provide programme coordination, scheduling, progress reporting, and quality assurance throughout the engagement.</p>`;
+    deliverableHTML=`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>One-to-one executive mentoring sessions</strong> delivered on a quarterly basis, typically 90–120 minutes per session</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Programme kickoff and goal-setting session</strong> to establish objectives, priorities, and success metrics</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Mid-programme review</strong> including progress check, objective refresh, and stakeholder alignment</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>End-of-programme report</strong> summarising outcomes, development progress, and recommendations</div></div>
+      ${e.retreatFee?`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Executive Retreat</strong> — ${dateLabel(e.retreatDate)}, retreat facilitation fee: ${fmt2(e.retreatFee)}</div></div>`:''}`;
+    feeHTML=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+      <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Quarter</th><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Invoice Date</th><th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:600">Amount (excl. VAT)</th><th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:600">Status</th></tr></thead>
+      <tbody>${qRows}</tbody>
+      <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:9px 14px;font-weight:700">Total Programme Value</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#A0191A">${fmt2(e.annualFee||((e.quarterlyFee||0)*4))}</td><td></td></tr></tfoot>
+    </table>
+    <p style="font-size:11px;color:#666;margin-top:4px">All fees are quoted exclusive of VAT. VAT will be applied at the prevailing rate where applicable. Invoices are due within 30 days of issue. Late payment may incur interest at 2% above the Bank of England base rate.</p>`;
+  } else if(e.type==='team'){
+    const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
+    const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
+    const stages=e.stages||[];
+    const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||0;
+    const stageRows=stages.length>0?stages.map((st,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px 14px;font-weight:600">${i+1}. ${st.name}</td><td style="padding:8px 14px;font-size:11px;color:#666;max-width:200px">${st.description||'—'}</td><td style="padding:8px 14px;text-align:center"><span style="font-size:11px;font-weight:600;color:${st.status==='completed'?'#16a34a':st.status==='active'?'#d97706':'#9ca3af'}">${(st.status||'Pending').charAt(0).toUpperCase()+(st.status||'pending').slice(1)}</span></td><td style="padding:8px 14px;text-align:right;font-weight:700;color:#A0191A">${fmt2(st.clientFee||0)}</td></tr>`).join(''):`<tr><td colspan="4" style="padding:14px;text-align:center;color:#999;font-size:12px">Stages to be agreed and documented prior to programme commencement</td></tr>`;
+    scopeHTML=`<p>This Statement of Work governs the delivery of a Team Engagement Programme by Global Mentors Group (GMG) for ${client?client.name:'the Client'}. The Programme provides structured mentoring, facilitation, and leadership development across ${stages.length||'multiple'} defined project stages.</p>
+      <p style="margin-top:10px">The programme will be delivered by a GMG mentor team${mentors.length>0?' comprising '+mentors.map(m=>m.name).join(', '):''}. GMG will provide programme management, stage coordination, and reporting throughout the engagement.</p>`;
+    deliverableHTML=`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Stage-based programme delivery</strong> across ${stages.length||'agreed'} defined project stages with clear milestones and deliverables</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Dedicated mentor team</strong> with appropriate expertise aligned to each programme stage</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Stage completion reports</strong> delivered on completion of each stage, documenting outcomes and progress</div></div>
+      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Programme close report</strong> summarising overall outcomes, learnings, and recommendations</div></div>`;
+    feeHTML=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+      <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Stage</th><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Description</th><th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:600">Status</th><th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:600">Stage Fee</th></tr></thead>
+      <tbody>${stageRows}</tbody>
+      <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="3" style="padding:9px 14px;font-weight:700">Total Programme Fee</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#A0191A">${fmt2(totalClientFee)}</td></tr></tfoot>
+    </table>
+    <p style="font-size:11px;color:#666;margin-top:4px">Stage fees are invoiced upon completion of each stage and acceptance by the Client. All fees are exclusive of VAT. Payment terms: 30 days from invoice date.</p>`;
+  }
+
+  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Statement of Work &#8212; ${e.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;color:#1a1a1a;background:#fff;font-size:12.5px;line-height:1.7}
+.page{max-width:760px;margin:0 auto;padding:48px 52px 64px}
+h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #e5e0d8}
+h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px}
+p{margin-bottom:10px;color:#333}
+@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.page{padding:24px 32px 40px}}
+</style></head>
+<body>
+<div class="no-print" style="background:#1a1a1a;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
+  <span style="color:#fff;font-size:12px">Statement of Work &mdash; Press &ldquo;Save as PDF&rdquo; or Ctrl+P to export</span>
+  <button onclick="window.print()" style="background:#A0191A;color:#fff;border:none;border-radius:5px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">&#128196; Save as PDF / Print</button>
+</div>
+<div class="page">
+
+  <!-- HEADER -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2.5px solid #A0191A">
+    <div>
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:700;color:#A0191A;letter-spacing:-0.5px">Global<span style="color:#1a1a1a">Mentors</span>Group</div>
+      <div style="font-size:10px;color:#999;margin-top:2px;font-weight:500;letter-spacing:.3px">MENTORING &amp; LEADERSHIP ADVISORY</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700">Statement of Work</div>
+      <div style="font-size:10px;font-weight:700;color:#A0191A;letter-spacing:.5px;margin-top:3px">CONFIDENTIAL</div>
+      <div style="font-size:10px;color:#888;margin-top:2px">Ref: ${refNo} &nbsp;&middot;&nbsp; ${today}</div>
+    </div>
+  </div>
+
+  <!-- PARTIES -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
+    <div style="padding:16px;background:#f8f6f3;border-left:3px solid #A0191A;border-radius:0 6px 6px 0">
+      <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Service Provider</div>
+      <div style="font-size:14px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif">Global Mentors Group</div>
+      <div style="font-size:11px;color:#666;margin-top:3px">London, United Kingdom</div>
+      <div style="font-size:11px;color:#666">info@globalmentorsgroup.com</div>
+    </div>
+    <div style="padding:16px;background:#f8f6f3;border-left:3px solid #1a1a1a;border-radius:0 6px 6px 0">
+      <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Client</div>
+      <div style="font-size:14px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif">${client?client.name:'[Client Name]'}</div>
+      <div style="font-size:11px;color:#666;margin-top:3px">${client?client.org||'':''}</div>
+      <div style="font-size:11px;color:#666">${client?client.email||'':''}</div>
+    </div>
+  </div>
+
+  <!-- ENGAGEMENT DETAILS -->
+  <div style="margin-bottom:28px;padding:16px 18px;background:#fff;border:1px solid #e5e0d8;border-radius:6px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Engagement</div><div style="font-size:12px;font-weight:600">${e.name}</div></div>
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Programme Type</div><div style="font-size:12px;font-weight:600">${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Mentoring</div></div>
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Lead Mentor</div><div style="font-size:12px;font-weight:600">${mentor?mentor.name:'TBC'}</div></div>
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Start Date</div><div style="font-size:12px;font-weight:600">${dateLabel(e.startDate)}</div></div>
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">End Date</div><div style="font-size:12px;font-weight:600">${dateLabel(e.endDate)}</div></div>
+      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">GMG Coordinator</div><div style="font-size:12px;font-weight:600">${e.coordinator||'—'}</div></div>
+    </div>
+    ${e.notes?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e0d8;font-size:11px;color:#666"><strong style="color:#1a1a1a">Notes: </strong>${e.notes}</div>`:''}
+  </div>
+
+  <!-- 1. SCOPE -->
+  <div style="margin-bottom:24px">
+    <h2>1. Scope of Services</h2>
+    ${scopeHTML}
+  </div>
+
+  <!-- 2. DELIVERABLES -->
+  <div style="margin-bottom:24px">
+    <h2>2. Deliverables</h2>
+    <p>GMG will provide the following as part of this engagement:</p>
+    <div style="padding:14px 16px;background:#f8f6f3;border-radius:6px;margin-top:8px">
+      ${deliverableHTML}
+    </div>
+  </div>
+
+  <!-- 3. FEE SCHEDULE -->
+  <div style="margin-bottom:24px">
+    <h2>3. Fee Schedule</h2>
+    ${feeHTML}
+  </div>
+
+  <!-- 4. TERMS -->
+  <div style="margin-bottom:28px">
+    <h2>4. Terms &amp; Conditions</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div>
+        <h3>Confidentiality</h3>
+        <p style="font-size:11px">Both parties agree to maintain the confidentiality of all information exchanged during the programme. All sessions, reports, and materials are strictly confidential.</p>
+        <h3 style="margin-top:12px">Cancellation</h3>
+        <p style="font-size:11px">Sessions cancelled with less than 48 hours' notice may be charged at the full session rate. Programme cancellation requires 30 days' written notice.</p>
+      </div>
+      <div>
+        <h3>Intellectual Property</h3>
+        <p style="font-size:11px">All programme materials and reports produced by GMG remain the intellectual property of Global Mentors Group unless otherwise agreed in writing.</p>
+        <h3 style="margin-top:12px">Governing Law</h3>
+        <p style="font-size:11px">This Statement of Work shall be governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the English courts.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. SIGNATURES -->
+  <div style="margin-bottom:20px">
+    <h2>5. Authorisation</h2>
+    <p style="margin-bottom:18px">By signing below, both parties agree to the terms of this Statement of Work.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">For Global Mentors Group</div>
+        <div style="border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;height:36px"></div>
+        <div style="font-size:11px;font-weight:600">${e.coordinator||'Authorised Signatory'}</div>
+        <div style="font-size:10px;color:#888">Global Mentors Group</div>
+        <div style="font-size:10px;color:#999;margin-top:8px">Date: ____________________________</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">For ${client?client.name:'the Client'}</div>
+        <div style="border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;height:36px"></div>
+        <div style="font-size:11px;font-weight:600">Authorised Signatory</div>
+        <div style="font-size:10px;color:#888">${client?client.name:''}</div>
+        <div style="font-size:10px;color:#999;margin-top:8px">Date: ____________________________</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="margin-top:36px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#999">
+    <span>Global Mentors Group &middot; ${refNo} &middot; ${today}</span>
+    <span style="color:#A0191A;font-weight:700">Confidential &mdash; Not for Distribution</span>
+  </div>
+</div>
+</body></html>`;
+
+  const win=window.open('','_blank');
+  if(!win){alert('Please allow pop-ups to generate the SOW PDF.');return;}
+  win.document.write(html);
+  win.document.close();
+  setTimeout(()=>win.print(),900);
+}
+
 function toggleEngTypeFields(type){
   document.getElementById('em-exec-fields').style.display=type==='executive'?'':'none';
   document.getElementById('em-team-fields').style.display=type==='team'?'':'none';
@@ -1295,7 +1578,7 @@ function openProjDetail(id){
     </div>
     <div class="fstitle" style="margin-bottom:7px">Team Mentors</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
-      ${mentors.map(m=>`<span class="mentor-tag">${m.name}<button onclick="removeProjMentor('${id}','${m.id}')" title="Remove">&#215;</button></span>`).join('')}
+      ${mentors.map(m=>`<span class="mentor-tag">${m.name}<button onclick="generateMentorFee('${id}','${m.id}')" title="Fee Summary" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:700;color:#A0191A;padding:0 2px;margin-left:1px" title="Fee Summary">PDF</button><button onclick="removeProjMentor('${id}','${m.id}')" title="Remove">&#215;</button></span>`).join('')}
       ${mentors.length===0?`<span style="font-size:11px;color:var(--muted)">No mentors assigned</span>`:''}
     </div>
     ${avail.length>0?`<div style="display:flex;gap:6px;margin-bottom:16px">
@@ -1329,6 +1612,7 @@ function openProjDetail(id){
       <button class="btn btn-primary" onclick="openStageModal('${id}',null)">+ Add Stage</button>
       <button class="btn btn-outline" onclick="openProjTaskModal('${id}')">+ Task</button>
       <button class="btn btn-outline" onclick="closeModal();openEngModal('${id}')">Edit Details</button>
+      <button class="btn btn-outline" style="border-color:#5E1100;color:#5E1100" onclick="generateSOW('${id}')">&#128221; SOW</button>
       <button class="btn btn-outline" onclick="closeModal()">Close</button>
     </div>
   </div>`,true);
@@ -2111,176 +2395,54 @@ function openEngModal(id){
       <div class="fstitle" style="margin:8px 0 4px">Team Mentors</div>
       <div class="mc-list">
         ${mentors.map(m=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px 0">
-          <input type="checkbox" value="${m.id}" ${e&&(e.mentorIds||[]).includes(m.id)?' checked':''}> ${m.name}<span style="color:var(--muted);font-size:10px;font-weight:400"> — ${m.org||m.type}</span>
+          <input type="checkbox" value="${m.id}" ${e&&(e.mentorIds||[]).includes(m.id)?' checked':''}>\xa0${m.name}<span style="color:var(--muted);font-size:10px;font-weight:400"> — ${m.org||m.type}</span>
         </label>`).join('')}
       </div>
     </div>
-    <div class="fg"><label>Notes</label><textarea id="em-notes" rows="3">${e?e.notes:''}<\/textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveEng('${id||''}')">Save Engagement</button>
-    </div>
-  </div>`,true);
+  `,true);
 }
 
 function saveEng(id){
-  const name=document.getElementById('em-name').value.trim();
-  if(!name)return alert('Please enter an engagement name.');
-  const type=document.getElementById('em-type').value;
-  const fee=parseFloat(document.getElementById('em-fee').value)||0;
-  const data={name,type,status:document.getElementById('em-status').value,clientId:document.getElementById('em-client').value,mentorId:document.getElementById('em-mentor').value,partner:document.getElementById('em-partner').value,coordinator:document.getElementById('em-coord').value,startDate:document.getElementById('em-start').value,endDate:document.getElementById('em-end').value,country:document.getElementById('em-country').value,notes:document.getElementById('em-notes').value.trim()};
-  if(type==='chair'){data.annualFee=fee;data.sessionRate=data.sessionRate||Math.round(fee/12);data.sessionsIncluded=data.sessionsIncluded||12;data.sessionsUsed=data.sessionsUsed||0;}
-  else if(type==='executive'){data.annualFee=fee;data.quarterlyFee=Math.round(fee/4);data.retreatDate=document.getElementById('em-retreat-date').value;data.retreatFee=parseFloat(document.getElementById('em-retreat-fee').value)||0;}
-  else{
-    data.totalFee=fee;
-    const checks=document.querySelectorAll('#em-team-fields input[type=checkbox]:checked');
+  const n=v=>document.getElementById(v);
+  const name=n('em-name').value.trim();
+  if(!name) return alert('Please enter an engagement name.');
+  const type=n('em-type').value;
+  const data={
+    name,type,clientId:n('em-client').value,mentorId:n('em-mentor').value,
+    status:n('em-status').value,coordinator:n('em-coord').value.trim(),
+    partner:n('em-partner').value.trim(),country:n('em-country').value.trim(),
+    startDate:n('em-start').value,endDate:n('em-end').value,
+    notes:n('em-notes').value.trim(),
+  };
+  if(type==='chair'){
+    data.annualFee=+n('em-annual-fee').value||0;
+    data.sessionsIncluded=+n('em-sessions').value||12;
+    data.sessionRate=+n('em-session-rate').value||0;
+  } else if(type==='executive'){
+    data.quarterlyFee=+n('em-qfee').value||0;
+    data.annualFee=data.quarterlyFee*4;
+    data.retreatDate=n('em-retreat-date')?n('em-retreat-date').value:'';
+    data.retreatFee=n('em-retreat-fee')?+n('em-retreat-fee').value||0:0;
+  } else {
+    data.totalFee=+n('em-total-fee').value||0;
+    data.mentorFee=+n('em-mentor-fee').value||0;
+    const checks=document.querySelectorAll('.mc-list input:checked');
     data.mentorIds=[...checks].map(cb=>cb.value);
     if(data.mentorIds.length>0) data.mentorId=data.mentorIds[0];
   }
-  if(id){const e=DB.engagements.find(x=>x.id===id);if(e)Object.assign(e,data);}
-  else{DB.engagements.push({id:uid(),...data,createdAt:today()});addAct('◈',`New engagement: ${name}`);}
+  if(id){
+    const idx=DB.engagements.findIndex(x=>x.id===id);
+    if(idx>-1) DB.engagements[idx]={...DB.engagements[idx],...data};
+    addAct('✏',`Updated: ${name}`);
+  } else {
+    data.id=uid();data.createdAt=new Date().toISOString().slice(0,10);
+    DB.engagements.unshift(data);addAct('◈',`New engagement: ${name}`);
+  }
   save();closeModal();renderView();
 }
 
-function openContactModal(id,defaultType){
-  const ct=id?DB.contacts.find(x=>x.id===id):null;
-  showModal(`<div class="mhdr"><h3>${ct?'Edit Contact':'New Contact'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fg"><label>Type</label><select id="cm-type">
-      <option value="mentor"${(!ct||ct.type==='mentor')?' selected':''}>Mentor</option>
-      <option value="client"${ct&&ct.type==='client'?' selected':''}>Client</option>
-    </select></div>
-    <div class="fg"><label>Name</label><input id="cm-name" type="text" value="${ct?ct.name:''}"></div>
-    <div class="fg"><label>Organisation</label><input id="cm-org" type="text" value="${ct?ct.org||'':''}"></div>
-    <div class="fgrow">
-      <div class="fg"><label>Email</label><input id="cm-email" type="email" value="${ct?ct.email||'':''}"></div>
-      <div class="fg"><label>Phone</label><input id="cm-phone" type="tel" value="${ct?ct.phone||'':''}"></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3">${ct?ct.notes||'':''}<\/textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      ${ct?`<button class="btn btn-danger btn-sm" onclick="deleteCon('${ct.id}');closeModal();renderView()">Delete</button>`:''}
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveContact('${id||''}')">Save Contact</button>
-    </div>
-  </div>`,true);
-  if(defaultType) setTimeout(()=>{const el=document.getElementById('cm-type');if(el)el.value=defaultType;},50);
-}
-function saveContact(id){
-  const data={type:document.getElementById('cm-type').value,name:document.getElementById('cm-name').value.trim(),org:document.getElementById('cm-org').value.trim(),email:document.getElementById('cm-email').value.trim(),phone:document.getElementById('cm-phone').value.trim(),notes:document.getElementById('cm-notes').value.trim(),status:'active'};
-  if(!data.name)return alert('Please enter a name.');
-  if(id){const c=DB.contacts.find(x=>x.id===id);if(c)Object.assign(c,data);}
-  else{DB.contacts.push({id:uid(),...data});addAct('◈',`Contact added: ${data.name}`);}
-  save();closeModal();renderView();
-}
-function viewContact(id){
-  const ct=DB.contacts.find(x=>x.id===id); if(!ct) return;
-  const engs=DB.engagements.filter(e=>e.clientId===id||e.mentorId===id);
-  const tb=ct.type==='mentor'?'type-chair':'b-black';
-  const sb=ct.status==='active'?'b-green':ct.status==='prospect'?'b-amber':'b-grey';
-  const engRows=engs.map(e=>{
-    const partner=e.clientId===id?DB.contacts.find(c=>c.id===e.mentorId):DB.contacts.find(c=>c.id===e.clientId);
-    const role=e.clientId===id?'Client':'Mentor';
-    const val=e.type==='mentee'?e.totalFee:e.type==='executive'?e.annualFee:e.type==='chair'?e.annualFee:e.totalFee;
-    const sb2={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
-    return`<tr><td style="font-size:12px;font-weight:600"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>openEngDetail('${e.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${e.name}</a></td><td><span class="badge ${sb2}">${e.type}</span></td><td style="font-size:11px">${role}</td><td style="font-size:12px">${partner?.name||'—'}</td><td style="font-size:12px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val||0)}</td><td><span class="badge ${sb2}">${e.status}</span></td></tr>`;
-  }).join('');
-  showModal(`<div class="mhdr"><h3>${ct.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-      <span class="badge ${tb}">${ct.type}</span>
-      <span class="badge ${sb}">${ct.status}</span>
-    </div>
-    <div class="fstitle">Contact Details</div>
-    ${ct.org?`<div class="ir"><span class="lbl">Organisation</span><span class="val">${ct.org}</span></div>`:''}
-    ${ct.email?`<div class="ir"><span class="lbl">Email</span><span class="val"><a href="mailto:${ct.email}" style="color:inherit">${ct.email}</a></span></div>`:''}
-    ${ct.phone?`<div class="ir"><span class="lbl">Phone</span><span class="val">${ct.phone}</span></div>`:''}
-    ${ct.notes?`<div style="margin:12px 0;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${ct.notes}</div>`:''}
-    ${engs.length>0?`<div class="fstitle" style="margin-top:14px">Engagements (${engs.length})</div>
-    <table class="tbl" style="margin-top:6px"><thead><tr><th>Engagement</th><th>Type</th><th>Role</th><th>Partner</th><th>Value</th><th>Status</th></tr></thead>
-    <tbody>${engRows}</tbody></table>`:'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No engagements</div>'}
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal();openContactModal('${ct.id}')">Edit Contact</button>
-      <button class="btn btn-outline" onclick="closeModal()">Close</button>
-    </div>
-  </div>`,true);
-}
-function openSessionModal(engId){
-  const engs=DB.engagements.filter(e=>e.status!=='cancelled');
-  showModal(`<div class="mhdr"><h3>Log Session</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fg"><label>Engagement</label><select id="sm-eng">
-      <option value="">— Select —</option>
-      ${engs.map(e=>`<option value="${e.id}"${engId===e.id?' selected':''}>${e.name.slice(0,50)}</option>`).join('')}
-    </select></div>
-    <div class="fgrow">
-      <div class="fg"><label>Date</label><input id="sm-date" type="date" value="${today()}"></div>
-      <div class="fg"><label>Duration (min)</label><input id="sm-dur" type="number" value="90" min="15" step="15"></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="sm-notes" rows="3" placeholder="Session summary..."><\/textarea></div>
-    <div class="fgrow">
-      <div class="fg"><label>Status</label><select id="sm-status">
-        <option value="scheduled">Scheduled</option>
-        <option value="completed" selected>Completed</option>
-        <option value="cancelled">Cancelled</option>
-      </select></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveSession()">Save Session</button>
-    </div>
-  </div>`,true);
-}
-function saveSession(){
-  const engId=document.getElementById('sm-eng').value;
-  if(!engId)return alert('Please select an engagement.');
-  const data={id:uid(),engId,date:document.getElementById('sm-date').value,duration:parseInt(document.getElementById('sm-dur').value)||90,notes:document.getElementById('sm-notes').value.trim(),status:document.getElementById('sm-status').value,mentorPaid:false};
-  DB.sessions.push(data);
-  if(data.status==='completed'){const e=DB.engagements.find(x=>x.id===engId);if(e){e.sessionsUsed=(e.sessionsUsed||0)+1;}}
-  addAct('◷',`Session logged: ${DB.engagements.find(x=>x.id===engId)?.name?.slice(0,40)||engId}`);
-  save();closeModal();renderView();
-}
-function openInvoiceModal(id,engId){
-  const inv=id?DB.clientInvoices.find(x=>x.id===id):null;
-  const engs=DB.engagements.filter(e=>e.status!=='cancelled');
-  showModal(`<div class="mhdr"><h3>${inv?'Edit Invoice':'New Invoice'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fgrow">
-      <div class="fg"><label>Engagement</label><select id="ivm-eng">
-        <option value="">— Select —</option>
-        ${engs.map(e=>`<option value="${e.id}"${(inv?inv.engId:engId)===e.id?' selected':''}>${e.name.slice(0,50)}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Type</label><select id="ivm-type">
-        <option value="chair-annual"${inv&&inv.type==='chair-annual'?' selected':''}>Chair Annual</option>
-        <option value="exec-quarterly"${!inv||inv.type==='exec-quarterly'?' selected':''}>Exec Quarterly</option>
-        <option value="team-adhoc"${inv&&inv.type==='team-adhoc'?' selected':''}>Team Ad-hoc</option>
-      </select></div>
-    </div>
-    <div class="fgrow">
-      <div class="fg"><label>Amount (£)</label><input id="ivm-amount" type="number" value="${inv?inv.amount:''}" placeholder="0"></div>
-      <div class="fg"><label>Period</label><input id="ivm-period" type="text" value="${inv?inv.period:''}" placeholder="e.g. Q3 2026"></div>
-    </div>
-    <div class="fgrow">
-      <div class="fg"><label>Issue Date</label><input id="ivm-issued" type="date" value="${inv?inv.issued:today()}"></div>
-      <div class="fg"><label>Due Date</label><input id="ivm-due" type="date" value="${inv?inv.due:''}"></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="ivm-notes" rows="2">${inv?inv.notes||'':''}<\/textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveInvoice('${id||''}','${engId||''}')">Save Invoice</button>
-    </div>
-  </div>`,true);
-}
-function saveInvoice(id,engId){
-  const amount=parseFloat(document.getElementById('ivm-amount').value)||0;
-  const eId=document.getElementById('ivm-eng').value;
-  const eng=DB.engagements.find(x=>x.id===eId);
-  const data={engId:eId,clientId:eng?eng.clientId:'',amount,type:document.getElementById('ivm-type').value,period:document.getElementById('ivm-period').value,status:'draft',xeroSynced:false,issued:document.getElementById('ivm-issued').value,due:document.getElementById('ivm-due').value,notes:document.getElementById('ivm-notes').value.trim()};
-  if(id){const inv=DB.clientInvoices.find(x=>x.id===id);if(inv)Object.assign(inv,data);}
-  else{DB.clientInvoices.push({id:uid(),...data});addAct('◎',`Invoice created: ${fmt(amount)} — ${data.period}`);}
-  save();closeModal();renderView();
-}
 
-/* ── CLAUDE CHAT BAR ─────────────────────────────────────────── */
+/* ── CLAUDE AI CHAT ─────────────────────────── */
 async function claudeAsk(){
   const q=document.getElementById('claude-input').value.trim();
   if(!q)return;
@@ -2294,7 +2456,7 @@ async function claudeAsk(){
     document.getElementById('claude-msgs').innerHTML='<div class="cp-q">'+q+'</div><div class="cp-a">No API key set — click ⚙ to add your Anthropic API key.</div>';
     return;
   }
-  const ctx=`You are a helpful assistant embedded in the GMG Operations Platform for Global Mentors Group. Current data: ${DB.engagements.length} engagements, ${DB.contacts.length} contacts, ${DB.tasks.filter(t=>t.status!=='done').length} open tasks, ${DB.opportunities.filter(o=>!['Closed Won','Closed Lost'].includes(o.stage)).length} active pipeline deals. The user is ${S.user.name} (${ROLES[S.user.role]||S.user.role}). Be concise and helpful.`;
+  const ctx=`You are a helpful assistant embedded in the GMG Operations Platform for Global Mentors Group. Current data: ${DB.engagements.length} engagements, ${DB.contacts.length} contacts, ${DB.tasks.filter(t=>t.status!=='done').length} open tasks, ${DB.opportunities.filter(o=>!'Closed Won,Closed Lost'.includes(o.stage)).length} active pipeline deals. The user is ${S.user.name} (${ROLES[S.user.role]||S.user.role}). Be concise and helpful.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
