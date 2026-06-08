@@ -2021,6 +2021,8 @@ function setSyncDot(state){
 }
 let DB=JSON.parse(JSON.stringify(SEED));
 try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
+// Auto-upgrade: if stored mentor count is less than seed, replace mentors while keeping all other data
+(function(){try{const seedMentors=SEED.contacts.filter(c=>c.type==='mentor');const storedMentors=(DB.contacts||[]).filter(c=>c.type==='mentor');if(storedMentors.length<seedMentors.length){const nonMentors=(DB.contacts||[]).filter(c=>c.type!=='mentor');DB.contacts=[...nonMentors,...seedMentors];try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}}}catch(e){}})();
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorCom:'',mentorCat:'',mentorId:null};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
