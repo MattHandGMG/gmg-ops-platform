@@ -5,6 +5,1706 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GMG Platform — Global Mentors Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
+:root {
+  --venetian:#CE2702; --burnt:#5E1100; --narrow:#E2DED1; --nearblack:#111111;
+  --cadmium:#B95300; --halfnarrow:#F2F1EE; --bgblack:#1A1A1A;
+  --white:#FFFFFF; --muted:#7a7a7a; --border:#E2DED1;
+  --success:#2d7a3a; --warn:#B95300; --info:#1a5a8a;
+  --sidebar:248px; --topbar:56px; --radius:8px;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--halfnarrow);color:var(--nearblack);min-height:100vh}
+h1,h2,h3,h4,.serif{font-family:'Cormorant Garamond',Georgia,serif}
+button{cursor:pointer;border:none;font-family:inherit}
+input,select,textarea{font-family:inherit;outline:none}
+
+/* Layout */
+#app{display:flex;min-height:100vh}
+#sidebar{width:var(--sidebar);background:var(--nearblack);color:#fff;position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;z-index:100}
+#main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+#topbar{height:52px;background:#5E1100;color:#fff;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;padding:0 28px;gap:0;position:sticky;top:0;z-index:50;box-shadow:0 1px 6px rgba(0,0,0,.35)}
+#content{padding:28px;flex:1}
+
+/* Sidebar */
+.sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;background:var(--burnt)}
+.sb-icon{width:36px;height:36px;flex-shrink:0}
+.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.sb-brand span{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.8px;text-transform:uppercase}
+.sb-nav{flex:1;padding:10px 0;overflow-y:auto}
+.sb-section{padding:8px 16px 2px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px}
+.sb-item{display:flex;align-items:center;gap:10px;padding:8px 14px;margin:1px 8px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.65);transition:.15s}
+.sb-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sb-item.active{background:var(--venetian);color:#fff}
+.sb-item .ic{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sb-item .nb{margin-left:auto;background:var(--venetian);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
+.sb-item.active .nb{background:rgba(255,255,255,.25)}
+.sb-bottom{padding:12px 14px;border-top:1px solid rgba(255,255,255,.1)}
+.sb-user{display:flex;align-items:center;gap:10px}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--venetian);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
+.sb-uinfo strong{font-size:12px;font-weight:600;display:block;color:#fff}
+.sb-uinfo span{font-size:10px;color:rgba(255,255,255,.4)}
+
+/* Topbar */
+.tb-logo{display:flex;align-items:center;gap:10px;padding-right:28px;border-right:1px solid rgba(255,255,255,.18);margin-right:24px;flex-shrink:0}
+.tb-brand{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:.01em}
+.tb-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:600;color:rgba(255,255,255,.7);flex:1}
+.tb-search{display:flex;align-items:center;gap:8px;cursor:pointer;color:rgba(255,255,255,.75);font-size:13px;font-weight:500;padding:5px 0;border:none;background:transparent}
+.tb-search input{border:none;background:transparent;font-size:13px;color:#fff;width:120px;cursor:pointer}
+.tb-search input::placeholder{color:rgba(255,255,255,.6)}
+.tb-search svg{opacity:.7}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;transition:.15s;cursor:pointer;border:none}
+.btn-primary{background:var(--venetian);color:#fff}.btn-primary:hover{background:var(--burnt)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--nearblack)}.btn-outline:hover{background:var(--halfnarrow)}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:5px}
+.btn-success{background:var(--success);color:#fff}
+.btn-warn{background:var(--cadmium);color:#fff}
+.btn-xero{background:#13B5EA;color:#fff;font-weight:700}
+.btn-xero:hover{background:#0d8ab5}
+.btn-danger{background:#b91c1c;color:#fff}
+
+/* Cards */
+.card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border)}
+.card-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-hdr h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;color:var(--nearblack)}
+.card-body{padding:18px}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:18px;box-shadow:var(--shadow)}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px}
+.kpi-val{font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:700;color:var(--nearblack);line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+.kpi-bar{height:3px;background:var(--border);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;background:var(--venetian);border-radius:2px}
+.kpi.accent .kpi-val{color:var(--venetian)}
+.kpi.gold .kpi-val{color:var(--cadmium)}
+
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+/* Tables */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;border-bottom:2px solid var(--border);background:var(--halfnarrow)}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafaf8}
+.tbl .acts{display:flex;gap:5px}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+.b-red{background:rgba(206,39,2,.1);color:var(--venetian)}
+.b-green{background:rgba(45,122,58,.1);color:var(--success)}
+.b-amber{background:rgba(185,83,0,.12);color:var(--cadmium)}
+.b-grey{background:rgba(0,0,0,.07);color:var(--muted)}
+.b-blue{background:rgba(26,90,138,.1);color:var(--info)}
+.b-black{background:var(--nearblack);color:#fff}
+.b-xero{background:#13B5EA;color:#fff}
+
+/* Page header */
+.phdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.phdr h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:19px;font-weight:700;color:var(--nearblack)}
+.phdr p{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;background:var(--halfnarrow);border-radius:6px;padding:3px;margin-bottom:18px;width:fit-content;border:1px solid var(--border)}
+.tab{padding:5px 14px;border-radius:4px;font-size:12px;font-weight:500;cursor:pointer;color:var(--muted);transition:.15s}
+.tab.active{background:var(--white);color:var(--nearblack);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* Engagement type chips */
+.type-chair{background:rgba(94,17,0,.1);color:var(--burnt);font-weight:700}
+.type-executive{background:rgba(206,39,2,.1);color:var(--venetian);font-weight:700}
+.type-team{background:rgba(185,83,0,.12);color:var(--cadmium);font-weight:700}
+
+/* Progress */
+.prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:4px 0}
+.prog-fill{height:100%;background:var(--venetian);border-radius:3px}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal{background:var(--white);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.2);width:100%;max-width:580px;max-height:90vh;overflow-y:auto;animation:fu .2s ease}
+.modal-lg{max-width:720px}
+@keyframes fu{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.mhdr h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700}
+.mbody{padding:22px}
+.mfoot{padding:14px 22px;border-bottom-left-radius:10px;border-bottom-right-radius:10px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--halfnarrow)}
+.mclose{width:28px;height:28px;border-radius:50%;background:var(--halfnarrow);border:none;cursor:pointer;font-size:14px;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.mclose:hover{background:var(--border)}
+
+/* Forms */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--nearblack);text-transform:uppercase;letter-spacing:.4px}
+.fg input,.fg select,.fg textarea{border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px;color:var(--nearblack);background:var(--halfnarrow);transition:.15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--venetian);background:#fff;box-shadow:0 0 0 3px rgba(206,39,2,.08)}
+.fg textarea{resize:vertical;min-height:70px}
+.fgrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fsep{border:none;border-top:1px solid var(--border);margin:10px 0}
+.fstitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:8px 0 6px}
+
+/* Finance items */
+.fin-item{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);gap:12px}
+.fin-item:last-child{border-bottom:none}
+.fin-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.fin-info{flex:1}
+.fin-info strong{font-size:12px;font-weight:600;display:block}
+.fin-info span{font-size:11px;color:var(--muted)}
+.fin-amount{font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700}
+
+/* Xero banner */
+.xero-banner{background:linear-gradient(135deg,#0e8ab0,#13B5EA);border-radius:8px;padding:14px 18px;color:#fff;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.xero-banner h4{font-size:13px;font-weight:700;margin-bottom:2px}
+.xero-banner p{font-size:11px;opacity:.85}
+
+/* Activity */
+.act-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.act-item:last-child{border-bottom:none}
+.act-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;background:var(--halfnarrow)}
+
+/* Empty */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty .ei{font-size:40px;opacity:.35;margin-bottom:10px}
+
+/* Login */
+#login{position:fixed;inset:0;background:var(--nearblack);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-card{background:var(--white);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.login-logo svg{width:32px;height:32px}
+.login-logo span{font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700}
+.login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;margin-bottom:4px}
+.login-card p{font-size:12px;color:var(--muted);margin-bottom:20px}
+
+/* Lifecycle stages */
+.lc-board{display:flex;gap:0;overflow-x:auto;padding-bottom:16px;border-radius:var(--radius);border:1px solid var(--border);background:var(--white);box-shadow:var(--shadow)}
+.lc-stage{flex:1;min-width:160px;border-right:1px solid var(--border);display:flex;flex-direction:column}
+.lc-stage:last-child{border-right:none}
+.lc-stage-hdr{padding:12px 10px;text-align:center;border-bottom:1px solid var(--border);position:relative}
+.lc-stage-num{width:22px;height:22px;border-radius:50%;background:var(--venetian);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto 5px}
+.lc-stage-name{font-size:10px;font-weight:700;color:var(--nearblack);line-height:1.3;text-align:center}
+.lc-stage-count{font-size:10px;color:var(--muted);margin-top:3px}
+.lc-stage.active-stage .lc-stage-hdr{background:rgba(206,39,2,.04)}
+.lc-cards{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;min-height:120px}
+.lc-card{background:var(--halfnarrow);border:1px solid var(--border);border-radius:6px;padding:10px;cursor:pointer;transition:.15s;border-left:3px solid var(--venetian)}
+.lc-card:hover{border-color:var(--venetian);box-shadow:0 2px 8px rgba(206,39,2,.12);transform:translateY(-1px)}
+.lc-card-name{font-size:11px;font-weight:700;color:var(--nearblack);margin-bottom:4px;line-height:1.3}
+.lc-card-meta{font-size:10px;color:var(--muted);line-height:1.5}
+.lc-card-val{font-family:'Cormorant Garamond',Georgia,serif;font-size:12px;font-weight:700;color:var(--cadmium);margin-top:5px}
+.lc-card-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:5px}
+.lc-add{margin:6px 8px;padding:5px;border:1.5px dashed var(--border);border-radius:5px;background:none;font-size:10px;color:var(--muted);cursor:pointer;width:calc(100% - 16px);transition:.15s}
+.lc-add:hover{border-color:var(--venetian);color:var(--venetian)}
+
+/* Filter row */
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-row select,.filter-sel{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;background:var(--white);color:var(--nearblack);cursor:pointer}
+.filter-row select:focus,.filter-sel:focus{border-color:var(--venetian);outline:none}
+.filter-clear{font-size:11px;color:var(--venetian);cursor:pointer;padding:4px 8px;border-radius:4px;background:rgba(206,39,2,.07);border:none;font-weight:600}
+
+/* Kanban */
+.kanban-board{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px}
+.kanban-col{background:var(--halfnarrow);border-radius:8px;padding:12px;border:1px solid var(--border)}
+.kanban-col-hdr{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.kanban-card{background:var(--white);border-radius:6px;padding:12px;margin-bottom:8px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.05);cursor:pointer;transition:.15s}
+.kanban-card:hover{box-shadow:0 3px 10px rgba(0,0,0,.1);transform:translateY(-1px)}
+.kanban-card-title{font-size:12px;font-weight:600;margin-bottom:6px;color:var(--nearblack)}
+.kanban-card-meta{font-size:10px;color:var(--muted)}
+
+/* Report cards */
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.report-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+.report-card h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700}
+.report-card p{font-size:12px;color:var(--muted);flex:1}
+
+/* Mentor cards */
+.mentor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.mentor-card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);padding:20px;box-shadow:var(--shadow)}
+.mentor-av{width:44px;height:44px;border-radius:50%;background:var(--venetian);color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-weight:700;flex-shrink:0}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* Info row */
+.ir{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.ir:last-child{border-bottom:none}
+.ir .lbl{color:var(--muted)}
+.ir .val{font-weight:600}
+
+@media(max-width:900px){.kpi-grid{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+
+/* Login states */
+.login-err{color:#b91c1c;font-size:12px;margin-top:6px;padding:6px 10px;background:rgba(185,28,28,.08);border-radius:5px;display:none}
+.login-ok{color:#15803d;font-size:12px;margin-top:6px;padding:6px 10px;background:rgba(21,128,61,.08);border-radius:5px;display:none}
+#login-form a,#signup-form a{color:var(--venetian);text-decoration:none}
+#login-form a:hover,#signup-form a:hover{text-decoration:underline}
+/* Sync indicator */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#2d7a3a;display:inline-block;margin-left:6px;vertical-align:middle}
+.sync-dot.syncing{background:var(--cadmium)}
+.sync-dot.offline{background:#b91c1c}
+/* Logout button */
+.sb-logout{width:100%;margin-top:8px;padding:6px 10px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.1);border-radius:5px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.3px;transition:.15s}
+.sb-logout:hover{background:rgba(185,28,28,.3);color:#fff;border-color:rgba(185,28,28,.4)}
+/* Claude Chat Bar */
+#claude-bar{position:fixed;bottom:0;left:var(--sidebar);right:0;z-index:200;background:var(--white);border-top:1px solid var(--border);padding:8px 20px;display:none;align-items:center;gap:10px;box-shadow:0 -2px 8px rgba(0,0,0,.06)}
+#claude-input{flex:1;border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:13px;background:var(--halfnarrow);color:var(--nearblack)}
+#claude-input:focus{border-color:var(--venetian);outline:none;background:#fff}
+#claude-panel{position:fixed;bottom:49px;left:var(--sidebar);right:0;z-index:199;background:var(--white);border-top:1px solid var(--border);padding:16px 24px 12px;max-height:280px;overflow-y:auto;display:none;box-shadow:0 -4px 16px rgba(0,0,0,.07);font-size:13px;line-height:1.7}
+#claude-panel.open{display:block}
+.cp-q{color:var(--muted);margin-bottom:8px;font-style:italic;font-size:12px}
+.cp-a{color:var(--nearblack)}
+.cp-close{position:absolute;top:10px;right:16px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);line-height:1}
+/* Extra bottom padding so content doesn't hide behind Claude bar */
+#content{padding-bottom:64px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+<div class="login-card">
+  <div class="login-logo">
+    <svg viewBox="0 0 97 96" fill="none" xmlns="http://www.w3.org/2000/svg" width="36" height="36">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M55.5191 4.27168C55.5121 4.32926 55.5263 4.37853 55.5617 4.41943C55.5547 4.47701 55.5689 4.52627 55.6043 4.56718C55.6779 4.80539 55.7276 5.05162 55.7534 5.30592C55.7499 5.44442 55.7641 5.57809 55.796 5.70695C55.7995 6.2206 55.796 6.73419 55.7853 7.24774C55.776 7.35763 55.7583 7.46316 55.7321 7.56435C55.6984 7.6356 55.6842 7.71298 55.6895 7.79652C55.6886 7.88587 55.6745 7.97029 55.6469 8.0498C55.6168 8.10719 55.6026 8.17051 55.6043 8.23977C55.556 8.37498 55.5205 8.5157 55.4978 8.6619C55.3212 9.32848 55.0905 9.97576 54.8057 10.6037C54.229 11.8383 53.5475 13.0132 52.7612 14.1286C51.744 15.5533 50.6649 16.9324 49.5241 18.2655C47.2981 20.8338 44.9803 23.328 42.5708 25.7479C42.0804 25.7924 41.5906 25.789 41.1013 25.7373C41.5835 25.0801 42.0698 24.4257 42.5602 23.7744C44.4049 21.2454 46.0021 18.5576 47.3519 15.7116C47.793 14.7457 48.2047 13.7678 48.5871 12.7777C48.6185 12.6809 48.6433 12.5824 48.6616 12.4822C48.6548 12.458 48.6407 12.4404 48.619 12.4295C46.3766 12.0556 44.7616 10.8561 43.7741 8.83076C43.2934 7.78303 43.1159 6.68548 43.2416 5.53809C43.5208 3.60834 44.4756 2.10623 46.106 1.03178C48.0163 -0.136879 50.0182 -0.312763 52.1117 0.504114C53.5776 1.16898 54.6459 2.22785 55.3168 3.68069C55.3992 3.87293 55.4666 4.06994 55.5191 4.27168Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M41.3707 91.7283C41.3777 91.6707 41.3635 91.6215 41.3281 91.5806C41.3351 91.523 41.3209 91.4737 41.2855 91.4328C41.2119 91.1946 41.1621 90.9484 41.1364 90.6941C41.1399 90.5556 41.1257 90.4219 41.0938 90.2931C41.0903 89.7794 41.0938 89.2658 41.1045 88.7523C41.1138 88.6424 41.1315 88.5368 41.1577 88.4356C41.1914 88.3644 41.2056 88.287 41.2003 88.2035C41.2011 88.1141 41.2153 88.0297 41.2429 87.9502C41.273 87.8928 41.2872 87.8295 41.2855 87.7602C41.3338 87.625 41.3693 87.4843 41.392 87.3381C41.5686 86.6715 41.7993 86.0242 42.0841 85.3963C42.6608 84.1617 43.3423 82.9868 44.1286 81.8714C45.1458 80.4467 46.2248 79.0676 47.3656 77.7345C49.5917 75.1662 51.9095 72.672 54.319 70.2521C54.8094 70.2076 55.2992 70.211 55.7884 70.2627C55.3063 70.9199 54.82 71.5743 54.3296 72.2256C52.4849 74.7546 50.8876 77.4424 49.5379 80.2884C49.0968 81.2543 48.685 82.2322 48.3027 83.2223C48.2713 83.3191 48.2464 83.4176 48.2282 83.5178C48.2349 83.542 48.2491 83.5596 48.2707 83.5705C50.5132 83.9444 52.1282 85.1439 53.1157 87.1692C53.5964 88.217 53.7738 89.3145 53.6481 90.4619C53.369 92.3917 52.4142 93.8938 50.7837 94.9682C48.8734 96.1369 46.8716 96.3128 44.7781 95.4959C43.3122 94.831 42.2438 93.7722 41.573 92.3193C41.4906 92.1271 41.4231 91.9301 41.3707 91.7283Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M90.1919 32.2074C90.138 32.2302 90.1021 32.267 90.084 32.3179C90.0302 32.3406 89.9943 32.3775 89.9762 32.4283C89.8049 32.6106 89.6146 32.7764 89.4053 32.9256C89.2825 32.9919 89.1728 33.0709 89.0761 33.1627C88.6291 33.4226 88.1785 33.6763 87.7244 33.924C87.6238 33.9709 87.5227 34.0084 87.4212 34.0366C87.3421 34.0433 87.2673 34.0698 87.197 34.1161C87.1185 34.16 87.0377 34.1901 86.9544 34.2062C86.8892 34.209 86.8268 34.2285 86.7671 34.2646C86.6248 34.2907 86.4841 34.3306 86.345 34.3843C85.6742 34.566 84.9933 34.6916 84.3021 34.7611C82.935 34.8834 81.5676 34.886 80.1999 34.7687C78.4463 34.608 76.7017 34.3714 74.9664 34.0588C71.6092 33.4323 68.2709 32.69 64.9516 31.8319C64.6675 31.4332 64.4255 31.0111 64.2261 30.5653C65.0415 30.6506 65.8564 30.7408 66.6707 30.836C69.803 31.1549 72.9502 31.1819 76.1119 30.9174C77.1765 30.8131 78.2369 30.6775 79.2932 30.5106C79.3935 30.4891 79.492 30.4612 79.5886 30.4269C79.6064 30.4089 79.6147 30.388 79.6135 30.3639C78.8189 28.2523 79.0596 26.2664 80.3356 24.4061C81.0108 23.4697 81.8811 22.7686 82.9465 22.3028C84.7723 21.5775 86.5623 21.6459 88.3164 22.5082C90.2927 23.5634 91.4473 25.1937 91.7803 27.399C91.9323 28.9896 91.5412 30.4361 90.6071 31.7383C90.4803 31.9051 90.3419 32.0615 90.1919 32.2074Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M6.69712 63.7924C6.75094 63.7696 6.78689 63.7328 6.80493 63.6819C6.85875 63.6592 6.8947 63.6224 6.91274 63.5715C7.08408 63.3892 7.27438 63.2234 7.48372 63.0742C7.60648 63.0079 7.71618 62.9289 7.81284 62.8371C8.2599 62.5772 8.71046 62.3235 9.16453 62.0759C9.2652 62.0289 9.36629 61.9914 9.4678 61.9633C9.54691 61.9566 9.62163 61.93 9.69198 61.8837C9.77046 61.8398 9.85133 61.8097 9.93459 61.7936C9.99979 61.7908 10.0622 61.7713 10.1219 61.7352C10.2642 61.7091 10.4049 61.6692 10.544 61.6156C11.2148 61.4339 11.8957 61.3082 12.5868 61.2387C13.954 61.1164 15.3214 61.1139 16.6891 61.2311C18.4427 61.3918 20.1873 61.6284 21.9226 61.941C25.2798 62.5675 28.6181 63.3098 31.9374 64.1679C32.2215 64.5666 32.4635 64.9887 32.6629 65.4345C31.8475 65.3493 31.0326 65.259 30.2183 65.1638C27.086 64.845 23.9388 64.8179 20.777 65.0825C19.7125 65.1868 18.6521 65.3223 17.5958 65.4892C17.4955 65.5107 17.397 65.5386 17.3003 65.573C17.2826 65.5909 17.2743 65.6118 17.2755 65.6359C18.0701 67.7475 17.8294 69.7335 16.5534 71.5937C15.8782 72.5301 15.0079 73.2312 13.9425 73.697C12.1166 74.4223 10.3267 74.3539 8.5726 73.4917C6.59626 72.4364 5.44164 70.8061 5.10871 68.6008C4.95672 67.0102 5.34778 65.5637 6.28187 64.2615C6.40865 64.0947 6.54708 63.9383 6.69712 63.7924Z" fill="#CE2702"/>
+      <path d="M16.2445 84.2587L24.087 89.499L38.2711 74.1239L36.9907 73.2683L16.2445 84.2587Z" fill="#CE2702"/>
+      <path d="M80.7561 11.6704L72.9136 6.43003L58.7295 21.8052L60.0099 22.6608L80.7561 11.6704Z" fill="#CE2702"/>
+    </svg>
+    <span>Global Mentors Group</span>
+  </div>
+  <h2>GMG Platform</h2>
+  <p>Internal operations &amp; client management</p>
+  <div id="login-form">
+    <div class="fg"><label>Email</label><input id="li-email" type="email" placeholder="you@globalmentorsgroup.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div id="login-err" class="login-err"></div>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Sign In</button>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">New staff? <a href="#" onclick="showSignup();return false">Create an account</a></p>
+  </div>
+  <div id="signup-form" style="display:none">
+    <div class="fg"><label>Your Name</label><input id="su-name" type="text" placeholder="Full name"></div>
+    <div class="fg"><label>Email</label><input id="su-email" type="email" placeholder="you@globalmentorsgroup.com"></div>
+    <div class="fg"><label>Password</label><input id="su-pass" type="password" placeholder="Create a password (8+ chars)"></div>
+    <div class="fg"><label>Role</label><select id="su-role">
+      <option value="rm">Relationship Manager</option>
+      <option value="ops">Operations</option>
+      <option value="finance">Finance</option>
+      <option value="leadership">Senior Leadership</option>
+    </select></div>
+    <div id="signup-err" class="login-err"></div>
+    <div id="signup-ok" class="login-ok"></div>
+    <button class="btn btn-primary" id="signup-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doSignup()">Create Account</button>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px"><a href="#" onclick="showLogin();return false">&#8592; Back to sign in</a></p>
+  </div>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+<nav id="sidebar">
+  <div class="sb-logo">
+    <svg class="sb-icon" viewBox="0 0 97 96" xmlns="http://www.w3.org/2000/svg" fill="none">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M55.5191 4.27168C55.5121 4.32926 55.5263 4.37853 55.5617 4.41943C55.5547 4.47701 55.5689 4.52627 55.6043 4.56718C55.6779 4.80539 55.7276 5.05162 55.7534 5.30592C55.7499 5.44442 55.7641 5.57809 55.796 5.70695C55.7995 6.2206 55.796 6.73419 55.7853 7.24774C55.776 7.35763 55.7583 7.46316 55.7321 7.56435C55.6984 7.6356 55.6842 7.71298 55.6895 7.79652C55.6886 7.88587 55.6745 7.97029 55.6469 8.0498C55.6168 8.10719 55.6026 8.17051 55.6043 8.23977C55.556 8.37498 55.5205 8.5157 55.4978 8.6619C55.3212 9.32848 55.0905 9.97576 54.8057 10.6037C54.229 11.8383 53.5475 13.0132 52.7612 14.1286C51.744 15.5533 50.6649 16.9324 49.5241 18.2655C47.2981 20.8338 44.9803 23.328 42.5708 25.7479C42.0804 25.7924 41.5906 25.789 41.1013 25.7373C41.5835 25.0801 42.0698 24.4257 42.5602 23.7744C44.4049 21.2454 46.0021 18.5576 47.3519 15.7116C47.793 14.7457 48.2047 13.7678 48.5871 12.7777C48.6185 12.6809 48.6433 12.5824 48.6616 12.4822C48.6548 12.458 48.6407 12.4404 48.619 12.4295C46.3766 12.0556 44.7616 10.8561 43.7741 8.83076C43.2934 7.78303 43.1159 6.68548 43.2416 5.53809C43.5208 3.60834 44.4756 2.10623 46.106 1.03178C48.0163 -0.136879 50.0182 -0.312763 52.1117 0.504114C53.5776 1.16898 54.6459 2.22785 55.3168 3.68069C55.3992 3.87293 55.4666 4.06994 55.5191 4.27168Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M41.3707 91.7283C41.3777 91.6707 41.3635 91.6215 41.3281 91.5806C41.3351 91.523 41.3209 91.4737 41.2855 91.4328C41.2119 91.1946 41.1621 90.9484 41.1364 90.6941C41.1399 90.5556 41.1257 90.4219 41.0938 90.2931C41.0903 89.7794 41.0938 89.2658 41.1045 88.7523C41.1138 88.6424 41.1315 88.5368 41.1577 88.4356C41.1914 88.3644 41.2056 88.287 41.2003 88.2035C41.2011 88.1141 41.2153 88.0297 41.2429 87.9502C41.273 87.8928 41.2872 87.8295 41.2855 87.7602C41.3338 87.625 41.3693 87.4843 41.392 87.3381C41.5686 86.6715 41.7993 86.0242 42.0841 85.3963C42.6608 84.1617 43.3423 82.9868 44.1286 81.8714C45.1458 80.4467 46.2248 79.0676 47.3656 77.7345C49.5917 75.1662 51.9095 72.672 54.319 70.2521C54.8094 70.2076 55.2992 70.211 55.7884 70.2627C55.3063 70.9199 54.82 71.5743 54.3296 72.2256C52.4849 74.7546 50.8876 77.4424 49.5379 80.2884C49.0968 81.2543 48.685 82.2322 48.3027 83.2223C48.2713 83.3191 48.2464 83.4176 48.2282 83.5178C48.2349 83.542 48.2491 83.5596 48.2707 83.5705C50.5132 83.9444 52.1282 85.1439 53.1157 87.1692C53.5964 88.217 53.7738 89.3145 53.6481 90.4619C53.369 92.3917 52.4142 93.8938 50.7837 94.9682C48.8734 96.1369 46.8716 96.3128 44.7781 95.4959C43.3122 94.831 42.2438 93.7722 41.573 92.3193C41.4906 92.1271 41.4231 91.9301 41.3707 91.7283Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M90.1919 32.2074C90.138 32.2302 90.1021 32.267 90.084 32.3179C90.0302 32.3406 89.9943 32.3775 89.9762 32.4283C89.8049 32.6106 89.6146 32.7764 89.4053 32.9256C89.2825 32.9919 89.1728 33.0709 89.0761 33.1627C88.6291 33.4226 88.1785 33.6763 87.7244 33.924C87.6238 33.9709 87.5227 34.0084 87.4212 34.0366C87.3421 34.0433 87.2673 34.0698 87.197 34.1161C87.1185 34.16 87.0377 34.1901 86.9544 34.2062C86.8892 34.209 86.8268 34.2285 86.7671 34.2646C86.6248 34.2907 86.4841 34.3306 86.345 34.3843C85.6742 34.566 84.9933 34.6916 84.3021 34.7611C82.935 34.8834 81.5676 34.886 80.1999 34.7687C78.4463 34.608 76.7017 34.3714 74.9664 34.0588C71.6092 33.4323 68.2709 32.69 64.9516 31.8319C64.6675 31.4332 64.4255 31.0111 64.2261 30.5653C65.0415 30.6506 65.8564 30.7408 66.6707 30.836C69.803 31.1549 72.9502 31.1819 76.1119 30.9174C77.1765 30.8131 78.2369 30.6775 79.2932 30.5106C79.3935 30.4891 79.492 30.4612 79.5886 30.4269C79.6064 30.4089 79.6147 30.388 79.6135 30.3639C78.8189 28.2523 79.0596 26.2664 80.3356 24.4061C81.0108 23.4697 81.8811 22.7686 82.9465 22.3028C84.7723 21.5775 86.5623 21.6459 88.3164 22.5082C90.2927 23.5634 91.4473 25.1937 91.7803 27.399C91.9323 28.9896 91.5412 30.4361 90.6071 31.7383C90.4803 31.9051 90.3419 32.0615 90.1919 32.2074Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M6.69712 63.7924C6.75094 63.7696 6.78689 63.7328 6.80493 63.6819C6.85875 63.6592 6.8947 63.6224 6.91274 63.5715C7.08408 63.3892 7.27438 63.2234 7.48372 63.0742C7.60648 63.0079 7.71618 62.9289 7.81284 62.8371C8.2599 62.5772 8.71046 62.3235 9.16453 62.0759C9.2652 62.0289 9.36629 61.9914 9.4678 61.9633C9.54691 61.9566 9.62163 61.93 9.69198 61.8837C9.77046 61.8398 9.85133 61.8097 9.93459 61.7936C9.99979 61.7908 10.0622 61.7713 10.1219 61.7352C10.2642 61.7091 10.4049 61.6692 10.544 61.6156C11.2148 61.4339 11.8957 61.3082 12.5868 61.2387C13.954 61.1164 15.3214 61.1139 16.6891 61.2311C18.4427 61.3918 20.1873 61.6284 21.9226 61.941C25.2798 62.5675 28.6181 63.3098 31.9374 64.1679C32.2215 64.5666 32.4635 64.9887 32.6629 65.4345C31.8475 65.3493 31.0326 65.259 30.2183 65.1638C27.086 64.845 23.9388 64.8179 20.777 65.0825C19.7125 65.1868 18.6521 65.3223 17.5958 65.4892C17.4955 65.5107 17.397 65.5386 17.3003 65.573C17.2826 65.5909 17.2743 65.6118 17.2755 65.6359C18.0701 67.7475 17.8294 69.7335 16.5534 71.5937C15.8782 72.5301 15.0079 73.2312 13.9425 73.697C12.1166 74.4223 10.3267 74.3539 8.5726 73.4917C6.59626 72.4364 5.44164 70.8061 5.10871 68.6008C4.95672 67.0102 5.34778 65.5637 6.28187 64.2615C6.40865 64.0947 6.54708 63.9383 6.69712 63.7924Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M83.1178 75.9363C83.071 75.9015 83.0208 75.889 82.9674 75.899C82.9206 75.8642 82.8704 75.8517 82.817 75.8616C82.572 75.8057 82.332 75.7253 82.0969 75.6202C81.9776 75.548 81.8537 75.4934 81.7252 75.4563C81.2746 75.2025 80.8276 74.9426 80.3841 74.6767C80.2928 74.6138 80.2094 74.5458 80.1341 74.4727C80.0887 74.4082 80.0282 74.3573 79.9525 74.3201C79.8749 74.2747 79.8082 74.2203 79.7525 74.1569C79.7174 74.1024 79.6692 74.0585 79.6078 74.0254C79.5138 73.9163 79.4086 73.8155 79.2922 73.7229C78.798 73.238 78.3478 72.7164 77.9415 72.1579C77.151 71.0456 76.4651 69.8732 75.8837 68.6407C75.1474 67.0552 74.4818 65.4395 73.8873 63.7938C72.7561 60.599 71.7356 57.3626 70.8258 54.0845C71.0321 53.6413 71.2799 53.2226 71.5698 52.8285C71.903 53.571 72.2316 54.3156 72.5556 55.0621C73.8431 57.91 75.393 60.6248 77.2051 63.2063C77.8285 64.0679 78.4771 64.9102 79.1511 65.7334C79.22 65.8088 79.2937 65.8794 79.372 65.9452C79.3966 65.9514 79.4191 65.9481 79.4395 65.935C80.8873 64.1972 82.743 63.4108 85.0065 63.5759C86.1624 63.6872 87.2101 64.0836 88.1499 64.7652C89.6966 65.9697 90.5317 67.5402 90.6554 69.4769C90.7214 71.7009 89.8741 73.507 88.1136 74.8954C86.7997 75.8212 85.3403 76.2088 83.7353 76.0581C83.5262 76.0327 83.3203 75.9921 83.1178 75.9363Z" fill="#CE2702"/>
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M13.7715 20.0641C13.8184 20.0989 13.8685 20.1114 13.9219 20.1014C13.9688 20.1362 14.0189 20.1487 14.0723 20.1387C14.3173 20.1947 14.5573 20.2751 14.7924 20.3802C14.9117 20.4524 15.0356 20.507 15.1641 20.5441C15.6147 20.7979 16.0617 21.0577 16.5052 21.3236C16.5965 21.3866 16.6799 21.4546 16.7552 21.5276C16.8006 21.5922 16.8611 21.6431 16.9368 21.6803C17.0144 21.7257 17.0811 21.7801 17.1368 21.8435C17.1719 21.898 17.2201 21.9419 17.2815 21.975C17.3755 22.0841 17.4807 22.1849 17.5971 22.2775C18.0913 22.7624 18.5415 23.284 18.9478 23.8425C19.7383 24.9547 20.4242 26.1271 21.0056 27.3597C21.742 28.9451 22.4075 30.5608 23.002 32.2066C24.1332 35.4013 25.1537 38.6378 26.0635 41.9159C25.8572 42.359 25.6094 42.7778 25.3196 43.1718C24.9863 42.4294 24.6577 41.6848 24.3337 40.9383C23.0462 38.0904 21.4963 35.3756 19.6842 32.7941C19.0608 31.9325 18.4122 31.0902 17.7382 30.267C17.6693 30.1916 17.5956 30.121 17.5173 30.0552C17.4927 30.0489 17.4702 30.0523 17.4499 30.0654C16.002 31.8032 14.1463 32.5896 11.8828 32.4245C10.727 32.3132 9.67917 31.9168 8.73942 31.2352C7.19274 30.0307 6.35759 28.4601 6.23395 26.5235C6.16791 24.2995 7.01516 22.4934 8.77568 21.105C10.0896 20.1792 11.549 19.7916 13.154 19.9423C13.3632 19.9677 13.569 20.0083 13.7715 20.0641Z" fill="#CE2702"/>
+      <path d="M16.2445 84.2587L24.087 89.499L38.2711 74.1239L36.9907 73.2683L16.2445 84.2587Z" fill="#CE2702"/>
+      <path d="M80.7561 11.6704L72.9136 6.43003L58.7295 21.8052L60.0099 22.6608L80.7561 11.6704Z" fill="#CE2702"/>
+      <path d="M0.657817 38.426L0 47.7776L20.527 52.2643L20.6344 50.7375L0.657817 38.426Z" fill="#CE2702"/>
+      <path d="M96.3422 57.5029L97 48.1513L76.473 43.6646L76.3656 45.1914L96.3422 57.5029Z" fill="#CE2702"/>
+      <path d="M32.9139 2.132L24.4136 6.24315L30.7565 26.1051L32.1443 25.4339L32.9139 2.132Z" fill="#CE2702"/>
+      <path d="M64.0867 93.7971L72.587 89.686L66.2441 69.8241L64.8563 70.4953L64.0867 93.7971Z" fill="#CE2702"/>
+    </svg>
+    <div class="sb-brand"><strong>Global Mentors Group</strong></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
+    <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
+    <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
+    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentors Library</div>
+    <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
+    <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
+    <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
+    <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
+    <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-av" id="sav">M</div>
+      <div class="sb-uinfo"><strong id="sun">Matt Hand</strong><span id="sur">Relationship Manager</span></div>
+      <span class="sync-dot" id="sync-dot" title="Data synced"></span>
+    </div>
+    <button class="sb-logout" onclick="doLogout()">Sign Out</button>
+  </div>
+</nav>
+
+<div id="main">
+  <div id="topbar">
+    <div class="tb-title" id="tbt">Dashboard</div>
+    <div style="flex:1"></div>
+    <div class="tb-search">
+      <input type="text" placeholder="Search" oninput="gSearch(this.value)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </div>
+    <button class="btn btn-primary" id="tba" style="display:none;margin-left:12px" onclick="topAction()">+ Add</button>
+  </div>
+  <div id="content"></div>
+</div>
+</div>
+<div id="mc"></div>
+
+<script>
+/* ── SUPABASE CONFIG ─────────────────────────────────────────── */
+const SB_URL='https://tqcpugdwmnrfkfihlnqi.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRxY3B1Z2R3bW5yZmtmaWhsbnFpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4OTM2OTEsImV4cCI6MjA5NjQ2OTY5MX0.gcvZt_tYCarx8YAl8eBGWngUzB-hoB2zc4G0YpT2tq0';
+const sb=supabase.createClient(SB_URL,SB_KEY);
+const SB_TIBLES={contacts:'contacts',ogia'ntacts',ogi',sessr">R:'sessr">R',s &ampInvoice{con &amp_invoice{',data-vPay',ogia'data-v_pay',ogi',#967B24 ia'#967_b24 i',op/spaunitie{coop/spaunitie{',data-v=":'data-v="',data-:'data-',datae{codatae{',#5}
+
+/*ie{co#5}
+
+/*ie{'};
+<script>
+/*BRAND SEED DATAE CONFIG ─────────────────────────────────────────── */EED = {
+TIBLES={c[  <{ida'd1',d<ina'data-v',r="F:'Mputus Thompson',org:'Independent (ex-McKn:fiy)con typa'd.thompson@gmgsup.uk',dho=":'+48 7200 90.151',statu{co#5}
+
+"',ntae{coStrbasgy specialist. 12 ynpus C-suass coachpan.'},  <{ida'd2',d<ina'data-v',r="F:'Dr. Priya Sharma',org:'Imperial "culege London',n typa'p.sharma@imperial.ac.uk',dho=":'+48 7200 90.271',statu{co#5}
+
+"',ntae{coTech & innovsur">  value="le.'},  <{ida'd3',d<ina'data-v',r="F:'Aisha Okonkwo',org:'Independent (ex-G" pman)con typa'a.okonkwo@gmgsup.uk',dho=":'+48 7200 90.789',statu{co#5}
+
+"',ntae{copx}
+
+/* & ="mue=/* A value="le.'},  <{ida'd4',d<ina'data-v',r="F:'Sir Robert Caldwell',org:'r)}
+er FT� S100 C
+.tycon typa'r.caldwell@gmgsup.uk',dho=":'+48 7200 90.321',statu{co#5}
+
+"',ntae{coC
+.tye;mvel data-vtom ppecialist.'},  <{ida'c1',d<ina'n &amp',r="F:'Deloitss UK',org:'Deloitsscon typa' value="le@deloitsssup.uk',dho=":'+48 20 3459 3000',statu{co#5}
+
+"',ntae{coKey -aligbtnsens &amp. Annual okeewal Oct.'},  <{ida'c2',d<ina'n &amp',r="F:'HSBC Mento',org:'HSBCcon typa'talamp@5yZcorsg',dho=":'+48 20 3442 4444',statu{co#5}
+
+"',ntae{coE
+.type-e 4px rammens &amp si
+/* 2024.'},  <{ida'c3',d<ina'n &amp',r="F:'Cabv="t Office',org:'HM Gt:28nmamp',n typa' value=@cabv="toffice.gov.uk',dho=":'+48 20 3025 0000',statu{co#5}
+
+"',ntae{coership"C
+
+/l Service 4px ramme.'},  <{ida'c4',d<ina'n &amp',r="F:'Bputle=s Plc',org:'Bputle=scon typa'talamp@bputle=sorsg',dho=":'+48 20 3156 4400',statu{co#5}
+
+"',ntae{cop:14s &amp — Jun* 2026 ms:fl.'},  <{ida'c5',d<ina'n &amp',r="F:'Uni;mver',org:'Uni;mver Plc',n typa' value="le@uni;mverorsg',dho=":'+48 20 3814L9252',statu{co4pxppect',ntae{coRFP in 4px ress.'}, ],
+ntacts',ogia[  <{ida'e1',d<ina'n
+.tycor="F:'Deloitss — C
+.tyg>Globa0px; Sarah Okonkwo',s &ampIda'c1',data-vIda'd4',statu{co#5}
+
+"',ms:fl tiF:'2026-01-15contd tiF:'2026-12-31',coordx}
+a-v:'Mp"sun">M',  < p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',  < annualFee:48400,sessr">RI:12udedgin,sessr">RtiF:4400,sessr">RUsedg4,ntae{coAnnual n
+.ty data-vtom fip"Deloitss CFO.',rpabasdAt:'2025-12-01'},  <{ida'e2',d<ina'e
+.type-e',r="F:'HSBC — E
+.type-e >Globa0px; J}
+@keThorlobn',s &ampIda'c2',data-vIda'd1',statu{co#5}
+
+"',ms:fl tiF:'2026-01-01'ontd tiF:'2026-12-31',coordx}
+a-v:'Sarah Chen',  < p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',  < qu:flerlyFee:18400,annualFee:7.w3.,ntae{coQu:flerly invoicpan. Mputus  vals.',rpabasdAt:'2025-11-15c},  <{ida'e3',d<ina'e
+.type-e',r="F:'Cabv="t Office — ership"C
+
+/l Service',s &ampIda'c3',data-vIda'd2',statu{co#5}
+
+"',ms:fl tiF:'2026-03-01'ontd tiF:'2026-08-31',coordx}
+a-v:'Mp"sun">M',  < p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',  < qu:flerlyFee:15400,annualFee:3000.,ntae{co6-mIBLh 4px ramme. Dr Sharma  vals.',rpabasdAt:'2026-02-01'},  <{ida'e4',d<ina'team',r="F:'Bputle=s — >Senior Le Tg:.3px;tr Workshop',s &ampIda'c4',data-vIda'd3',statu{co#5}
+
+"',ms:fl tiF:'2026-06-15contd tiF:'2026-09-15cocoordx}
+a-v:'J}
+@keOkaf-v',  < p:flnev:'J}
+@keOkaf-v',reatery:'United Kn:gdsg',  < totalFee:85400,data-vFee:2800.,ntae{coTeam ntacts',og fip"12 srship" value=.',rpabasdAt:'2026-04-20'},  <{ida'e5',d<ina'n
+.tycor="F:'Cabv="t Office — C
+.tyg>Globa0px; D="F C. Walsh',s &ampIda'c3',data-vIda'd4',statu{co#5}
+
+"',ms:fl tiF:'2026-04-01'ontd tiF:'2027-03-31',coordx}
+a-v:'Mp"sun">M',  < p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',  < annualFee:52400,sessr">RI:12udedgi0,sessr">RtiF:5240,sessr">RUsedg2,ntae{coerTIBd >
+  n
+.ty ntacts',og at Cabv="t Office.',rpabasdAt:'2026-03-10'},  <{ida'e6',d<ina'e
+.type-e',r="F:'Deloitss — E
+.type-e >Globa0px; R. Mehta',s &ampIda'c1',data-vIda'd1',statu{coplann0px',ms:fl tiF:'2026-07-01'ontd tiF:'2026-12-31',coordx}
+a-v:'Sarah Chen',  < p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',  < qu:flerlyFee:9400,annualFee:1800.,ntae{coAwaittom p:nonoff from"Deloitss HR.',rpabasdAt:'2026-05-01'}, ],
+sessr">R:[  <{ida's1'ontgIda'e1',dtiF:'2026-02-10',duext-dec90,ntae{coE
+plored bt">D dyr="ics and successr">.',statu{co9;" autod',data-vPaida;retu},  <{ida's2'ontgIda'e1',dtiF:'2026-03-05',duext-dec90,ntae{coStrbasgy reht=" and stakxt" pla; client ma.',statu{co9;" autod',data-vPaidatruu},  <{ida's3'ontgIda'e1',dtiF:'2026-04-12',duext-dec90,ntae{coCtnsisA value="le rm:u study.',statu{co9;" autod',data-vPaidatruu},  <{ida's4'ontgIda'e1',dtiF:'2026-05-20',duext-dec90,ntae{coGt:28n
+
+/* and n
+.ty resp">Ribil/*ie{.',statu{co9;" autod',data-vPaidatruu},  <{ida's5'ontgIda'e1',dtiF:'2026-07-01'oduext-dec90,ntae{co',statu{coschedulod',data-vPaida;retu},  <{ida's6'ontgIda'e5',dtiF:'2026-04-18'oduext-dec90,ntae{coInitial sessr"> — btnba0*ie{ and niv ixa.',statu{co9;" autod',data-vPaidatruu},  <{ida's7'ontgIda'e5',dtiF:'2026-05-22',duext-dec90,ntae{coPolicy n
+.llamge{ and  value="le d="tb.',statu{co9;" autod',data-vPaidatruu},  <{ida's8'ontgIda'e5',dtiF:'2026-07-10',duext-dec90,ntae{co',statu{coschedulod',data-vPaida;retu}, ],
+s &ampInvoice{c[  <{ida'i1'ontgIda'e1',s &ampIda'c1',ameate:48400,d<ina'n
+.ty-annual',detnbd:'2026 Annual',statu{copaid',m:2pS="Datatruu,issued:'2026-01-15coduF:'2026-02-14',ntae{coAnnual C
+.tyg>Globa0px fee.'},  <{ida'i2'ontgIda'e2',s &ampIda'c2',ameate:18400,d<ina'e
+.t-qu:flerly',detnbd:'Q1 2026',statu{copaid',m:2pS="Datatruu,issued:'2026-01-01'oduF:'2026-01-31',ntae{coE
+.type-e >Globa0px Q1 adv
+
+/*.'},  <{ida'i3'ontgIda'e2',s &ampIda'c2',ameate:18400,d<ina'e
+.t-qu:flerly',detnbd:'Q2 2026',statu{copaid',m:2pS="Datatruu,issued:'2026-04-01'oduF:'2026-04-30',ntae{coE
+.type-e >Globa0px Q2 adv
+
+/*.'},  <{ida'i4'ontgIda'e2',s &ampIda'c2',ameate:18400,d<ina'e
+.t-qu:flerly',detnbd:'Q3 2026',statu{cosamp',m:2pS="Datatruu,issued:'2026-07-01'oduF:'2026-07-31',ntae{coE
+.type-e >Globa0px Q3 adv
+
+/*.'},  <{ida'i5'ontgIda'e3',s &ampIda'c3',ameate:15400,d<ina'e
+.t-qu:flerly',detnbd:'Q1 2026',statu{copaid',m:2pS="Datatruu,issued:'2026-03-01'oduF:'2026-03-31',ntae{coCabv="t Office Q1.'},  <{ida'i6'ontgIda'e3',s &ampIda'c3',ameate:15400,d<ina'e
+.t-qu:flerly',detnbd:'Q2 2026',statu{cosamp',m:2pS="Data;retu,issued:'2026-06-01'oduF:'2026-06-30',ntae{coCabv="t Office Q2.'},  <{ida'i7'ontgIda'e4',s &ampIda'c4',ameate:85400,d<ina'team-adhoc',detnbd:'Jun 2026',statu{codrafp',m:2pS="Data;retu,issued:'2026-06-01'oduF:'2026-06-30',ntae{coTeam �</span>En — folde4px rammenfee.'},  <{ida'i8'ontgIda'e5',s &ampIda'c3',ameate:52400,d<ina'n
+.ty-annual',detnbd:'2026–27 Annual',statu{cosamp',m:2pS="Datatruu,issued:'2026-04-01'oduF:'2026-05-01',ntae{coAnnual C
+.tygfee — D="F C. Walsh.'}, ],
+data-vPay',ogia[  <{ida'dp1',data-vIda'd4',ntgIda'e1',sessr">Ida's2'oameate:4400,d<ina'n
+.ty-sessr">',detnbd:'Mar 2026',statu{copaid',#967B24 Ida'ab1',m:2pS="Datatruu,rpabasd:'2026-03-05'},  <{ida'dp2',data-vIda'd4',ntgIda'e1',sessr">Ida's3'oameate:4400,d<ina'n
+.ty-sessr">',detnbd:'Apr 2026',statu{copaid',#967B24 Ida'ab2',m:2pS="Datatruu,rpabasd:'2026-04-12'},  <{ida'dp3',data-vIda'd4',ntgIda'e1',sessr">Ida's4'oameate:4400,d<ina'n
+.ty-sessr">',detnbd:'May 2026',statu{copaid',#967B24 Ida'ab3',m:2pS="Datatruu,rpabasd:'2026-05-20'},  <{ida'mp4',data-vIda'd4',ntgIda'e5',sessr">Ida's6',ameate:5240,d<ina'n
+.ty-sessr">',detnbd:'Apr 2026',statu{copaid',#967B24 Ida'ab2',m:2pS="Datatruu,rpabasd:'2026-04-18'},  <{ida'mp5',data-vIda'd4',ntgIda'e5',sessr">Ida's7',ameate:5240,d<ina'n
+.ty-sessr">',detnbd:'May 2026',statu{copaid',#967B24 Ida'ab3',m:2pS="Datatruu,rpabasd:'2026-05-22'},  <{ida'dp6',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'Jan 2026',statu{copaid',#967B24 Ida'ab1',m:2pS="Datatruu,rpabasd:'2026-01-31'},  <{ida'dp7',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'Feb 2026',statu{copaid',#967B24 Ida'ab1',m:2pS="Datatruu,rpabasd:'2026-02-28'},  <{ida'mp8',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'Mar 2026',statu{copaid',#967B24 Ida'ab1',m:2pS="Datatruu,rpabasd:'2026-03-31'},  <{ida'dp9',data-vIda'd2',ntgIda'e3',ameate:2000,d<ina'e
+.t-mIBLhly',detnbd:'Mar 2026',statu{copaid',#967B24 Ida'ab1',m:2pS="Datatruu,rpabasd:'2026-03-31'},  <{ida'dp10',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'Apr 2026',statu{copaid',#967B24 Ida'ab2',m:2pS="Datatruu,rpabasd:'2026-04-30'},  <{ida'mp11',data-vIda'd2',ntgIda'e3',ameate:2000,d<ina'e
+.t-mIBLhly',detnbd:'Apr 2026',statu{copaid',#967B24 Ida'ab2',m:2pS="Datatruu,rpabasd:'2026-04-30'},  <{ida'mp12',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'May 2026',statu{copaid',#967B24 Ida'ab3',m:2pS="Datatruu,rpabasd:'2026-05-31'},  <{ida'dp13',data-vIda'd2',ntgIda'e3',ameate:2000,d<ina'e
+.t-mIBLhly',detnbd:'May 2026',statu{copaid',#967B24 Ida'ab3',m:2pS="Datatruu,rpabasd:'2026-05-31'},  <{ida'dp14',data-vIda'd1',ntgIda'e2',ameate:2400,d<ina'e
+.t-mIBLhly',detnbd:'Jun 2026',statu{copend0px',#967B24 Idanold,m:2pS="Data;retu,rpabasd:'2026-06-01'},  <{ida'dp15',data-vIda'd2',ntgIda'e3',ameate:2000,d<ina'e
+.t-mIBLhly',detnbd:'Jun 2026',statu{copend0px',#967B24 Idanold,m:2pS="Data;retu,rpabasd:'2026-06-01'},  <{ida'dp16',data-vIda'd3',ntgIda'e4',ameate:28400,d<ina'team-besp"ke',detnbd:'Jun 2026',statu{copend0px',#967B24 Idanold,m:2pS="Data;retu,rpabasd:'2026-06-01'}, ],
+#967B24 ia[  <{ida'ab1',detnbd:'2026-03',day',ogia['dp1','dp6','dp7','mp8','dp9'],totalAmeate:17400,statu{copaid',m:2pS="Datatruu,rpabasd:'2026-03-31'},  <{ida'ab2',detnbd:'2026-04',day',ogia['dp2','dp4','dp10','mp11'],totalAmeate:13600,statu{copaid',m:2pS="Datatruu,rpabasd:'2026-04-30'},  <{ida'ab3',detnbd:'2026-05',day',ogia['dp3','mp5','mp12','dp13'],totalAmeate:13600,statu{copaid',m:2pS="Datatruu,rpabasd:'2026-05-31'}, ],
+data-v=":[  <{ida'p1',r="F:'Uni;mver — <strongGrad Ppx ramme',s &ampIda'c5',ch(th:210400,stagF:'Ppxposal',drob:55,ownev:'Sarah Chen',p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',ition-dec'e
+.type-e',k)}
+. tiF:'2026-08-15',ntae{coMulti-regr"> RFP. Sinfo">pitch da-vvered.'},  <{ida'p2',r="F:'Amaz"> UK — >Senior Le Cohort',s &ampIdanold,s &amp:'Amaz"> UK',ch(th:95400,stagF:'Qualifiod',drob:40,ownev:'Mp"sun">M',p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ition-dec'e
+.type-e',k)}
+. tiF:'2026-09-30',ntae{coItero caldedone. Cm:u studie{ s ma.'},  <{ida'p3',r="F:'Ro4 i-Royce — �</v="ea0px >Senior',s &ampIdanold,s &amp:'Ro4 i-Royce',ch(th:7.w3.,stagF:'Ppxppect',drob:20,ownev:'J}
+@keOkaf-v',p:flnev:'J}
+@keOkaf-v',reatery:'United Kn:gdsg',ition-dec'n
+.tycok)}
+. tiF:'2026-11-30',ntae{coWarm itero from"Deloitss TIBLES=.'},  <{ida'p4',r="F:'PwC — Associp()">Globa0px Pilot',s &ampIdanold,s &amp:'PwC',ch(th:38w3.,stagF:'C)}
+.d W">',drob:104,ownev:'Mp"sun">M',p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ition-dec'e
+.type-e',k)}
+. tiF:'2026-05-01',ntae{cogouted May 2026.'}, ],
+op/spaunitie{c[  <{ida'o1',r="F:'Deloitss UK — C
+.tygPpx ramme 2026',s &amp:'Deloitss UK',ition-dec'n
+.tycop:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ch(th:48w3.,stagF:'C)}
+.d W">',ntae{cogouted Jan 2026. Now">Creape-e ntacts',og.',rpabasd:'2025-11-01'},  <{ida'o2',r="F:'HSBC — E
+.type-e >Globa0px',s &amp:'HSBC Mento',ition-dec'e
+.type-e',p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',ch(th:7.w3.,stagF:'C)}
+.d W">',ntae{cogouted Dec 2025.',rpabasd:'2025-10-15c},  <{ida'o3',r="F:'Cabv="t Office — ership">Senior',s &amp:'Cabv="t Office',ition-dec'e
+.type-e',p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ch(th:30w3.,stagF:'C)}
+.d W">',ntae{co6-mIBLh 4px ramme. Aape-e.',rpabasd:'2026-01-10'},  <{ida'o4',r="F:'Bputle=s — >Senior Le Tg:.3px;tr',s &amp:'Bputle=s Plc',ition-dec'team',p:flnev:'J}
+@keOkaf-v',reatery:'United Kn:gdsg',ch(th:85400,stagF:'CIBLreapepx',ntae{coCIBLreap in datal reht=". Kncknoff Jun* 15.',rpabasd:'2026-04-05'},  <{ida'o5',r="F:'Uni;mver — <strongGrad Ppx ramme',s &amp:'Uni;mver',ition-dec'e
+.type-e',p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',ch(th:210400,stagF:'Ppxposal erst',ntae{coMulti-regr"> RFP. Sinfo">pitch da-vvered 28 May.',rpabasd:'2026-03-10'},  <{ida'o6',r="F:'Amaz"> UK — >Senior Le Cohort',s &amp:'Amaz"> UK',ition-dec'e
+.type-e',p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ch(th:95400,stagF:'Qualifiod',ntae{coItero caldedone. Cm:u studie{ and nredampiret s ma.',rpabasd:'2026-05-01'},  <{ida'o7',r="F:'Ro4 i-Royce — �</v="ea0px >Senior',s &amp:'Ro4 i-Royce',ition-dec'n
+.tycop:flnev:'J}
+@keOkaf-v',reatery:'United Kn:gdsg',ch(th:7.w3.,stagF:'>Sen',ntae{coWarm itero from"Deloitss TIBLES=. First caldebo"ked.',rpabasd:'2026-05-28'},  <{ida'o8',r="F:'Deutsche Bank — MD >Globa0px',s &amp:'Deutsche Bank',ition-dec'e
+.type-e',p:flnev:'Sarah Chen',reatery:'Germany',ch(th:64w3.,stagF:'>Sen',ntae{coInbx;ba ntquiry. Initial disct:28y calde10 Jun.',rpabasd:'2026-06-01'},  <{ida'o9',r="F:'Sitac/spe Air-v="s — Bt">D >Globa0px',s &amp:'Sitac/spe Air-v="s',ition-dec'n
+.tycop:flnev:'Mp"sun">M',reatery:'Sitac/spe',ch(th:88400,stagF:'Qualifiod',ntae{coReferred by existtom HSBC TIBLES=. Po3px;-e first meetpan.',rpabasd:'2026-05-15c},  <{ida'o10',r="F:'Mpcqu:fie Mento — E
+.type-e Ppx .',s &amp:'Mpcqu:fie Mento',ition-dec'e
+.type-e',p:flnev:'J}
+@keOkaf-v',reatery:'AusLrelia',ch(th:55400,stagF:'Ppxposal Acceptod',ntae{coVerrongap4pxval recee-ed. CIBLreaps betom drafped.',rpabasd:'2026-04-20'},  <{ida'o11',r="F:'ADNOC — >Senior Le Dmvelopmamp',s &amp:'ADNOC',ition-dec'team',p:flnev:'Mp"sun">M',reatery:'UAE',ch(th:140w3.,stagF:'C)&amp Itero',ntae{coC-suass itero meetpan 9;" autod. V28y po3px;-e.',rpabasd:'2026-05-05c},  <{ida'o12',r="F:'RBC Capital — C
+.tyg>Globa0px',s &amp:'Royal Bank of Canada',ition-dec'n
+.tycop:flnev:'Sarah Chen',reatery:'Canada',ch(th:5.w3.,stagF:'>Gloee Idampifiod',ntae{co>Gloee TIBfirmod. >Globa matchpan in 4px ress.',rpabasd:'2026-04-28'}, ],
+data-:[  <{ida't1',dss="coersd Q3 invoice — HSBC E
+.type-e >Globa0px',refa'e2',d<ina'data-v=',asp:noee:'Mp"sun">M',statu{cotodo',drnba0*y:'high'oduF:'2026-07-01',ntae{coRanseni4 and push92; Xero.'},  <{ida't2',dss="coPush9Cabv="t Office Q2 invoice 2; Xero',refa'i6',d<ina'data-v=',asp:noee:'Mp"sun">M',statu{cotodo',drnba0*y:'high'oduF:'2026-06-10',ntae{coInvoice i6 drafped — e="D pend0px.'},  <{ida't3',dss="coRun Jun* #967-b24  fip"data-v pay',ogi',refanold,d<ina'data-v=',asp:noee:'Mp"sun">M',statu{cotodo',drnba0*y:'high'oduF:'2026-06-30',ntae{codp14, dp15, dp16 pend0px.'},  <{ida't4',dss="coRansenBputle=s team ntacts',og invoice',refa'e4',d<ina'data-v=',asp:noee:'J}
+@keOkaf-v',statu{cotodo',drnba0*y:'modium'oduF:'2026-06-15',ntae{coi7 is in drafp — ersd 2; s &amp.'},  <{ida't5',dss="coLog sessr"> s5 — Deloitss C
+.tycorefa'e1',d<ina'sessr">R',asp:noee:'Mp"sun">M',statu{cotodo',drnba0*y:'modium'oduF:'2026-07-02',ntae{coerssr"> schedulod 1 Jul — log afper.'},  <{ida't6',dss="coCIBfirm Uni;mver RFP submissr"> dtiFcorefa'p1',d<ina'data-v="',asp:noee:'Sarah Chen',statu{coin4px ress',drnba0*y:'high'oduF:'2026-06-12',ntae{co'},  <{ida't7',dss="coOnbt">D Bputle=s ntacts',og coordx}
+a-v',refa'e4',d<ina'ntacts',og',asp:noee:'J}
+@keOkaf-v',statu{coin4px ress',drnba0*y:'modium'oduF:'2026-06-14',ntae{coItero caldewiLh Bputle=s HRebo"ked.'}, ],
+datae{c[  <{ida'q1',r="F:'Uni;mver <strongGradup()"Ppx ramme',s &ampIda'c5',ition-dec'e
+.type-e',ch(th:210400,statu{cosamp',dtiF:'2026-05-20',p:flnev:'Sarah Chen',reatery:'United Kn:gdsg',ntae{coMulti-regr"> 4px ramme. 12"data-vs t:28 18 mIBLhs.',ch(idUmpil:'2026-07-20'},  <{ida'q2',r="F:'KPMG ership">Senior Le Dmvelopmamp',s &ampIda'c3',ition-dec'n
+.tycoch(th:95400,statu{co#p4pxvod',dtiF:'2026-04-15',p:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ntae{coC
+.tyg>Globa0px fip"5 srship"p:flnevs.',ch(idUmpil:'2026-06-30'},  <{ida'q3',r="F:'PwC Associp()">Globa0px Pilot',s &ampIda'c6',ition-dec'e
+.type-e',ch(th:38w3.,statu{co#p4pxvod',dtiF:'2026-03-01'op:flnev:'Mp"sun">M',reatery:'United Kn:gdsg',ntae{coPilot cohort of 8 associp()s.',ch(idUmpil:'2026-05-01'},  <{ida'q4',r="F:'NHS >Senior Le Cohort',s &ampIda'c7',ition-dec'team',ch(th:55400,statu{codrafp',dtiF:'2026-06-01'op:flnev:'Emma Riord ds',reatery:'United Kn:gdsg',ntae{coTeam ntacts',og across 3 trusLs.',ch(idUmpil:'2026-08-01'}, ],
+#5}
+
+/*ie{c[  <{ida'a1'oass=:'◈',dextcop:14ntacts',og cpabasd: Bputle=s — >Senior Le Tg:.3px;tr Workshop',gia'2026-06-01e10:32'},  <{ida'a2'oass=:'◎',dextcoInvoice ransed: Cabv="t Office Q2 — £15,400',gia'2026-06-01e09:15c},  <{ida'a3'oass=:'◐',dextcoA967-b24  run 9;" autod: May 2026 — £13,600 2; Xero',gia'2026-05-31 17:00'},  <{ida'a4'oass=:'◷',dextcoerssr"> 9;" autod: Deloitss C
+.ty — e. Okonkwo (erssr"> 4)',gia'2026-05-20 14:00'},  <{ida'a5'oass=:'◆',dextcoDeal n)}
+.d: PwC — Associp()">Globa0px Pilot (£38,400)',gia'2026-05-01e11:30'}, ]
+};
+<�─ */K='gmg_v2';
+aut _e="DTimer=nold;
+funck="t save(){  <ery{localSobacts.setItem(SK,JSON.sLr0pxify(DB));}catch(e){}  <setS="DDot('e="D0px');  <clearTimek="d_e="DTimer);  <_e="DTimer=setTimek="de="DToSnst sb=,600); }
+ae="D funck="t s="DToSnst sb=(){  <�─ *{b-it:{sessr">}}=await sb.#96h.getSessr">();  <if(!sessr">){setS="DDot('off-v="'owLogin(;}  <ery{  </dfip(�─ [dbKey,table]of Obspan.Glofies(;
+const S)){value)"�─ *rows=DB[dbKey];value)"if(!rows||!rows.lamgth)TIBLinue;value)"await sb.from(table).upsert(rows.map(r=>({idar.id,b-it:r,updtiFd_at:n:14 tiF().toISOSLr0px()})),{:nooreDuplicp()sa;retu});value}valuesetS="DDot('ok');  <}catch(e){setS="DDot('off-v="'ow�─ole.warn('Snst sb= e="D err-v',e);} }
+funck="t setS="DDot(state){  <�─ *d=docu',og.getEls',ogById('e="Did="');  <if(!d)Login(;  <d.<buttel>Y='e="Did="'+(statevente="D0px'?' e="D0px':stateventoff-v="'?' off-v="'co');  <d.nc-dotstateventok'?' title="Dat':statevente="D0px'?'Sav0px…'coOff-v=" — ordmge{ saved locally'; }
+aut DB=JSON.p:fb=(JSON.sLr0pxify(/EED));
+ery{�─ *lc=localSobacts.getItem(SK);if(lc)DB=JSON.p:fb=(lc);}catch(e){} <�─ */={ht="cod="tbt">D',ass=:{r="F:'Mp"sun">M', id=:'rm'},tab:{},ass="tco',amgFilpers:{p:flnev:'',reatery:'',ition-dec''}},SB_KEY)ROt SB_ value="lecoership">Senior Le', mcoRe"sur">Relationship',data-v=copx}
+
+/*',opia'e="ops">Op'},SB_KEY)VIEWSB_d="tbt">DcoD="tbt">D',data-v=":'Pata-v="',ntacts',ogia'Etacts',ogi',data-vsco>Glopan>Mentors',droa-v=":'Ppxspan>Project Ma',data0px;'�</span',data-v=copx}
+
+/*',data-:'Tata-',data-v=coReta-v='},SB_KEY)TOPACT={data-v=":'+ p:14Deal',ntacts',ogia'+ p:14Etacts',og',data-vscotion(">Globa',data0px;'+ p:14�</s*',data-:'+ p:14Tata'},SB_KEY)LC_STAG SB['>Sen','Qualifiod','>Gloee Idampifiod','Ppxposal erst','Ppxposal Acceptod','C)&amp Itero','CIBLreapepx','C)}
+.d W">'],SB_KEY)LC_STAG _LABELSB_'>Sen':'1 · Ppxppect / >Sen','Qualifiod'a'2 · Qualifiod Op/spaunity','>Gloee Idampifiod':'3 · >Gloee Idampifiod','Ppxposal erst':'3 · Ppxposal erst','Ppxposal Acceptod':'4 · Ppxposal Acceptod','C)&amp Itero':'5 · C)&amp Itero','CIBLreapepx':'6 · CIBLreapepx','C)}
+.d W">':'7 · C)}
+.d W">'},SB_KEY)PARTNERSB['Mp"sun">M','Sarah Chen','J}
+@keOkaf-v','W24  Chidlow','Emma Riord ds','Tom Ashwspah'],SB_KEY)COUNTRI SB['United Kn:gdsg','United States','Germany','Fr
+
+/*','AusLrelia','Sitac/spe','UAE','Canada','SwiLzerl">M','Netherl">Ms','Swedam>M'Hfo">Kopx','Japam>M'Sk="h Africp>M'India','Brazil>M'Spaim>M'Italy','Belgium'o'Irel">M'],S
+funck="t uid(){Login()'_'+Mp"h.ss="om().toSLr0px(36).slice(2,9)}
+funck="t today(){Login()n:14 tiF().toISOSLr0px().split('T')[0]}
+funck="t fmt(n){Login()'£'+Number(n).toLocaleSLr0px('en-GB',{minimumFwedam>M'Hfo">Kopx'OUNaZly','Becplit(Login()n:14 ide10 Jser(n).toLocnk="t fmt ')it:r,x=>x{Lo).joi-v''-GB'UpIEWC:{sest today0,2Login()n:14 addAct(l n)PwC �){DB.a1'oass=:'.uv=cofttiFd_h.ss=,l n)PwC �0'},px().split('T,{minimumFwedam>M'Hfo"F()spa-dBecpoba2026spa-dBecpoban.':'n('el>M',hourspa-dBecpoba.frnev:'-dBecpo}).B_KSear(="t,''-DDoobacts}in()'_'+Mp"retuMiF(l(html,lg=etS="g.getEls',omcById('e="Did="');  <if(!d)mcentok'mc.inionHTML='tb-search">
+idUmTg:opAction()"lc)M13.t.tarid=… clascip()MiF(l(ss="b-search">
+miF(l?' lg.ncmiF(l-lgteven+'">'+html+'ipt>
+/ipt>
+/b=(JS()'_'+Mp"cip()MiF(l(s{yId('e="Did="');  <if(!d)mcen.inionHTML=''DDoD DATAE CONAUTH�─────────────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"retueate Acc{yId('e="Did="');  <if(!d)div>
+ 'Emmen.autod';margin='left';yId('e="Did="');  <if(!d)Ltyle="'Emmen.autod';margin='b(SKk'DDo()'_'+Mp"return fals{yId('e="Did="');  <if(!d)Ltyle="'Emmen.autod';margin='left';yId('e="Did="');  <if(!d)div>
+ 'Emmen.autod';margin='b(SKk'DDo()'_'+Mp"_div>
+Err(msg)ts.getIe=yId('e="Did="');  <if(!d)div>
+ "t ente.wC �Cv>
+</d=msgte.autod';margin='b(SKk'DDo()'_'+Mp"_Ltyle=Err(msg)ts.getIe=yId('e="Did="');  <if(!d)Ltyle=""t ente.wC �Cv>
+</d=msgte.autod';margin='b(SKk'DyId('e="Did="');  <if(!d)Ltyle="tS=".autod';margin='left';Do()'_'+Mp"_Ltyle=Ok(msg)ts.getIe=yId('e="Did="');  <if(!d)Ltyle="tS="De.wC �Cv>
+</d=msgte.autod';margin='b(SKk'DyId('e="Did="');  <if(!d)Ltyle=""t en.autod';margin='left';DoToSnst sb=(){  <Sign fals{getEls',oi;mve=yId('e="Did="');  <if(!d)di-i;mveen.drafp.umFmetS="DEls',opch">yId('e="Did="');  <if(!d)di-pch"en.drafptok'?Id('e="Did="');  <if(!d)div>
+ "t en.autod';margin='left';.<buttei;mvenuepch">Y='e=""_div>
+Err('PSenseAnnual youroi;mve,  <{ich"RI d.'tS="DEls',obtn=yId('e="Did="');  <if(!d)div>
+ btn'tS="Dbtn.wC �Cv>
+</d=pabasabasd:dmge;btn.;map(r=d=5-31S="DEls',it sb,"t seessr">();  <if(!LtylInWithPch"RI d({i;mve,ich"RI d:ich"}tS="Dbtn.wC �Cv>
+</d=pabas':'e;btn.;map(r=d=etS=";.<butt"t se>Y='e=""_div>
+Err("t se.idlson(tS="Dsr">()bootApp(t sb.M', s="DTToSnst sb=(){  <Sieate Acc{="DEls',o=:'r=yId('e="Did="');  <if(!d)Lu-=:'ren.drafp.umFmetS="DEls',oi;mve=yId('e="Did="');  <if(!d)Lu-i;mveen.drafp.umFmetS="DEls',opch">yId('e="Did="');  <if(!d)Lu-pch"en.drafptok';value)"lr=yId('e="Did="');  <if(!d)Lu-)"lren.drafptok'?Id('e="Did="');  <if(!d)Ltyle=""t en.autod';margin='left';ok'?Id('e="Did="');  <if(!d)Ltyle="tS=".autod';margin='left';.<butte=:'rnuei;mvenuepch">Y='e=""_Ltyle=Err('PSenseAstro; s ebo"':'l-02-<d.<buttpch"ue)"awa<8>Y='e=""_Ltyle=Err('Pch"RI d mu',obe,rpaSenst 8ly';NaZl26-06tS="DEls',obtn=yId('e="Did="');  <if(!d)Ltyle="btn'tS="Dbtn.wC �Cv>
+</d=pC >Se ordmge;btn.;map(r=d=5-31S="DEls',it sb,"t seessr">();  <if(!LtylUp({i;mve,ich"RI d:ich"}tS="Dbtn.wC �Cv>
+</d=pC >Seetero'}},e;btn.;map(r=d=etS=";.<butt"t se>Y='e=""_Ltyle=Err("t se.idlson(tS="Duttt sb.M', sB[dbKe.upsert(rows.mP instre"en.{idar.iiFd_t sb.M', t:n:14 tid=:'rss="t,erst6-06GMG'}().toISOSLr0px()})),{:nooreDuplicp()saot('ok_Ltyle=Ok('ero'}},�� >Seni!','Wck youroi;mve,'t5'submis, 'Hfntss H; s06tS="D}"DTToSnst sb=(){  <bootApp(M', sB[dbEls',it sb: insessr">();  ows.mP instre"en.selod'('t sben.eq('in">M', t:nn.sicpleetS="DDot ins&& ins.t sb){S.M', t=:'r= ins.t sb.=:'rnuM', ti;mvek="t fmt@n){Lo;S.M', t)"lr= ins.t sb.)"lr||o',a�� [deS="{S.M', t=:'r=M', ti;mvek="t fmt@n){Lo;S.M', t)"lr=o',a�� [dsr">()loadAllnte=etS="DyId('e="Did="');  <if(!d)div>
+en.autod';margin='left';ok'?Id('e="Did="');  <if(!d)appen.autod';margin='v>
+ ';ok'?Id('e="Did="');  <if(!d)arcude-bar');  <if(!d)arcude-bar');  <if(!d)arcude-bar');  <ifcu
+en.wC �Cv>
+</d=S.M', t=:'r);  <if(!d)arcude-bar');  <ifcaven.wC �Cv>
+</d=S.M', t=:'r.y';NAt(0-GB'UpIEWC:{ses);  <if(!d)arcude-bar');  <ifcuren.wC �Cv>
+</d=rship[S.M', t)"lr]||S.M', t)"lr;px'); upRealtimses);  span<if(!d)arquerySelod'or('[board" onclick="na]')s="DTToSnst sb=(){  <loadAllnte=et{ [dbKey,tabl;value)esultsssr">()Pws.ise.ebo((table)st S)){value)"�─ *rows=it:r,oSnst(an.Glofies(;
+)=>B[dbKey]"DEls',it sb,"t seessr">();  ows.map(r=>(selod'('t sben.I der(').toISOSLrfo"asc',dss=setS="DDot('okkkkkY='e="an.Gloftt sb||[])it:r,updr.t sb).feater(Bo"lran)rows.lamg})ws.laDot('okON.shasnte==etS=";.<bble]of ObspaklofrecI ds
+con)esultsDB[dbKey]DotrecI dsue)"awa>0){DBaklo]=recI ds;hasnte==5-31S}t('ok');  <uttehasnte=)sr">();eed{b-it:{ses;);  <}catch(e){setS="DDot('off-v="'b= e="D err-v',e);} }
+fload="t setS="Dow�─ole.warn('Snst s}"DTToSnst sb=(){  <;eed{b-it:{sesB[dbe]of Obspan.Glofies(;
+const S)){value)"�─ *rows=DB[dbKeutt!rows||!r&&!rows||!rue)"awa>0){(table).upsert(rows.map(r=>({idar.i!rows||!rut:r,updtiFd_at:n:14 tiF().toISOSLr0px()})),{:nooreDuplicp()sa;Dot('ok'); }"DTTstate){  <��upRealtimses{="DEls',oy'; nel=t(ry'; nel(imer-realtims="DDotst S)){value)"�─ *rows=ie]oEaf-v(an.Glofies(;
+)=>B[dbKey'; nel.o-v'postium'_y'; }
+afo"M13.t:'*',log ma:'publ>M',ies(;}5','load=>B[dbKey];value)ec=','load.px(?.t sbows.lamgth)TIec>Y='e="Did=Key];valueidx(!rows||!r.fendman)x,updr.id===rect:nnows.lamgth)','load.M13.tTlace=='DELETE'){th)idx>=0)!rows||!r.="t ce)idx,1)S}t('ok[deS=" th)idx>=0)!rows||!r[idx]=rec;t('ok[deS=" !rows||!r.ida'trecnows.lamgron trViewes;);  <DDot('DDot('y'; nel.sub���bses;)DoToSnst sb=(){  <Sign Out</{
+e).upsert(r<if(!LtylOut</ot('Lr0pxify(/EED));
+ery{�─ *lc=localSok'?Id('e="Did="');  <if(!d)appen.autod';margin='left';ok'?Id('e="Did="');  <if(!d)arcude-bar');  <if(!d)arcudeleft';ok'?Id('e="Did="');  <if(!d)div>
+en.autod';margin='-bar');  return fals;"DTTstate){  spanel/{
+e)<if(!d)arquerySelod'orAll('.a-v="re'=ie]oEaf-vi=>i'+(staL<inaremove(2026-04-alSok'el.+(staL<inaadd(2026-04-aS="DEls',ov=el.t sb<��.v; S.=:{r=v;ok'?Id('e="Did="');  <if(!d)tbten.wC �Cv>
+</d="tbt"[v]||vS="DEls',oab=?Id('e="Did="');  <if(!d)tba-<d.<buttp:14De[v]){ab.wC �Cv>
+</d=p:14De[v];ab.autod';margin='in'Sns--bar'}eS=" ab.autod';margin='left';ok'ron trViewes;)ogin()n:14 ti Add</but.getEls',om={tacts',og',dopenEngMiF(l,ntacts',oopen p:1MiF(l,',data-:openTata'MiF(l,SB_KEYopenG SBMiF(l,a',data0()=>openCst meeMiF(l(asp:nobert Ca)}d.<buttm[S.=:{r]) m[S.=:{r]es;)ogin()n:14 .value)"v){S.:{p:fl=vogin()n:14 ron trViewes{="DEls',oy=?Id('e="Did="');  <if(!d)iv>
+</d-aS="DEls',or>D',data-v="r'Pata-v=",ntacts',oria'EtactEtacts',og',drco>Glopan>M,a',data0ra-v=":'roject Ma'rdata0pxs,',data-:r}
+
+/*',ata-:'Tatr-',data,SB_KEYr-v='}SB_KEY)TOrACT={da}d.<buttr[S.=:{r]) r[S.=:{r](cs;"DTT DATAE CONDASHBOARD ───────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"r'Pata-v="(cs{="DEls',o026-04co>f(!r.tacts',og',.feater(e=>e.au026-e=='026-04-aS="DEls',o4',dss=Pin=!r.ida'dp1',data-.feater(p=>p.au026-e=='nold,m:2aS="DEls',o4',dss=PinVal=4',dss=Pinareduce)('ro)=>s+p.eam-be,0aS="DEls',ounD0px'?Inv=!r.ida'i1'ontgIda.feater(i=>!i.asd:'2026-aS="DEls',oidUmdueT=!r.SB_KE.feater(t=>t.au026-!=='nd n'&&t.due<tiF().taS="DEls',oum'oT=!r.SB_KE.feater(t=>t.au026-e=='um'odaS="DEls',oyt?Inv=!r.ida'i1'ontgIda.feater(i=>i.au026-e=='n,rpa)areduce)('ri)=>s+i.eam-be,0aS="DEls',ofyTarid=�Idamp0S="DEls',o4a'EtactVal=!r.da'o1',r="F:'.feater(p=>![6-mIBLh 4px r6-mIBLh Lost'].iiF:524s(p.au0ge))areduce)('ro)=>s+p.drafp,0aS="DEls',owonVal=!r.da'o1',r="F:'.feater(p=>p.au0gee=='-mIBLh 4px )areduce)('ro)=>s+p.drafp,0aS="DEls',oyt?Pct=px(36)l di(yt?Inv/fyTarid=*1t s="="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2div>
+    <dih2d<p>Good morsaba, ${S.M', t=:'rk="t fmt '){Log. Here's yourooIEWSB_d=aloidUm15.',</p>v id="content"ay:none;margin--bar;gap:8px;als HR="res:cnnualclass="tsync-1"></divv>
+-size:11px;c-wid:var(--muISO)">FriF() 5  <{ida'c5</div>
+    <${unD0px'?Invue)"awa?`"sync-dot" idbadge b-apx('">&#9888;<${unD0px'?Invue)"awa}ounD0px'?5-31 17:</div>
+` val<div id="v class="sb-bottom">
+kpi-griFclass="tb-title" idkpio02c</div>b-bottom">
+kpi-label">YTD RM13.u<div cl>b-bottom">
+kpi-dra">${umbeyt?Inv)} <div class="sb-uinfo"><skpi-iv clsb-uinfo"><skpi-iv -stroplay:noneircle:${yt?Pct}%cript>
+/ <div class="sb-uinfo"><skpi-sub">${yt?Pct}%h(id${umbefyTarid=)} FY tarid=ipt>
+/ <div classsb-uinfo"><skpiiv>b-bottom">
+kpi-label">26-01- /div>
+    <div cl>b-bottom">
+kpi-dra">${026-04co>fue)"awa} <div class="sb-uinfo"><skpi-sub">${026-04co>fufeater(e=>e.tlace=='tatu{c)ue)"awa}o (erss· ${026-04co>fufeater(e=>e.tlace=='3.,statu{c)ue)"awa}o,refs· ${026-04co>fufeater(e=>e.tlace=='atu{c)ue)"awa}oss 3ipt>
+/ <div classsb-uinfo"><skpi goldiv>b-bottom">
+kpi-label">P',dss=4px ress1',data-div cl>b-bottom">
+kpi-dra">${umbe4',dss=PinVal)} <div class="sb-uinfo"><skpi-sub">${4',dss=Pinae)"awa}o<ina'dats· nC �2026 {ida(ida2026ipt>
+/ <div classsb-uinfo"><skpiiv>b-bottom">
+kpi-label">O4', v>
+    <div cl>b-bottom">
+kpi-dra">${umbe4a'EtactVal)} <div class="sb-uinfo"><skpi-sub">${umbewonVal)} cip()"owon YTDv id="v class="s class="sb-bottom">
+g2play:none12px" o <div :18pxclass="tb-title" idc="na class="sb-uinfo"><sc="n-hdrs="h3>Outau0,dss=4-v='} "sync-dot" idbadge b-redplay:none12px" onclic6pxcl${idUmdueTae)"awa}oidUmdue>
+      <h3>t('okkkkks="btn btn-primary" id=sm" id=Outk="nav(this)"><span<if(!d)arquerySelod'or('[board" SB_KE]')s">V cliell</div>
+   <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkksies(;earch">
+  a"><thead><tr><th
+    </th
+<th
+ lac</th
+<th
+Duc</th
+<th
+P:'2026-</th
+</tr></thead><tbody>t('okkkkk${um'oT.Elsca.i!r.SB_KE.feater(t=>t.au026-e==':'modium'od)st today0,6)it:r,t=>B[dbKey]"D"DEls',oid=t.due<tiF().t&&t.au026-!=='nd n';[dbKey]"D"DY='e="`<tr><td>tsync-1"></divv>
+-wiewBo:600cl${t' titl}>
+      lex:1"></divv>
+-size:10px;c-wid:var(--muISO)">${t'-v',stat}v id="v td>[dbKey]"D"D<td>tsync-dot" idbadge b-iumycl${t' lac}>
+       td>[dbKey]"D"D<td:1"></dic-wid:${id?'var(--13.etio@gm*y:'hercpo};vv>
+-wiewBo:${id?700ssr"}cl${t'due}${id?' &#9888;teve}v td>[dbKey]"D"D<td>tsync-dot" idbadge ${t'F:'2026-e=='2',nt?'b-red':t'F:'2026-e=='-14',nt?'b-apx('tevb-iumy'}cl${t'F:'2026-}>
+       td></tr>`;[dbKey]"D}).joi-v''-}t('okkkkks/tbody>s/tes(; class="s<div classs<div classsb-uinfo"><sc="na class="sb-uinfo"><sc="n-hdrs="h3>26-01- /div>
+    <dih3> <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkk${026-04co>fut:r,e=>B[dbKey]"D"DEls',oida'i1=!r.i,d<ina'.fend(c=>c.id===e.ida'i1'd);[dbKey]"D"DEls',oida'dp=!r.i,d<ina'.fend(m=>m.id===e.'e4',ame);[dbKey]"D"DEls',otb={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[e.tlac]||vb-iumy';[dbKey]"D"DY='e="`<lex:1"></dipaddta-:10px 18px;bI dero <div :1px solid var(--bI der);;margin--bar;als HR="res:cnnual;gap:10px">[dbKey]"D"D  tsync-dot" idbadge ${tb}play:none1" oircle:56px;justify-iv>
+</d:cnnualcl${e' lac}>
+     [dbKey]"D"D  tlex:1"></div>
+    <dlex:1"></divv>
+-size:12px;vv>
+-wiewBo:600cl${et=:'rke)"awa>42?et=:'rk today0,42)+'dmge{et=:'r} <div class=""D"D  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">${'e4',a?.=:'rnu'dm�'}s· ${20 3d<ina'nta}ipt>
+/ <div class="okkkkks="btn btn-primary" id=sm" id=Outk="nav(this)"><openEngDetail('${20id}'s">V cl</div>
+   <div `;[dbKey]"D}).joi-v''-}t('okkks<div classs<div clas class="sb-bottom">
+g2p classsb-uinfo"><sc="na class="sb-uinfo"><sc="n-hdrs="h3> value="callP',dss=4Add</b<dih3> <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0 18pxclass="   <${unD0px'?Invue)"awa===0&&4',dss=Pinae)"awa===0?'<play:nonepaddta-:20px 0;c-wid:var(--muISO);vv>
+-size:12px;wC �-als H:cnnualclAll"D0px'? &#dtiF3;</p>' val<di="   <${unD0px'?Invut:r,inv=>BEls',oid=!r.i,d<ina'.fend(c=>c.id===inv.ida'i1'd);[dbKey]"D"DY='e="`<lex:nfo"><sfenR="reiv>b-bottom">
+fenRData ay:nonebackg)l di:var(--13.etio@g"/ <div class="okkk<lex:nfo"><sfenR=nfo"/ sd 28 >${cl?.=:'rnu'eapepx'}scall${inv.',ogia}>
+ d 28 >tsync>="t Offi· ${inv. lac}i· ${inv.au026-}>
+       div class="okkk<lex:nfo"><sfenReam-be":1"></dic-wid:var(--13.etio@g"/${umbeinv.eam-be)} <div class=""D"Ds="btn btn-primary" id=sm" id=asd:av(this)"><ida'="t 17:('${inv.id}'s">&#8594;1 17:</div>
+   <div `;[dbKey]"D}).joi-v''-}t('okkk <${4',dss=Pina today0,3)it:r,p=>BEls',om=!r.i,d<ina'.fend(x=>x.id===p.'e4',ame);[dbKey]"D"DEls',oe(!r.tacts',og',.fend(x=>x.id===p.400,d);[dbKey]"D"DY='e="`<lex:nfo"><sfenR="reiv>b-bottom">
+fenRData ay:nonebackg)l di:var(--cadm',ng"/ <div class="okkk<lex:nfo"><sfenR=nfo"/ sd 28 >${m?.=:'rnu':14�</s}scall${p.',ogia}>
+ d 28 >tsync>${2?.=:'r?k="t fmtdm�'){Lonu''}s· ${p' lac}>
+       div class="okkk<lex:nfo"><sfenReam-be":1"></dic-wid:var(--cadm',ng"/${umbe4.eam-be)} <div class=""D"Dssync-dot" idbadge b-apx('">4',dss=>
+       div `;[dbKey]"D}).joi-v''-}t('okkk <${4',dss=Pinae)"awa>3?`<lex:1"></dipaddta-:8px 0;vv>
+-size:11px;c-wid:var(--muISO);wC �-als H:cnnualcl+${4',dss=Pinae)"awa-3} more 4',dss=>
+div ` val<di="  s<div classs<div classsb-uinfo"><sc="na class="sb-uinfo"><sc="n-hdrs="h3>Recnnu026-0126-</h3> <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0 18pxclass="   <${DB.a1'oass=:'. today0,6)it:r,a=>`class="okkk<lex:nfo"><sa1'R="reiv>b-bottom">
+a1'RData>${0.l n)}  div class="okkk<lex:1"></div>
+    <dlex:1"></divv>
+-size:12pxa>${0.wC �}div cl>b-bo1"></divv>
+-size:10px;c-wid:var(--muISO);12px" otop:2pxa>${0.ws}ipt>
+/ <div >
+div `).joi-v''-}t('okkks<div classs<div clas clas`;"DTT DATAE CONENGAGEMENTS ─────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"r/div>
+    <(cs{="DEls',otes=S.SBb.400nu'all'S="DEls',o4f=S.'',reatery.',ition;DEls',oif=S.'',reatery.''}},SB;DEls',osf=S.'',reatery.)ROt SB_S="DON.seo>f(!r.tacts',og',.feater(e=>B[dbKeuttSBb!=='all'&&e' lac!==SBb&&e'au026-!==SBb)DY='e=" etS=";.<bblth)'f&&e'',ition!==pf)DY='e=" etS=";.<bblth)cf&&e'''}},SB!==cf)DY='e=" etS=";.<bblth)sf&&e' lac!==sf)DY='e=" etS=";.<bblY='e=" 5-31S="D}aS="DEls',oallP:'2026-=[...px( Se.i!r.tacts',og',.t:r,e=>e'',ition).feater(Bo"lran))rows.Els',oallC'}},S=:'=[...px( Se.i!r.tacts',og',.t:r,e=>e'''}},SB).feater(Bo"lran))rows.Els',ohasreater=pf||cf||sf;="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2d/div>
+    <dih2d<p>${DB.tacts',og',.feater(e=>e.au026-e=='026-04-aae)"awa}orpabasd:'2025-11-sh(idUmpiebo" lacs</p>v id="cont="btn btn-primary" id=pri12pyav(this)"><openEngMiF(l(ss=ta-vscotion(">Gl</div>
+   <div clasb-bottom">
+SBbs"
+    <${['all',statu{cow3.,statu{cotatu{co2026-04-0:'2026-07-0idatruu},  ]it:r,t=>`sb-bottom">
+SBb${tes===S?'orpabas' valav(this)"><S.SBb.400='${t}';ron trViewescl${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)} (${t==='all'?DB.tacts',og',.e)"awa:DB.tacts',og',.feater(e=>e.tlace==t||e.au026-e==taae)"awa})>
+div `).joi-v''-}t(' <div clasb-bottom">
+feater-rowclass="tselod'v(th'; }
+><S.'',reatery.',ition� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"P:'2026-</op'+Mplt('okkk${0llP:'2026-it:r,p=>`sop'+Mp"drafp="${4lav${4f===p?'selod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'v(th'; }
+><S.'',reatery.''}},SB� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"C'}},S=:'</op'+Mplt('okkk${0llC'}},S=:'it:r,p=>`sop'+Mp"drafp="${4lav${cf===p?'selod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'v(th'; }
+><S.'',reatery.)ROt SB_� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"SROt SB_'</op'+Mplt('okkksop'+Mp"drafp="tatu{av${sfe=='tatu{c?'selod'ccept'}>5 srship"p:flne</op'+Mplt('okkksop'+Mp"drafp="3.,statu{av${sfe=='3.,statu{c?'selod'ccept'}>,refa'e2',d<ina'dat</op'+Mplt('okkksop'+Mp"drafp="atu{av${sfe=='atu{c?'selod'ccept'}>folde4px rammen</op'+Mplt('ok>
+ elod'lass="${hasreater?`<="btn btn-primfeater-mer);av(this)"><S.'',reatery='',ition-dec''}},SB_KEY)ROt SB_ valtron trViewescl&#dtiF5; Cer); featers</div>
+  ` val<di="tsync-1"></divv>
+-size:11px;c-wid:var(--muISO);12px" onclic4pxa>${eo>fue)"awa}n)esult${eo>fue)"awa!==1?'steve}v      [db <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+4px rammen</th
+<th
+SROt SB_</th
+<th
+eapepx</th
+<th
+d<ina'</th
+<th
+P,ition</th
+<th
+e'}},SB</th
+<th
+Vrafp</th
+<th
+Su026-</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${eo>fue)"awa?eo>fut:r,e=>B[dbKey]Els',oid=!r.i,d<ina'.fend(x=>x.id===e.ida'i1'd);[dbKey]Els',omn=!r.i,d<ina'.fend(x=>x.id===e.'e4',ame);[dbKey]Els',oval=e.tlace=='tatu{c?e.{coAwaittoe.tlace=='3.,statu{c?e.{coAwaittoe.tFee:280;[dbKey]Els',otb={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[e.tlac];[dbKey]Els',osb={rpabasevb-iumhen',2026-07:'b-apx('t,C
+.ty — vb-iumy'}[e.au026-]||vb-iumy';[dbKey]Y='e="`<tr><td>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${et=:'r} <div tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">${20 3d<ina'nta}s· ${201'ontd ti}v id="v td>[dbKey]<td>tsync-dot" idbadge ${tb}cl${e' lac}>
+     v td>[dbKey]<td:1"></divv>
+-size:12pxa>${cl?.=:'rnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:12pxa>${mn?.=:'rnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:12pxa>${e'',itionnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:12pxa>${e'''}},SBnu'dm�'}v td>[dbKey]<td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700;c-wid:var(--cadm',ng"/${umbeval||0)}v td>[dbKey]<td>tsync-dot" idbadge ${sb}cl${e'au026-}>
+       td>[dbKey]<td>tb-bottom">
+a1's"
+s="btn btn-primary" id=sm" id=Outk="nav(this)"><openEngDetail('${20id}'s">V cl</div>
+   ="btn btn-primary" id=sm" id=Outk="nav(this)"><openEngMiF(l('${20id}'s">Edil</div>
+   <div   td></tr>`;[dbKe}).joi-v''-:`<tr><td]Ell    ="9play:nonewC �-als H:cnnual;paddta-:32px;c-wid:var(--muISO)">Nod:'2025-11-sh.',rp 'Hf selod'cc featers.  td></tr>`}s/tbody>s/tes(; clas clas`;"DTT()'_'+Mp"openEngDetail(ids{getEls',oi(!r.tacts',og',.fend(x=>x.id===:nnobuttei)DY='e="ows.Els',oid=!r.i,d<ina'.fend(c=>c.id===e.ida'i1'd);[dbEls',omn=!r.i,d<ina'.fend(m=>m.id===e.'e4',ame);[dbEls',otb={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[e.tlac];[dbEls',osb={rpabasevb-iumhen',2026-07:'b-apx('t,C
+.ty — vb-iumy'}[e.au026-]||vb-iumy';[dbEls',oinsr">=!r.Mp"sun">.feater(s=>s.400,d===:nno[dbEls',oinInv=!r.ida'i1'ontgIda.feater(i=>i.400,d===:nno[dbEls',oinPin=!r.ida'dp1',data-.feater(p=>p.400,d===:nno[dbON.stlacInfo=''D.<butt".tlace=='tatu{c)stlacInfo=`sb-bottom">
+irs="sync-dot" idl a"> D="F C280>
+      sync-dot" iddra":1"></dic-wid:var(--cadm',ng"/${umbee.{coAwaitt)}>
+       div classsb-bottom">
+irs="sync-dot" idl a">sr">){ss IiF:524d>
+      sync-dot" iddra"l${e'ar">){ssIiF:524d}>
+       div classsb-bottom">
+irs="sync-dot" idl a">sr">){ss Us4d>
+      sync-dot" iddra"l${e'ar">){ssUs4d} / ${e'ar">){ssIiF:524d}>
+       div classsb-bottom">
+irs="sync-dot" idl a">RSeetIEW sr">){s>
+      sync-dot" iddra"l${umbee.ar">){sRSee)}>
+       div `;
+[deS=" th)e.tlace=='3.,statu{c)stlacInfo=`sb-bottom">
+irs="sync-dot" idl a">Q 2026',sC280 (ida'i1)>
+      sync-dot" iddra":1"></dic-wid:var(--cadm',ng"/${umbee.2 2026',sitt)}>
+       div classsb-bottom">
+irs="sync-dot" idl a"> D="F CVrafp</      sync-dot" iddra"l${umbee.{coAwaitt)}>
+       div classsb-bottom">
+irs="sync-dot" idl a">px ressM2026', (40%)</      sync-dot" iddra"l${umbepx(36)l di(e.2 2026',sitt/3*0.4))}>
+       div `;
+[deS=" tlacInfo=`sb-bottom">
+irs="sync-dot" idl a">TFee:amp:'Deloit280>
+      sync-dot" iddra":1"></dic-wid:var(--cadm',ng"/${umbee.tFee:280)}>
+       div classsb-bottom">
+irs="sync-dot" idl a"> iumh p:14�</t280>
+      sync-dot" iddra"/${umbee.ida'dp280)}>
+       div `);  retuMiF(l(`sb-bottom">
+mhdrs="h3>${et=:'r} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-boay:none;margin--bar;gap:8px;12px" o <div :14pxa>tsync-dot" idbadge ${tb}cl${e' lac}>
+     vsync-dot" idbadge ${sb}cl${e'au026-}>
+       div classsb-bottom">
+fs titl"
+4px rammen Details  div classsb-bottom">
+irs="sync-dot" idl a">eapepx</      sync-dot" iddra"/${cl?.=:'rnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">px res</      sync-dot" iddra"/${mn?.=:'rnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">C3d<ina'nta>
+      sync-dot" iddra"l${e' 3d<ina'nta}ip       div classsb-bottom">
+irs="sync-dot" idl a">P,ition</      sync-dot" iddra"l${e'',itionnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">C3}},SB</      sync-dot" iddra"l${e' 3}},SBnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">d tis>
+      sync-dot" iddra"l${e'a'ontd ti} &#8594;1${e'endd ti}v        div classsb-bottom">
+fs titl"lay:none12px" otop:12pxa> value0 JuTerms  div class${tlacInfo}class${et=g ac?`<lex:1"></di12px" :12px 0;paddta-:10px;backg)l di:var(--halfnarrow);bI deroradiusc6px;vv>
+-size:12pxa>${et=g ac}>
+div ` val<di="sb-boay:none;margin-griF;griF-at.ty ti-c-wumns:1fr 1fr 1fr;gap:10px;12px" otop:14pxa>
+="okkk<lex:1"></dibackg)l di:var(--halfnarrow);bI deroradiusc6px;paddta-:12px;wC �-als H:cnnualcl
+=""D"D  tlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:18px;vv>
+-wiewBo:700cl${ensr">ue)"awa} <div class="  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">sr">){ssipt>
+/ <div class="sb-ui1"></dibackg)l di:var(--halfnarrow);bI deroradiusc6px;paddta-:12px;wC �-als H:cnnualcl
+=""D"D  tlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:18px;vv>
+-wiewBo:700cl${enInvue)"awa} <div class="  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">'ontgIdaipt>
+/ <div class="sb-ui1"></dibackg)l di:var(--halfnarrow);bI deroradiusc6px;paddta-:12px;wC �-als H:cnnualcl
+=""D"D  tlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:18px;vv>
+-wiewBo:700cl${enPinae)"awa} <div class="  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">1',data-div cl><div classs<div classsb-uiay:none;margin--bar;gap:8px;12px" otop:14px;-bar-wrap:wrapa>
+="okkk<="btn btn-primary" id=sm" id=Outk="nav(this)"><cip()MiF(l(s;openEngMiF(l('${20id}'s">&#9999; Edil</div>
+  t('okkk${e.tlace=='tatu{c?`<="btn btn-primary" id=sm" id=Outk="nav(this)"><cip()MiF(l(s;opensr">){sMiF(l('${20id}'s">+ eloisr">){s>
+div>
+  ` val<di="kk<="btn btn-primary" id=sm" id=Outk="nav(this)"><cip()MiF(l(s;open'ontgIdMiF(l(asp:no${20id}'s">+ 'ontgId</div>
+  t('okkk<="btn btn-primary" id=sm" id=d; }
+;av(this)"><dey �Eweda${20id}'s">Dey �</div>
+  t('oks<div clas clas`,5-31s;"DTTstate){  dey �Ewedids{getutte'submis('Dey �  clad:'2025-11-? Tcladc{coo,obe, did nr'))DY='e="ows.!r.tacts',og',(!r.tacts',og',.feater(e=>e.id!==:nno[dbobacts;"cip()MiF(l(s;'ron trViewes;)ogT DATAE CONSESSIONS ────────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"rsr">){ss(cs{="DEls',otes=S.SBb.ar">nu'all'S="DON.ssr">=!r.Mp"sun">D.<buttSBb!=='all')ssr">=sr">.feater(s=>s.au026-e==tab);="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dsr">){ssiph2d<p>5 srshm,400)',giMp"sun">ocally
+.ty —iMp"sun">otrig}
+;v payfanold,d<ina'da</p>v id=" <div clasb-bottom">
+SBbs"
+    <${['all',slog afper-0idatruu},  0idlue=ll,  ]it:r,t=>`sb-bottom">
+SBb${tes===S?'orpabas' valav(this)"><S.SBb.sr">='${t}';ron trViewescl${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)} (${t==='all'?DB.Mp"sun">.e)"awa:DB.Mp"sun">.feater(s=>s.au026-e==taae)"awa})>
+div `).joi-v''-}t(' <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+4px rammen</th
+<th
+d ti</th
+<th
+DuWSB_d=</th
+<th
+Su026-</th
+<th
+px ress1',data</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${sr">.t:r,s=>B[dbKey]Els',oi(!r.tacts',og',.fend(x=>x.id===s.400,d);[dbKey]Els',omn=e?!r.i,d<ina'.fend(m=>m.id===e.'e4',ame):){  <edbKey]Els',osb={log afper vb-bluet,C
+.ty — vb-iumKn:gdlue=ll,  vb-iumy'}[s.au026-];[dbKey]Y='e="`<tr><td>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${e?.=:'rnu'dm�'}v div tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">${mn?.=:'rnu'dm�'}v id="v td>[dbKey]<td:1"></divv>
+-size:12pxa>${s.t se}v td>[dbKey]<td:1"></divv>
+-size:12pxa>${s.tuWSB_d=} minv td>[dbKey]<td>tsync-dot" idbadge ${sb}cl${s'au026-}>
+       td>[dbKey]<td>${s'au026-e=='tatruu},  ?`"sync-dot" idbadge ${s'ida'dp1'id?vb-iumKn::'b-apx('t}cl${s'ida'dp1'id?v&#dtiF3; n,rpa:'nold,m:2}</div>
+` vtsync-dot" idbadge b-iumycln/a</div>
+'}  td>[dbKey]<td>tb-bottom">
+a1's"
+ass="   <${s'au026-e=='log afper-?`<="btn btn-primary" id=sm" id=sucIdasav(this)"><catruu},sr">){se'${s'id}'s">&#dtiF3; Catruu},>
+div>
+  ` val<di="kk <${s'au026-e=='tatruu},  &&!s'ida'dp1'id?`<="btn btn-primary" id=sm" id=err-av(this)"><iaysr">){se'${s'id}'s">1', px res</div>
+  ` val<di="kk <<="btn btn-primary" id=sm" id=Outk="nav(this)"><15.'sr">){se'${s'id}'s">V cl</div>
+  t('okkks<div   td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`;"DTT()'_'+Mp"catruu},sr">){seids{getEls',o>=!r.Mp"sun">.fend(x=>x.id===:nnobuttes)DY='e="ows.Els',oi(!r.tacts',og',.fend(x=>x.id===s.400,d);[dbs'au026-e'tatruu},  D.<butt"){e'ar">){ssUs4d=(e'ar">){ssUs4d||0)+1S}t('!r.ida'dp1',data-.ida'tiFd_h.ss=,'e4',ame:e?.'e4',ame,400,d:s.400,d,ar">){s,d:id,[dbKe.am-be:e?.ar">){sRSee||0sp:noeetatu{-ar">){s',',ogia:s.t se. today0,7),[dbKe'2026-06nold,m:2, payBill,d:asp:nasd:'2026-setS="'}, ],
+datiF().t}aS="DaddAct(9;" au`eloitss C
+.ty — e${2?.=:'r?k="t fmtdm�'){Lonu''}scallanold,d<ina'dav pay'genEWSB��i(${umbee?.ar">){sRSee||0t}a`no[dbobacts;"ron trViewes;)ogT()'_'+Mp"iaysr">){seids{getEls',o>=!r.Mp"sun">.fend(x=>x.id===:nnobuttes)DY='e="ows.Els',omp=!r.ida'dp1',data-.fend(p=>p.ar">){s,d===:nno[dbuttmp){mp.au026-e'n,rpa;mp.asd:'2026-=5-31S}t('s'ida'dp1'id=5-31S="Dobacts;"ron trViewes;)ogT()'_'+Mp"15.'sr">){seids{getEls',o>=!r.Mp"sun">.fend(x=>x.id===:nnobuttes)DY='e="ows.Els',oi(!r.tacts',og',.fend(x=>x.id===s.400,d);[dbEls',omn=e?!r.i,d<ina'.fend(m=>m.id===e.'e4',ame):){  <edbretuMiF(l(`sb-bottom">
+mhdrs="h3>eloitss Detail <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+irs="sync-dot" idl a">4px rammen</      sync-dot" iddra"l${e?.=:'rnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">px res</      sync-dot" iddra"/${mn?.=:'rnu'dm�'}v        div classsb-bottom">
+irs="sync-dot" idl a">d ti</      sync-dot" iddra"/${s.t se}v        div classsb-bottom">
+irs="sync-dot" idl a">duWSB_d=</      sync-dot" iddra"/${s.tuWSB_d=} minutis>
+       div classsb-bottom">
+irs="sync-dot" idl a">su026-</      sync-dot" iddra"/"sync-dot" idbadge ${s'au026-e=='tatruu},  ?vb-iumKn::s'au026-e=='log afper-?vb-bluetevb-iumy'}cl${s'au026-}>
+              div classsb-bottom">
+irs="sync-dot" idl a">px ressR ti</      sync-dot" iddra"/${umbee?.ar">){sRSee||0t}ip       div classsb-bottom">
+irs="sync-dot" idl a">P,ymmen</      sync-dot" iddra"l"sync-dot" idbadge ${s'ida'dp1'id?vb-iumKn::'b-apx('t}cl${s'ida'dp1'id?vP,rpa:'Pold,m:2}</div>
+ip       div class${s'=g ac?`<lex:1"></di12px" otop:12px;paddta-:10px;backg)l di:var(--halfnarrow);bI deroradiusc6px;vv>
+-size:12pxa>${st=g ac}>
+div ` val<di>
+div `);)ogT DATAE CONCLIENT INVOICES ────────────────────────────────── */EED = {
+T─────IBLE()'_'+Mp"r'ontgIda(cs{="DEls',otes=S.SBb.invnu'all'S="DON.sinvs=!r.ida'i1'ontgIdaD.<buttSBb!=='all')sinvs=invs.feater(i=>i.au026-e==SBb||(!i.asd:'2026-&&tes==='unD0px'?'taS="DEls',oumtalOut=!r.ida'i1'ontgIda.feater(i=>i.au026-e=='20',p)areduce)('ri)=>s+i.eam-be,0aS="DEls',oumtal1'id=!r.ida'i1'ontgIda.feater(i=>i.au026-e=='n,rpa)areduce)('ri)=>s+i.eam-be,0aS="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2deapepx':'ntgIdaiph2d<<div classsb-uiay:none;margin--bar;gap:10px;als HR="res:cnnualclass="="tsync-1"></divv>
+-size:12px;c-wid:var(--muISO)">Outau0,dss=:  sd 28 :1"></dic-wid:var(--13.etio@g"/${umbeumtalOut)}>
+ d 28 >t
+     [dbKey]tsync-1"></divv>
+-size:12px;c-wid:var(--muISO)">1'id:  sd 28 :1"></dic-wid:var(--sucIdasg"/${umbeumtal1'id)}>
+ d 28 >t
+     [dbKes<div clas class="${DB.ida'i1'ontgIda.feater(i=>!i.asd:'2026-aue)"awa?`"b-bottom">
+asd:-b; ners="b-s><h4> 17: '202 Requir4d>
+h4><p>${DB.ida'i1'ontgIda.feater(i=>!i.asd:'2026-aue)"awa}sinvtgIda oo,oyN.sida''?5-31 17:</pd<<div classs="btn btn-primary" id=sma ay:nonebackg)l di:#fff;c-wid:#13B5EA;vv>
+-wiewBo:700cv(this)"><ida'All 17:()">1da' All"-31 17: &#8594;</div>
+   <div ` val<di>b-bottom">
+SBbs"
+    <${['all',s-01'op:-20',p:'n,rpa,'unD0px'?']it:r,t=>`sb-bottom">
+SBb${tes===S?'orpabas' valav(this)"><S.SBb.inv='${t}';ron trViewescl${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)} (${t==='all'?DB.ida'i1'ontgIda.e)"awa:t==='unD0px'?'?DB.ida'i1'ontgIda.feater(i=>!i.asd:'2026-aue)"awa:!r.ida'i1'ontgIda.feater(i=>i.au026-e==taae)"awa})>
+div `).joi-v''-}t(' <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+'ontgId</th
+<th
+ lac</th
+<th
+eapepx</th
+<th
+P,ogia</th
+<th
+Aam-be</th
+<th
+Duc</th
+<th
+Su026-</th
+<th
+ 17:</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${invs.t:r,inv=>B[dbKey]Els',oid=!r.i,d<ina'.fend(c=>c.id===inv.ida'i1'd);[dbKey]Els',oi(!r.tacts',og',.fend(x=>x.id===:nv.400,d);[dbKey]Els',osb={-01'oevb-iumy',s3.t:'b-bluet,n,rp vb-iumKn:}[inv.au026-]||vb-iumy';[dbKey]Els',otb={etatu{-{coAwa':' lac-tatu{co'3.,s-2 2026',s':' lac-3.,statu{co'atu{-adhoc':' lac-atu{c}[inv. lac]||vb-iumy';[dbKey]Y='e="`<tr><td>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:11pxa>${inv.idGB'UpIEWC:{ses} <div tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)">${2?.=:'r?k="t fmtdm�'){Lo?.umFmetnu'dm�'}v id="v td>[dbKey]<td>tsync-dot" idbadge ${tb}play:nonevv>
+-size:9pxa>${inv. lac}>
+     v td>[dbKey]<td:1"></divv>
+-size:12pxa>${cl?.=:'rnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:11pxa>${inv.',ogia}>
+td>[dbKey]<td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbeinv.eam-be)} <td>[dbKey]<td:1"></divv>
+-size:11px;c-wid:${inv.due<tiF().t&&inv.au026-!=='n,rpa?'var(--13.etio@gm*y:'hercpo}a>${inv.due}v td>[dbKey]<td>tsync-dot" idbadge ${sb}cl${inv.au026-}>
+       td>[dbKey]<td>tsync-dot" idbadge ${inv.asd:'2026-?vb-asd:::'b-apx('t}cl${inv.asd:'2026-?v&#dtiF3; D0px'?'S'nold,m:2}</div>
+  td>[dbKey]<td>tb-bottom">
+a1's"
+ass="   <${inv.au026-==='-01'op?`<="btn btn-primary" id=sm" id=Outk="nav(this)"><s3.d'ontgId('${inv.id}'s">S3.d>
+div>
+  ` val<di="kk <${inv.au026-==='20',p?`<="btn btn-primary" id=sm" id=sucIdasav(this)"><12pk1'id('${inv.id}'s">&#dtiF3; 1'id>
+div>
+  ` val<di="kk <${!inv.asd:'2026-?`s="btn btn-primary" id=sm" id=asd:av(this)"><ida'="t 17:('${inv.id}'s">&#8594;1 17:</div>
+  ` val<di="  s<div   td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`;"DTT()'_'+Mp"s3.d'ontgId(ids{;valuei=!r.ida'i1'ontgIda.fend(x=>x.id===:nnoth)i){i.au026-e'20',p;addAct(9;"�',`="t Offis3.t:d${umbei.eam-be)}scall${i.',ogia}`Doobacts;ron trViewes;}ogin()n:14 12pk1'id(ids{;valuei=!r.ida'i1'ontgIda.fend(x=>x.id===:nnoth)i){i.au026-e'n,rpa;obacts;ron trViewes;}ogin()n:14 ida'="t 17:(ids{;valuei=!r.ida'i1'ontgIda.fend(x=>x.id===:nnoth)i){i.asd:'2026-=5-31SaddAct(9;"�',`="t Offiida''?5-31 17::d${umbei.eam-be)}`Doobacts;ron trViewes;}ogin()n:14 ida'All 17:(){DB.ida'i1'ontgIda.f]oEaf-vi=>{th)!i.asd:'2026-ai.asd:'2026-=5-31})SaddAct(9;"�','All"nold,m:sinvtgIda ida''?5-31 17:'Doobacts;ron trViewes;}gT DATAE CONMENTOR PAYMENTS ─────────────────────────────── */EED = {
+T────────IBLE()'_'+Mp"r1',data-(cs{="DEls',otes=S.SBb.paynu'all'S="DON.spays=!r.ida'dp1',data-D.<buttSBb!=='all')spays=pays.feater(p=>p.au026-e==tab);="DEls',o4',dss==!r.ida'dp1',data-.feater(p=>p.au026-e=='nold,m:2aS="DEls',o4',dVal=4',dss=areduce)('ro)=>s+p.eam-be,0aS="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dpx ress1',data-dih2d<p>${4',dss=ae)"awa}o<ina'datsnold,m:s· ${umbe4',dVal)} due  clada2026-3.d>
+p>v id=" <div clasb-bottom">
+SBbs"
+    <${['all',snold,m:2,'n,rpa]it:r,t=>`sb-bottom">
+SBb${tes===S?'orpabas' valav(this)"><S.SBb.pin='${t}';ron trViewescl${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)} (${t==='all'?DB.ida'dp1',data-.e)"awa:!r.ida'dp1',data-.feater(p=>p.au026-e==taae)"awa})>
+div `).joi-v''-}t(' <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+d<ina'</th
+<th
+4px rammen</th
+<th
+ lac</th
+<th
+P,ogia</th
+<th
+Aam-be</th
+<th
+Su026-</th
+<th
+Apay'Bill</th
+<th
+ 17:</th
+</tr></thead>classsibody>${pays.t:r,p=>B[dbKey]Els',om=!r.i,d<ina'.fend(x=>x.id===p.'e4',ame);[dbKey]Els',oe(!r.tacts',og',.fend(x=>x.id===p.400,d);[dbKey]Els',otb={etatu{-ar">){s':' lac-tatu{co'3.,s-m2026',':' lac-3.,statu{co'atu{-bespoke':' lac-atu{c}[p. lac]||vb-iumy';[dbKey]Y='e="`<tr><tdo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${m?.=:'rnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:11pxa>${2?.=:'r?k="t fmtdm�'){Lo?.umFmetnu'dm�'}v td>[dbKey]<td>tsync-dot" idbadge ${tb}play:nonevv>
+-size:9pxa>${p. lac}>
+     v td>[dbKey]<td:1"></divv>
+-size:11pxa>${p.',ogia}>
+td>[dbKey]<td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700;c-wid:var(--cadm',ng"/${umbe4.eam-be)} <td>[dbKey]<td>tsync-dot" idbadge ${p.au026-e=='n,rpa?vb-iumKn::'b-apx('t}cl${p.au026-}>
+       td>[dbKey]<td:1"></divv>
+-size:11pxa>${p. payBill,dnu'tsync-1"></dic-wid:var(--muISO)">un-v',stad</div>
+'}  td>[dbKey]<td>tsync-dot" idbadge ${p.asd:'2026-?vb-asd:::'b-apx('t}cl${p.asd:'2026-?v&#dtiF3;'S'nold,m:2}</div>
+  td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`;"DTT DATAE CONAUTO-BILL ────────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"rApayBill(cs{="DEls',o4',dss==!r.ida'dp1',data-.feater(p=>p.au026-e=='nold,m:2&&!p. payBill,dtS="DEls',obyd<ina'={}d.<b4',dss=af]oEaf-vp=>{th)!byd<ina'[p.'e4',ame]) byd<ina'[p.'e4',ame]=[];byd<ina'[p.'e4',ame].ida'tps;}aS="DEls',o4',dTFee:=4',dss=areduce)('ro)=>s+p.eam-be,0aS="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dApay'Bill &amp;1 17:</h2d<p>5= e="it selanold,d<ina'das,  <{ida' -31 17: atda2026-3.d>
+p>v id=" <div clasb-bottom">
+asd:-b; nerslay:none12px" o <div :20pxclass="tb-t><h4> 17: IntegWSB_d=026-01e>
+h4><p>Apay'bills, rfiida''?5assinb-tid"F Csup"t er bills,IEW anold,.</pd<<div classslex:1"></diwC �-als H:rewBo <dlex:1"></divv>
+-size:18px;vv>
+-wiewBo:700cl${umbe4',dTFee:s} <div tlex:1"></divv>
+-size:10px;opact6-0.8">4',dss=  clada2026v id="v class="s class="sb-bottom">
+g2play:none12px" o <div :18pxclass="tb-title" idc="na class="sb-uinfo"><sc="n-hdrs="h3> <{ida'c5"callP',dss=41',data-dih3
+ass="   <${st S)){keys(byd<ina'aue)"awa?`"="btn btn-primary" id=sm" id=pri12pyav(this)"><runApayBill()">Ru=02pay'Bill &#8594;</div>
+  ` vtsync-dot" idbadge b-iumen">&#dtiF3; All"nroIdasad</div>
+'}t('okkks<div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkk${st S)){keys(byd<ina'aue)"awa===0?`sb-bottom">
+emptyiv>b-bottom">
+ei">&#dtiF3;v id="vp>Nod4',dss= <ina'das,f]o  cladp,ogia</p>>
+div ` val<di="  kk${st S)){value)"�byd<ina'aut:r,([mid5','s
+)=>B[dbKey]"Dy]Els',om=!r.i,d<ina'.fend(x=>x.id===mie);[dbKey]"D"DEls',otFee:=4ays.reduce)('ro)=>s+p.eam-be,0aS="DKey]"D"DY='e="`<lex:1"></dipaddta-:12px 18px;bI dero <div :1px solid var(--bI der)" class=""D"D  tlex:1"></di;margin--bar;als HR="res:cnnual;justify-iv>
+</d:divce-betwmen;12px" o <div :8px">[dbKey]"D"D  ="tb-t><sd 28 :1"></divv>
+-size:13pxa>${m?.=:'rnu'Unknown :14�</s}>
+ d 28 >[dbKey]"D"D  ="tsync-dot" idbadge b-apx('"lay:none12px" onclic8pxa>${pays.e)"awa}o<ina'da${pays.e)"awa>1?'steve}v       <div class="okkkkk  <sd 28 :1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:14px;c-wid:var(--cadm',ng"/${umbetFee:s} < d 28 >[dbKey]"D"D   <div class="okkkkk${pays.t:r,p=>BEls',oe(!r.tacts',og',.fend(x=>x.id===p.400,d);[dbKey]"D"D"D"DY='e="`<lex:1"></di;margin--bar;justify-iv>
+</d:divce-betwmen;vv>
+-size:11px;c-wid:var(--muISO);paddta-:3px 0">[dbKey]"D"D  ="="tsync>${2?.=:'r?k="t fmtdm�'){Lo?.umFmetnu'dm�'}v      [dbKey]"D"D  ="="tsync>${umbe4.eam-be)} <       div `)}).joi-v''-}t('okkk <las clas`;"dbKey]"D}).joi-v''-}t('okkks<div classs<div cla="tb-title" idc="na class="sb-uinfo"><sc="n-hdrs="h3>Previous02pay'Bill Ru=<dih3> <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkk${DB.apayBills.t:r,ab=>B[dbKey]"Dy]Els',opays=Bb.pin,og',.t:r,id=>!r.ida'dp1',data-.fend(p=>p.id===:nn).feater(Bo"lran);[dbKey]"D"DEls',oida'dpId'=[...px( Se.ipays.t:r,p=>p.'e4',ame))rows.lamg"D"DY='e="`<lex:1"></dipaddta-:12px 18px;bI dero <div :1px solid var(--bI der);;margin--bar;als HR="res:cnnual;gap:10px">[dbKey]"D"D  tlex:1"></div>
+    <dsd 28 :1"></divv>
+-size:12pxa>2pay'Bill ${ab.idGB'UpIEWC:{ses}scall${Bb.p,ogia}>
+ d 28 >class=""D"D  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO);12px" otop:2pxa>${ida'dpId'.e)"awa}oida'dp${ida'dpId'.e)"awa>1?'steve}s· ${0b.pin,og',.e)"awa}o<ina'datipt>
+/ <div class="okkkkkslex:1"></diwC �-als H:rewBo <dlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700;c-wid:var(--cadm',ng"/${umbeab.wFee:Aam-be)} <div class=""D"D  tsync-dot" idbadge ${ab.asd:'2026-?vb-asd:::'b-apx('t}cl${ab.asd:'2026-?v&#dtiF3; Xsd:::'nold,m:2}</div>
+  div class="okkk< clas`;"dbKey]"D}).reveEED)).joi-v''-}t('okkks<div classs<div clas clas`;"DTT()'_'+Mp"runApayBill(){="DEls',o4',dss==!r.ida'dp1',data-.feater(p=>p.au026-e=='nold,m:2&&!p. payBill,dtS="Dth)!4',dss=ae)"awa){alar.i'Nod4',dss= <ina'das,-31nroIdas.'s;ro'e="o}
+y];valueid=h.ss=S="DEls',oumtal=4',dss=areduce)('ro)=>s+p.eam-be,0aS="D4',dss=af]oEaf-vp=>{p. payBill,d=:n;p.au026-e'n,rpa;p.asd:'2026-=5-31S}/ot('Lr.apayBills.ida'tiFd,',ogia:'a'c5-06t,n,na'das:4',dss=at:r,p=>p.:nn,wFee:Aam-be:wFee:,'2026-06n,rpa,asd:'2026-s5-31'}, ],
+datiF().t}aS="DaddAct(9;"�',`Apay'bill2026 C
+.ty — e <{ida'c5"call${umbetFee:s} ida''?5-31 17:`no[dbobacts;"ron trViewes;)"Dalar.i'Apay'bill2026 C
+.ty �.\n'+4',dss=ae)"awa+' <ina'das,-3ee:lss= '+umbetFee:s+' <da''?5-31 17:.'s;)ogT DATAE CONCONTACTS ────────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"rCst mee-(cs{="DEls',otes=S.SBb.Elsnu'all'S="DON.sEls'=!r.i,d<ina'.feater(x=>tes==='all'||x.tlace==tab);="DE.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dCst mee-dih2d<p>${DB.i,d<ina'.feater(c=>c.tlace=='bert Ca).e)"awa}oida'dpss· ${DB.i,d<ina'.feater(c=>c.tlace=='ida'i1a).e)"awa}oida'i1s</p>v id="cont="btn btn-primary" id=pri12pyav(this)"><openCst meeMiF(l(s">+ Add Cst mee</div>
+   <div clasb-bottom">
+SBbs"
+    <${['all',sbert Ca,'ida'i1a]it:r,t=>`sb-bottom">
+SBb${tes===S?'orpabas' valav(this)"><S.SBb.i,d='${t}';ron trViewescl${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)} (${t==='all'?DB.i,d<ina'.e)"awa:!r.i,d<ina'.feater(c=>c.tlace==taae)"awa})>
+div `).joi-v''-}t(' <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+N:'r</th
+<th
+ lac</th
+<th
+OrganisSB_d=</th
+<th
+Email <th
+<th
+Su026-</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${Els'it:r,ct=>B[dbKey]Els',otb=ct.tlace=='bert Ca?' lac-tatu{c:'b-black';[dbKey]Els',osb=ct.au026-e=='026-04-?vb-iumKn::ct.au026-e=='nrospS))t?'b-apx('tevb-iumy';[dbKey]Y='e="`<tr><td>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${ct.=:'r} <div t td>[dbKey]<td>tsync-dot" idbadge ${tb}cl${ct. lac}>
+     v td>[dbKey]<td:1"></divv>
+-size:12pxa>${ct.opxnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:11px;c-wid:var(--muISO)">${)){vmail}v td>[dbKey]<td>tsync-dot" idbadge ${sb}cl${ct.au026-}>
+       td>[dbKey]<td>tb-bottom">
+a1's"
+s="btn btn-primary" id=sm" id=Outk="nav(this)"><openCst meeMiF(l('${ct.id}'s">Edil</div>
+  t('okkk<="btn btn-primary" id=sm" id=d; }
+;av(this)"><dey �C{se'${ct.id}'s">&#dtiF5;</div>
+   <div   td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`;"DTstate){  dey �C{seids{utte'submis('Dey � i,d<ina?'))ro'e="o!r.i,d<ina'=!r.i,d<ina'.feater(c=>c.id!==:nnoobacts;ron trViewes;}gT DATAE CONPROJECT MANAGEMENT ──────────────────────────── */EED = {
+T────────IBLE()'_'+Mp"r1ro S))-(cs{="DEls',oau026-reater=S.SBb.pro Su026-nu''S="DEls',o4,itionreater=S.SBb.pro P,itionnu''S="DON.seo>f(!r.tacts',og',.feater(e=>B[dbKeuttau026-reater&&e'au026-!==au026-reater)DY='e=" etS=";.<bblth)',itionreater&&e'',ition!==p,itionreater)DY='e=" etS=";.<bblY='e=" 5-31S="D}aS="DEls',ohasreater=au026-reater||p,itionreaterS="DEls',o4,itionOpt-=[...px( Se.i!r.tacts',og',.t:r,e=>e'',ition).feater(Bo"lran))rows.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2d1ro S)) Man rammen</h2d<p>${DB.tacts',og',.feater(e=>e.au026-e=='026-04-aae)"awa}orpabasdpro S))-s· ${DB.tacts',og',.e)"awa},-3ee:>
+p>v id=" <div clasb-boay:none;margin--bar;gap:8px;-bar-wrap:wrap;12px" o <div :16px;als HR="res:cnnualclass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.pro Su026-� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"Su026-:'</op'+Mplt('okkk${[2026-04-0:'2026-07-0idatruu},  ]it:r,s=>`sop'+Mp"drafp="${s}"${su026-reater===a?'oselod'ccept'}>${s'y';NAt(0-GB'UpIEWC:{ses+s. today1)}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.pro P,ition� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"P:'2026-</op'+Mplt('okkk${4,itionOpt-it:r,p=>`sop'+Mp"drafp="${4la${4,itionreater===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="${hasreater?`<="btn btn-primfeater-mer);av(this)"><S.SBb.pro Su026-�''SS.SBb.pro P,ition�''tron trViewescl&#dtiF5; Cer);</div>
+  ` val<di <div clasb-boay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],( pay'feal,minmax(340px,1fr));gap:16px">[dbKe${eo>fut:r,e=>B[dbKey]Els',oida'i1=!r.i,d<ina'.fend(x=>x.id===e.ida'i1'd);[dbKey]Els',omda'dp=!r.i,d<ina'.fend(x=>x.id===e.'e4',ame);[dbKey]Els',oeo>sr">=!r.Mp"sun">.feater(s=>s.400,d===e.id);[dbKey]Els',oid n=eo>sr">.feater(s=>s.au026-e==idatruu},  aae)"awa;[dbKey]Els',otmtal=e'ar">){ssP20264d||eo>sr">.e)"awa||1;[dbKey]Els',opct=px(36min(dti,px(36)l di((id n/tFee:s*dti));[dbKey]Els',ostBadge=e.au026-e=='026-04-?vb-iumKn::e.au026-e==''2026-07-?'b-apx('tevb-iumy';[dbKey]Els',otlacBadge={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[e.tlac]||vb-iumy';[dbKey]Els',oeo>-v='}=!r.SB_KE.feater(t=>t.ref===e.id);[dbKey]Els',oopen-v='}=eo>-v='}.feater(t=>t.au026-!=='nd n'aae)"awa;[dbKey]Y='e="`<lex:nfo"><sc="na:1"></dipaddta-:18px">[dbKey]"Dtlex:1"></di;margin--bar;als HR="res:-bar-a'ont;justify-iv>
+</d:divce-betwmen;12px" o <div :12pxa>class="okkk<lex:1"></div>
+    <class=""D"D  tlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:14px;vv>
+-wiewBo:700;c-wid:var(--nr);black);12px" o <div :4pxa>${et=:'r} <div class=""D"D  tlex:1"></divv>
+-size:11px;c-wid:var(--muISO)">${)da'i1?)da'i1t=:'r:'dm�'}s· ${'e4',a?anold,.=:'r:'Nyfanold,'}  div class="okkk< clas
+ss=""D"D  tsync-dot" idbadge ${stBadge}"lay:none12px" onclic8px;-bar-shrink:0cl${e'au026-}>
+     
+ss="okkk< clas
+ss=""D"Dsb-boay:none;margin--bar;gap:6px;12px" o <div :12px;-bar-wrap:wrapa>
+="okkk"D  tsync-dot" idbadge ${tlacBadge}cl${e' lac}>
+     [dbKey]"D"D${e'',ition?`"sync-dot" idbadge b-iumycl${e'',ition}</div>
+` val<di="kk << clas
+ss=""D"Dsb-boay:none12px" o <div :12pxa>class="okkk<lex:1"></di;margin--bar;justify-iv>
+</d:divce-betwmen;vv>
+-size:11px;c-wid:var(--muISO);12px" o <div :4pxa>class=""D"D  tsyncdsr">){ssip      syncl${nd n} / ${tFee:} C
+.ty —>
+     [dbKey]"D"D  div class="okkk<lex:1"></dihiewBo:5px;backg)l di:var(--bI der);bI deroradiusc3px;overflow:hidden">class=""D"D  tlex:1"></diircle:${4ct}%;hiewBo:dti%;backg)l di:${4ct===dti?'var(--sucIdasgtevvar(--13.etio@gm};bI deroradiusc3px;transi SB_ .3s">  div class="okkk< clas
+ss=""D"D< clas
+ss=""D"Dsb-boay:none;margin--bar;justify-iv>
+</d:divce-betwmen;als HR="res:cnnualclass="=""D  tlex:1"></divv>
+-size:11px;c-wid:var(--muISO)">${open-v='}>0?`"sync-1"></dic-wid:var(--cadm',ng"/${open-v='}}oopen SB_K${open-v='}>1?'steve}v      `:'Nyfopen SB_Ks'}  div class="okkk<lex:1"></di;margin--bar;gap:6px" class="okkkkks="btn btn-primary" id=sm" id=Outk="nav(this)"><openEngMiF(l('${20id}'s">Edil</div>
+  class="okkkkks="btn btn-primary" id=sm" id=Outk="nav(this)"><open1ro -v='MiF(l('${20id}'s">+ -v='</div>
+  class="okkk< clas
+ss=""D"D< clas
+ss=""D< clas`;"dbKe}).joi-v''-}t('ok${eo>fue)"awa===0?`sb-bo1"></digriF-c-wumn:1/-1;wC �-als H:cnnual;paddta-:48px;c-wid:var(--muISO)">Nodpro S))-s.',rp 'Hf selod'cc featers.  div ` val<di>
+div `;"DTT()'_'+Mp"open1ro -v='MiF(l(400,d){getEls',oi(!r.tacts',og',.fend(x=>x.id===400,d);[dbsetuMiF(l(`sb-bottom">
+mhdrs="h3>-vsc-v='"call${e?e.=:'r:''} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>-v='"Ttitl</label><inpuueid="pt- titl"ltlaceiwC �" rgiceholder="e.g. S3.d Q3sinvtgId"   div classsb-bottom">
+fgs="label>Av',stal</label><selod'vid="pt--v',stae"lt('okkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'l  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Prior26-</label><selod'vid="pt-pri">[dbKey]"Dtop'+Mp"drafp="hewB">HewB</op'+Mpltop'+Mp"drafp="mediuma aelod'cc>Medium</op'+Mpltop'+Mp"drafp="lowclLow</op'+Mplt('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Due d ti</label><inpuuetlaceit se"vid="pt-due"vdrafp="${tiF().t}">s<div classs<div cla="tb-title" idfgs="label>Notis>
+label><wC �areavid="pt-=g ac" row id2s="\/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obac1ro -v='('${200,d}'s">Sbac -v='</div>
+  classs<div clas clas`s;)ogT()'_'+Mp"obac1ro -v='(400,d){getEls',o titl=docu,og'.getEl',og'ById('pt- titl'aadrafp.umFmetS="Dth)! titl)ro'e="Dalar.i'Pleassd:'t
+;v o titl.2aS="DEls',ot=iFd_h.ss=, titl,ref:400,d,p:noeetacts',og'',-v',stae:docu,og'.getEl',og'ById('pt--v',stae'aadrafp,'2026-06tiFo',prior26-:docu,og'.getEl',og'ById('pt-pri'aadrafp,due:docu,og'.getEl',og'ById('pt-due'aadrafp,=g ac:docu,og'.getEl',og'ById('pt-=g ac'aadrafp.umFmet}ot('Lr.SB_KE.unshift(t)SaddAct(9;"�',`-v='"}, ],
+da ${ttitl}`Doobacts;cip()MiF(l(s;ron trViewes;)ogT DATAE CONQUOTING ────────────────────────────────── */EED = {
+T──────── */EED = {
+T─IBLE()'_'+Mp"rQuotta-(cs{="Dth)!Lr.qug ac) Lr.qug ac=[];="DEls',oaureater=S.SBb.qug aStnu''S="DEls',o4,itreater=S.SBb.qug aP,itnu''S="DON.squg ac=Lr.qug ac.feater(q=>B[dbKeuttaureater&&q'au026-!==aureater)DY='e=" etS=";.<bblth)',itreater&&q'',ition!==p,itreater)DY='e=" etS=";.<bblY='e=" 5-31S="D}aS="DEls',ohasreater=aureater||p,itreaterS="DEls',otFee:Val=Lr.qug ac.reduce)('rq)=>s+qadrafp,0aS="DEls',oapprovedVal=Lr.qug ac.feater(q=>q.au026-e=='0pproveda)areduce)('rq)=>s+qadrafp,0aS="DEls',ostBadgeMap={-01'oevb-iumy',s3.t:'b-bluet,0pproved vb-iumKn:gdeck="nd vb-red'}ows.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dQuotta-</h2d<p>${DB.qug ac.e)"awa},qug acs· ${umbeapprovedVal)}oapprovedvdrafp</p>v id="cont="btn btn-primary" id=pri12pyav(this)"><openQuoteMiF(l(ss=ta-vscQuote</div>
+   <div clasb-bottom">
+kpi-griF"o1"></digriF-at.ty ti-c-wumns:rep ],(4,1fr);12px" o <div :20pxclass="${[t('okkk{label:'TFee:aQuotes',dra:DB.qug ac.e)"awa,sub:'ebo" ime'},t('okkk{label:'TFee:aVrafp',dra:umbetFee:Val),sub:'pipek="n'},t('okkk{label:'Approveda,dra:DB.qug ac.feater(q=>q.au026-e=='0pproveda)ae)"awa,sub:umbeapprovedVal)+'vdrafp',cl-06accnnu'},t('okkk{label:'Awaitta- Responsea,dra:DB.qug ac.feater(q=>q.au026-e=='s'i1a).e)"awa,sub:'s'i1,qug ac',cl-06gold'},t('ok]it:r,k=>`sb-bottom">
+kpi${k.cl-?' '+k.cl- vala>sb-bottom">
+kpi-labela>${k.label} <div tlex:ttom">
+kpi-dra"/${kadra} <div tlex:ttom">
+kpi-sub"/${kasub}v id=" <div `).joi-v''-}t(' <div clasb-boay:none;margin--bar;gap:8px;-bar-wrap:wrap;12px" o <div :16px;als HR="res:cnnualclass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.qug aSt� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"Su026-:'</op'+Mplt('okkk${[2-01'op:-20',p:'0pproveda,'deck="nd ]it:r,s=>`sop'+Mp"drafp="${s}"${sureater===a?'oselod'ccept'}>${s'y';NAt(0-GB'UpIEWC:{ses+s. today1)}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.qug aP,it� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"P:'2026-</op'+Mplt('okkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la${4,itreater===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="${hasreater?`<="btn btn-primfeater-mer);av(this)"><S.SBb.qug aSt�''SS.SBb.qug aP,it�''tron trViewescl&#dtiF5; Cer);</div>
+  ` val<di <div clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+Quote N:'r</th
+<th
+eapepx</th
+<th
+SROt SB_</th
+<th
+Vrafp</th
+<th
+P,ition</th
+<th
+d ti</th
+<th
+Vraid Until <th
+<th
+Su026-</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${qug ac.e)"awa?qug ac.t:r,q=>B[dbKey]Els',oida'i1=!r.i,d<ina'.fend(x=>x.id===q.ida'i1'd);[dbKey]Els',osb=stBadgeMap[q.au026-]||vb-iumy';[dbKey]Els',otb={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[q.aROt SB_]||vb-iumy';[dbKey]Y='e="`<tr>[dbKey]"Dttd>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${qt=:'r} <div ${qt=g ac?`<lex:1"></divv>
+-size:10px;c-wid:var(--muISO);12px" otop:2pxa>${qt=g ac. today0,60)}${qt=g ac.e)"awa>60?'…teve}v div ` val  td>[dbKey]y]<td:1"></divv>
+-size:12pxa>${cla'i1?)da'i1t=:'r:'dm�'}  td>[dbKey]y]<td>tsync-dot" idbadge ${tb}cl${q.aROt SB_}>
+       td>[dbKey]y]<td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:13px;c-wid:var(--cadm',ng"/${umbeqadrafp)l  td>[dbKey]y]<td:1"></divv>
+-size:12pxa>${q'',itionnu'dm�'}v td>[dbKey]y]<td:1"></divv>
+-size:11px;c-wid:var(--muISO)">${q.t senu'dm�'}v td>[dbKey]y]<td:1"></divv>
+-size:11px;c-wid:${q.vraidUntil tiF().t?'var(--13.etio@gm*yvar(--muISO)'}cl${q.vraidUntilnu'dm�'}v td>[dbKey]y]<td>tsync-dot" idbadge ${sb}cl${q.au026-}>
+       td>[dbKey]y]<td>tb-bottom">
+a1's"
+ass="   <kks="btn btn-primary" id=sm" id=Outk="nav(this)"><openQuoteMiF(l('${q.id}'s">Edil</div>
+  class="okkk${q.au026-==='-01'op?`<="btn btn-primary" id=sm" id=Outk="nav(this)"><s3.dQuote('${q.id}'s">S3.d>
+div>
+  ` val<di="kk <kk${q.au026-==='20',p?`<="btn btn-primary" id=sm" id=sucIdasav(this)"><0pproveQuote('${q.id}'s">Approve>
+div>
+  ` val<di="kk <kk${q.au026-==='20',p?`<="btn btn-primary" id=sm" id=d; }
+;av(this)"><deck="nQuote('${q.id}'s">Deck="n</div>
+  ` val<di="kk <<<div   td></tr>`;[dbKe}).joi-v''-:`<tr><td]Ell    ="9play:nonewC �-als H:cnnual;paddta-:32px;c-wid:var(--muISO)">Nodqug acsfl di.  td></tr>`}s/tbody>s/tes(; clas clas`;"DTT()'_'+Mp"s3.dQuote(ids{;valueq=Lr.qug ac.fend(x=>x.id===:nnoth)q){q.au026-='20',p;addAct(9;"�',`Quote s3.t:d${qt=:'r}`Doobacts;ron trViewes;}ogin()n:14 0pproveQuote(ids{;valueq=Lr.qug ac.fend(x=>x.id===:nnoth)q){q.au026-='0pproveda;addAct(9;"�',`Quote 0pproved d${qt=:'r}"call${umbeqadrafp)l`Doobacts;ron trViewes;}ogin()n:14 deck="nQuote(ids{;valueq=Lr.qug ac.fend(x=>x.id===:nnoth)q){q.au026-='deck="nd oobacts;ron trViewes;}ogT()'_'+Mp"openQuoteMiF(l(ids{getEls',oq=:n?Lr.qug ac.fend(x=>x.id===:nn:){  <edbEls',oida'i1'=!r.i,d<ina'.feater(c=>c.tlace=='ida'i1a));  retuMiF(l(`sb-bottom">
+mhdrs="h3>${q?'EdilaQuotem*y-vscQuote'} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>Quote N:'r</label><inpuueid="qm-=:'r"ltlaceiwC �" drafp="${q?q.=:'r:''}" rgiceholder="e.g. UnileveE Lead26-hipamp:'Deloi"l  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>eapepx</label><selod'vid="qm-ida'i1">[dbKey]"Dtop'+Mp"drafp="">callSelod'veapepx'cal</op'+Mplt('okkkkk${ida'i1'it:r,cl=>`sop'+Mp"drafp="${cl.id}"${q&&q'ida'i1'de==cl.id?'oselod'ccept'}>${cl.=:'r} <op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>SROt SB_</label><selod'vid="qm-aRO">[dbKey]"Dtop'+Mp"drafp="tatu{"${q&&q'aROt SB_e=='tatu{c?'oselod'ccept'}>5 srshM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="3.,statu{"${!q||q'aROt SB_e=='3.,statu{c?'oselod'ccept'}>E.,statu{hM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="atu{"${q&&q'aROt SB_e=='atu{c?'oselod'ccept'}>Ttu{ 4px rammen</op'+Mplt('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Vrafp (£)</label><inpuueid="qm-dra":tlaceinupx('"ldrafp="${q?q.drafp:''}" rgiceholder="0"l  div classsssb-bottom">
+fgs="label>Vraid Until <label><inpuueid="qm-draiF"otlaceit se"vdrafp="${q?q.draidUntil vala>s div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>P,ition</label><selod'vid="qm-',ition">t('okkkkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la${q&&q'',ition===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>C3}},SB</label><selod'vid="qm-i3}},SB">t('okkkkk${COUNTRIESit:r,cn=>`sop'+Mp"drafp="${cn}"${q&&q'i3}},SBe==cn?'oselod'ccept'}>${cn}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classs<div cla="tb-title" idfgs="label>Notis>
+label><wC �areavid="qm-=g ac" row id3cl${q?qt=g ac val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obacQuote('${idnu''}'s">Sbac Quote</div>
+  classs<div clas clas`s;)ogT()'_'+Mp"obacQuote(ids{edbEls',o=:'r=docu,og'.getEl',og'ById('qm-=:'r'aadrafp.umFmetS="Dth)!=:'r)ro'e="Dalar.i'Pleassd:'t
+;v oqug ao=:'r.2aS="DEls',ove:=4arseFloat(docu,og'.getEl',og'ById('qm-ve:'aadrafp)||0S="Dth)ids{edbetEls',oq=Lr.qug ac.fend(x=>x.id===:nno.<bblth)q){q.=:'r==:'r;q'ida'i1'dedocu,og'.getEl',og'ById('qm-ida'i1a).drafptq'aROt SB_edocu,og'.getEl',og'ById('qm-aROa).drafptq'drafp=dra;q.draidUntil=docu,og'.getEl',og'ById('qm-ve:rpa)adrafptq'',ition=docu,og'.getEl',og'ById('qm-',itiona)adrafptq'i3}},SBedocu,og'.getEl',og'ById('qm-i3}},SBa)adrafptq'=g ac=docu,og'.getEl',og'ById('qm-=g ac'aadrafp.umFmeto}
+y]} elssd{edbetLr.qug ac.ida'tiFd_h.ss=,=:'r,ida'i1'd:docu,og'.getEl',og'ById('qm-ida'i1a).drafp,aROt SB_:docu,og'.getEl',og'ById('qm-aROa).drafp,drafp:ve:,'2026-06-01'op:t seatiF().t,draidUntil docu,og'.getEl',og'ById('qm-ve:rpa)adrafp,',ition:docu,og'.getEl',og'ById('qm-',itiona)adrafp,i3}},SB:docu,og'.getEl',og'ById('qm-i3}},SBa)adrafp,=g ac:docu,og'.getEl',og'ById('qm-=g ac'aadrafp.umFmet}no.<bbladdAct(9;"�',`Quote }, ],
+da ${=:'r}"call${umbeval)}`no[db}[dbobacts;cip()MiF(l(s;ron trViewes;)ogT DATAE CONPIPELINE ────────────────────────────────── */EED = {
+T──────── */EED = {
+TIBLE()'_'+Mp"rPipek="n(cs{="Dth)!Lr.opportunitiac) Lr.opportunitiac=[];="DEls',o4,itionr=S.SBb.plP,itionnu''S="DEls',oi3}},SBr=S.SBb.plC3}},SBnu''S="DEls',oaROt SB_r=S.SBb.plSROt SB_nu''S="DON.sopp'=!r.opportunitiac.feater(o=>B[dbKeutt4,itionr&&o'',ition!==p,itionr)DY='e=" etS=";.<bblth)i3}},SBr&&o'i3}},SB!==i3}},SBr)DY='e=" etS=";.<bblth)aROt SB_r&&o'aROt SB_!==aROt SB_r)DY='e=" etS=";.<bblY='e=" 5-31S="D}aS="DEls',oallP,ition-=[...px( Se.i!r.opportunitiac.t:r,o=>o'',ition).feater(Bo"lran))rows.Els',oallC3}},Siac=[...px( Se.i!r.opportunitiac.t:r,o=>o'i3}},SB).feater(Bo"lran))rows.Els',otFee:Val=Lr.opportunitiac.feater(o=>o.au0ge!=='Cip()d Los,p)areduce)('ro)=>s+oadrafp,0aS="DEls',ocip()dWB_eLr.opportunitiac.feater(o=>o.au0ge==='Cip()d WB_2aS="DEls',owonVal=cip()dWB_areduce)('ro)=>s+oadrafp,0aS="DEls',oopenOpp'=!r.opportunitiac.feater(o=>!['Cip()d WB_2,'Cip()d Los,p].ithiudes(o.au0getaS="DEls',owiewBoedVal=openOpp'areduce)('ro)=>s+(oadrafp*(oaprob||50)/dti),0aS="DEls',ohasreater=p,itionr||i3}},SBr||aROt SB_r;
+ws.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2d1ipek="n</h2d<p>${DB.opportunitiac.e)"awa},opportunitiac acrossoall au0ges</p>v id="cont="btn btn-primary" id=pri12pyav(this)"><openDealMiF(l(ss=ta-vscDeal</div>
+   <div clasb-bottom">
+kpi-griF" cla="tb-title" idkpi accnnua>sb-bottom">
+kpi-labela>TFee:a1ipek="n Vrafp</div tlex:ttom">
+kpi-dra"/${umbetFee:Val)} <div tlex:ttom">
+kpi-sub"/${DB.opportunitiac.e)"awa},opportunitiacipt>
+/ <div classtlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Open Deals</div tlex:ttom">
+kpi-dra"/${openOpp'ae)"awa} <div tlex:ttom">
+kpi-sub"/${umbeopenOpp'areduce)('ro)=>s+oadrafp,0a)} C
+.b="ndvdrafp</t>
+/ <div classtlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>Cip()d WB_</div tlex:ttom">
+kpi-dra"/${cip()dWB_ae)"awa} <div tlex:ttom">
+kpi-sub"/${umbewonVal)},-3ee:>
+t>
+/ <div classtlex:ttom">
+kpia>sb-bottom">
+kpi-labela>WiewBoed Vrafp</div tlex:ttom">
+kpi-dra"/${umbepx(36)l di(wiewBoedVal))} <div tlex:ttom">
+kpi-sub"/probability-wiewBoedfopen pipek="n</id="v class="s class="sb-bottom">
+feater-rowcoay:none12px" o <div :12pxa>class<selod'v(th'; }
+><S.SBb.plP,ition� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"P:'2026-</op'+Mplt('okkk${allP,ition-it:r,p=>`sop'+Mp"drafp="${4la${4,itionr===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="<selod'v(th'; }
+><S.SBb.plC3}},SB� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"C3}},Siac</op'+Mplt('okkk${allC3}},Siacit:r,cn=>`sop'+Mp"drafp="${cn}"${i3}},SBr===cn?'oselod'ccept'}>${cn}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="<selod'v(th'; }
+><S.SBb.plSROt SB_� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"SROt SB_c</op'+Mplt('okkktop'+Mp"drafp="tatu{"${aROt SB_r==='tatu{c?'oselod'ccept'}>5 srs</op'+Mplt('okkktop'+Mp"drafp="3.,statu{"${aROt SB_r==='3.,statu{c?'oselod'ccept'}>E.,statu{</op'+Mplt('okkktop'+Mp"drafp="atu{"${aROt SB_r==='atu{c?'oselod'ccept'}>Ttu{</op'+Mplt('ok>
+ elod'lass="${hasreater?`<="btn btn-primfeater-mer);av(this)"><S.SBb.plP,ition�''tS.SBb.plC3}},SB�''tS.SBb.plSROt SB_�''tron trViewescl&#dtiF5; Cer);</div>
+  ` val<di <div clasb-bottom">
+lco <="na class${LC_STAGESit:r,(au0geri)=>{[dbKey]Els',ost0geOpp'=opp'.feater(o=>o.au0ge===au0get;[dbKey]Els',ost0geVal=st0geOpp'areduce)('ro)=>s+oadrafp,0aS="DKey]Y='e="`<lex:nfo"><slcost0ge">[dbKey]"Dtlex:nfo"><slcost0ge-hdrs=class="okkk<lex:nfo"><slcost0ge-numcl${i+1}  div class="okkk<lex:nfo"><slcost0ge-n:'r">${LC_STAGE_LABELS[st0ge]||at0ge}  div class="okkk<lex:nfo"><slcost0ge-i3}},a>${st0geOpp'ae)"awa},deal${st0geOpp'ae)"awa!==1?'steve}s· ${umbest0geVal)} <div class=""D< clas
+ss=""D"Dsb-bonfo"><slcoc="ns"
+ass="   <kk${st0geOpp'at:r,o=>{class="okkkkkEls',otb={tatu{:' lac-tatu{co3.,statu{:' lac-3.,statu{coatu{:' lac-atu{c}[o.aROt SB_]||vb-iumy';[dbKey]"DKey]Y='e="`<lex:nfo"><slcoc="na:(this)"><openDealMiF(l('${o.id}'s">[dbKey]"D"D  ="tb-t:nfo"><slcoc="n-n:'r">${ot=:'r} <div class=""D"D  ="tb-t:nfo"><slcoc="n-meta">${otida'i1nu'dm�'}vbr>${ot',itionnu'dm�'}s· ${o'i3}},SBnu'dm�'}v id="class=""D"D  ="tb-t:nfo"><slcoc="n-dra"/${umbeoadrafp)l  id="class=""D"D  ="tb-t:nfo"><slcoc="n-t0gs">tsync-dot" idbadge ${tb}play:nonevv>
+-size:9pxa>${o.aROt SB_}>
+       div class=""D"D  t clas`;"dbKey]"D"D}).joi-v''-}t('okkkokkk<="btn btn-primlcoadna:(this)"><openDealMiF(l(){  ,'${st0ge}'s">+ Add</div>
+  class="ok< clas
+ss=""D< clas`;"dbKe}).joi-v''-}t('>
+div `;"DTT()'_'+Mp"openDealMiF(l(id,defaultSu0get{edbEls',oo=:n?Lr.opportunitiac.fend(x=>x.id===:nn:){  <edbretuMiF(l(`sb-bottom">
+mhdrs="h3>${o?'EdilaDealm*y-vscDealm} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>Deal N:'r</label><inpuueid="dm-=:'r"ltlaceiwC �" drafp="${o?o.=:'r:''}" rgiceholder="e.g. HSBC"callE.,statu{hM,400)',g"l  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>eapepx</label><inpuueid="dm-ida'i1"ltlaceiwC �" drafp="${o?o.ida'i1nu'':''}" rgiceholder="eapepx'n:'r">  div classsssb-bottom">
+fgs="label>SROt SB_</label><selod'vid="dm-aRO">[dbKey]"Dtop'+Mp"drafp="tatu{"${o&&o'aROt SB_e=='tatu{c?'oselod'ccept'}>5 srshM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="3.,statu{"${!o||o'aROt SB_e=='3.,statu{c?'oselod'ccept'}>E.,statu{hM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="atu{"${o&&o'aROt SB_e=='atu{c?'oselod'ccept'}>Ttu{ 4px rammen</op'+Mplt('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Vrafp (£)</label><inpuueid="dm-dra":tlaceinupx('"ldrafp="${o?o.drafp:''}" rgiceholder="0"l  div classsssb-bottom">
+fgs="label>Probability (%)</label><inpuueid="dm-prob":tlaceinupx('"lmin="0" max="100cvdrafp="${o?o.prob:50la>s div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Su0ge</label><selod'vid="dm-at0ge">[dbKey]"D${LC_STAGESit:r,s=>`sop'+Mp"drafp="${s}"${(o?o.at0ge:defaultSu0get===a?'oselod'ccept'}>${s}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Cip() d ti</label><inpuueid="dm-idp()avtlaceit se"vdrafp="${o?o.idp()d ti vala>s div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>P,ition</label><selod'vid="dm-',ition">t('okkkkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la${o&&o'',ition===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>C3}},SB</label><selod'vid="dm-i3}},SB">t('okkkkk${COUNTRIESit:r,cn=>`sop'+Mp"drafp="${cn}"${o&&o'i3}},SBe==cn?'oselod'ccept'}>${cn}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classs<div cla="tb-title" idfgs="label>Notis>
+label><wC �areavid="dm-=g ac" row id3cl${o?o.=g ac val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obacDeal('${idnu''}'s">Sbac Deal</div>
+  classs<div clas clas`,5-31s;)ogT()'_'+Mp"obacDeal(ids{edbEls',o=:'r=docu,og'.getEl',og'ById('dm-=:'r'aadrafp.umFmetS="Dth)!=:'r)ro'e="Dalar.i'Pleassd:'t
+;v odealo=:'r.2aS="DEls',ot sa={=:'r,ida'i1:docu,og'.getEl',og'ById('dm-ida'i1a).drafp.umFmet,aROt SB_:docu,og'.getEl',og'ById('dm-aROa).drafp,drafp:4arseFloat(docu,og'.getEl',og'ById('dm-ve:'aadrafp)||0,prob:4arseInt(docu,og'.getEl',og'ById('dm-prob'aadrafp)||50,at0ge:docu,og'.getEl',og'ById('dm-at0gea)adrafp,idp()d ti docu,og'.getEl',og'ById('dm-idp()a)adrafp,',ition:docu,og'.getEl',og'ById('dm-',itiona)adrafp,i3}},SB:docu,og'.getEl',og'ById('dm-i3}},SBa)adrafp,=g ac:docu,og'.getEl',og'ById('dm-=g ac'aadrafp.umFmet}ot('th)ids{Els',oo=Lr.opportunitiac.fend(x=>x.id===:nnoth)o)st S)){-v',st(o:t sato}
+y]elss{DB.opportunitiac.ida'tiFd_h.ss=,...t sa'}, ],
+datiF().t}aSaddAct(9;"�',`-vscdeala ${=:'r}"call${umbet saadrafp)l`Do}[dbobacts;cip()MiF(l(s;ron trViewes;)ogT DATAE CONFINANCE ────────────────────────────────── */EED = {
+T──────── */EED = {
+T─IBLE()'_'+Mp"rFinlue=(cs{="DEls',oog'ity=S.SBb.fenEg'itynu'gmg'S="DEls',oae_'+Mp=S.SBb.fenSe_'+Mpnu'autobill';
+ws.EvalueisGmg=og'ity==='gmg'S="DEls',o4',dss=Pays=isGmg?!r.ida'dp1',data-.feater(p=>p.au026-e=='nold,m:2a:[rows.Els',oallBills=isGmg?!r.apayBills:[rows.Els',oallInvs=isGmg?!r.ida'i1'ontgIda:[rows.Els',ounD0px'?Invs=allInvs.feater(i=>!i.asd:'2026-aS="DEls',ooutau0ld,m:Val=allInvs.feater(i=>i.au026-e=='s'i1a).reduce)('ri)=>s+i.eam-be,0aS="DEls',o4,idVal=allInvs.feater(i=>i.au026-e=='n,rpa).reduce)('ri)=>s+i.eam-be,0aS="DEls',o4',dTFee:=4',dss=Pays.reduce)('ro)=>s+p.eam-be,0aS=="DEls',obyd<ina'={}d.<b4',dss=Pays.feater(p=>!p. payBill,dtaf]oEaf-vp=>{th)!byd<ina'[p.'e4',ame])byd<ina'[p.'e4',ame]=[];byd<ina'[p.'e4',ame].ida'tps;}aS=ws.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dFinlue=</h2d<p>Billss=,sinvtgIta-   <{ 17: D0px acrossoog'ities</p>v id=" <div clasb-bottom">
+SBbs"oay:none12px" o <div :6px">[dbKe${['gmg',sbeCa,'imi ]it:r,e=>`sb-bottom">
+SBb${og'ity===e?'orpabas' valav(this)"><S.SBb.fenEg'ity='${e}';ron trViewescl${eGB'UpIEWC:{ses}>
+div `).joi-v''-}t(' <div clasb-bottom">
+SBbs"
+    <sb-bottom">
+SBb${ae_'+Mp==='0utobill'?'orpabas' valav(this)"><S.SBb.fenSe_'+Mp='0utobill';ron trViewescl2pay'Bill',g</div cla="tb-title" idSBb${ae_'+Mp==='invtgIta-'?'orpabas' valav(this)"><S.SBb.fenSe_'+Mp='invtgIta-';ron trViewescl2pay'InvtgIta-v class="s class
+kk${se_'+Mp==='0utobill'?`clasb-bottom">
+asd:-b; nerslay:none12px" o <div :20pxclass="tb-t><h4> 17: IntegWSB_d=026-01e"call${eg'ityGB'UpIEWC:{ses}>
+h4><p>Mnold,d<ina'das,c= e="it sed,  <{ida''?5asssup"t er bills,atda2026-3.d.</pd<<div classslex:1"></diwC �-als H:rewBo <dlex:1"></divv>
+-size:18px;vv>
+-wiewBo:700cl${umbe4',dTFee:s} <div tlex:1"></divv>
+-size:10px;opact6-0.8">4',dss=  clada2026v id="v class="s class="${!isGmg?`sb-bottom">
+emptyiv>b-bottom">
+ei">&#9711;v id="vp>Nodanold,d<ina'das,f]o ${eg'ityGB'UpIEWC:{ses}  cladp,ogia</p>>
+div ` `s="sb-bottom">
+g2play:none12px" o <div :18pxclass="tb-title" idc="na class="sb-uinfo"><sc="n-hdrs="h3>P',dss=41',data-"call <{ida'c5dih3
+ass="   <${st S)){keys(byd<ina'aue)"awa?`"="btn btn-primary" id=sm" id=pri12pyav(this)"><runApayBill()">Ru=02pay'Bill &#8594;</div>
+  ` vtsync-dot" idbadge b-iumen">&#dtiF3; All"nroIdasad</div>
+'}t('okkks<div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkk${st S)){keys(byd<ina'aue)"awa===0?`sb-bottom">
+emptyiv>b-bottom">
+ei">&#dtiF3;v id="vp>Nod4',dss= <ina'das</p>>
+div ` val<di="  kk${st S)){value)"�byd<ina'aut:r,([mid5','s
+)=>B[dbKey]"Dy]Els',om=!r.i,d<ina'.fend(x=>x.id===mie);[dbKey]"D"DEls',otFee:=4ays.reduce)('ro)=>s+p.eam-be,0aS="DKey]"D"DY='e="`<lex:1"></dipaddta-:12px 18px;bI dero <div :1px solid var(--bI der)" class=""D"D  tlex:1"></di;margin--bar;als HR="res:cnnual;justify-iv>
+</d:divce-betwmen" class="okkkkk  <sd 28 >${m?.=:'rnu'Unknowns}>
+ d 28 >[dbKey]"D"D  ="tsd 28 :1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;c-wid:var(--cadm',ng"/${umbetFee:s} < d 28 >[dbKey]"D"D   <div class="okkkkk${pays.t:r,p=>BEls',oe(!r.tacts',og',.fend(x=>x.id===p.400,d);[dbKey]"D"D"D"DY='e="`<lex:1"></divv>
+-size:11px;c-wid:var(--muISO);paddta-:2px 0;;margin--bar;justify-iv>
+</d:divce-betwmen">tsync>${2?.=:'r?k="t fmtdm�'){Lo?.umFmetnu'dm�'}v      tsync>${umbe4.eam-be)} <       div `)}).joi-v''-}t('okkk <las clas`;"dbKey]"D}).joi-v''-}t('okkks<div classs<div cla="tb-title" idc="na class="sb-uinfo"><sc="n-hdrs="h3>Previous02pay'Bill Ru=<dih3> <div class="sb-uinfo"><sc="n-bodyplay:nonepaddta-:0">t('okkkkk${allBills.t:r,ab=>B[dbKey]"Dy]Els',opays=Bb.pin,og',.t:r,id=>!r.ida'dp1',data-.fend(p=>p.id===:nn).feater(Bo"lran);[dbKey]"D"DEls',oiid'=[...px( Se.ipays.t:r,p=>p.'e4',ame))rows.lamg"D"DY='e="`<lex:1"></dipaddta-:12px 18px;bI dero <div :1px solid var(--bI der);;margin--bar;als HR="res:cnnual;gap:10px">[dbKey]"D"D  tlex:1"></div>
+    <dsd 28 :1"></divv>
+-size:12pxa>${ab.idGB'UpIEWC:{ses}scall${Bb.p,ogia}>
+ d 28 >class=""D"D  tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)a>${iid'.e)"awa}oida'dpss· ${0b.pin,og',.e)"awa}o<ina'datipt>
+/ <div class="okkkkkslex>tsd 28 :1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;c-wid:var(--cadm',ng"/${umbeab.wFee:Aam-be)} < d 28 >class=""D"D  tsync-dot" idbadge ${ab.asd:'2026-?vb-asd:::'b-apx('t}clay:none12px" onclic6pxa>${ab.asd:'2026-?v&#dtiF3; Xsd:::'nold,m:2}</div>
+  div class="okkk< clas`;"dbKey]"D}).reveEED)).joi-v''-}t('okkks<div classs<div clas clas`}` val<
+kk${se_'+Mp==='invtgIta-'?`s="${!isGmg?`sb-bottom">
+emptyiv>b-bottom">
+ei">&#9711;v id="vp>Nodida'i1sinvtgIds,f]o ${eg'ityGB'UpIEWC:{ses}  cladp,ogia</p>>
+div ` `s="${unD0px'?Invsue)"awa?`"b-bottom">
+asd:-b; ners>tb-t><h4> 17: '202 Requirad</h4><p>${unD0px'?Invsue)"awa}sinvtgIds,not yet <da''?5-31 17:</pd<<div classs="btn btn-primary" id=smclay:nonebackg)l di:#fff;c-wid:#13B5EA;vv>
+-wiewBo:700cv(this)"><<da'All 17:()">Pda' All"&#8594;</div>
+    div ` val<di>b-bottom">
+kpi-griF"o1"></digriF-at.ty ti-c-wumns:rep ],(3,1fr);12px" o <div :18pxclass="tb-title" idkpi accnnua>sb-bottom">
+kpi-labela>Outau0ld,m:</div tlex:ttom">
+kpi-dra"/${umbeoutau0ld,m:Val)} <div tlex:ttom">
+kpi-sub"/${allInvs.feater(i=>i.au026-e=='s'i1a).e)"awa}sinvtgIds,smen</t>
+/ <div classtlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Paid</div tlex:ttom">
+kpi-dra"/${umbe4,idVal)} <div tlex:ttom">
+kpi-sub"/${allInvs.feater(i=>i.au026-e=='n,rpa).e)"awa}sinvtgIds,paid</div t<div classtlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>UnD0px'?5-31 17:</div tlex:ttom">
+kpi-dra"/${unD0px'?Invsue)"awa} <div tlex:ttom">
+kpi-sub"/${umbeunD0px'?Invsureduce)('ri)=>s+i.eam-be,0as} i',dss= D0px</id="v class="s class="sb-bottom">
+c="na classsb-uinfo"><sc="n-hdrs="h3>eapepx''ontgIda <h3> ="btn btn-primary" id=sm" id=pri12pyav(this)"><open'ontgIdMiF(l(ss=ta-vsc'ontgId</div>
+   <div classsies(;earch">
+  a"><thead><tr><th
+'ontgId</th
+<th
+eapepx</th
+<th
+P,ogia</th
+<th
+Aam-be <th
+<th
+Su026-</th
+<th
+ 17:</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${allInvs.t:r,inv=>B[dbKey]Els',oid=!r.i,d<ina'.fend(c=>c.id===:nv.ida'i1'd);[dbKey]Els',osb={-01'oevb-iumy',s3.t:'b-bluet,paid vb-iumKn:}[:nv.au026-]||vb-iumy';[dbKey]Y='e="`<tr><tdo1"></divv>
+-wiewBo:600;vv>
+-size:11pxa>${:nv.idGB'UpIEWC:{ses}v td>[dbKey]<td:1"></divv>
+-size:12pxa>${cl?.=:'rnu'dm�'}v td>[dbKey]<td:1"></divv>
+-size:11pxa>${:nv.p,ogia}>
+td>[dbKey]<td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbe:nv.eam-be)} <td>[dbKey]<td>tsync-dot" idbadge ${sb}cl${:nv.au026-}>
+       td>[dbKey]<td>tsync-dot" idbadge ${:nv.asd:'2026-?vb-asd:::'b-apx('t}cl${:nv.asd:'2026-?v&#dtiF3;::'nold,m:2}</div>
+  td>[dbKey]<td>tb-bottom">
+a1's"
+t('okkkkk${:nv.au026-==='-01'op?`<="btn btn-primary" id=sm" id=Outk="nav(this)"><s3.d'ontgId('${inv.id}'s">S3.d>
+div>
+  ` val<di="kk <${:nv.au026-==='20',p?`<="btn btn-primary" id=sm" id=sucIdasav(this)"><12pkPaid('${inv.id}'s">&#dtiF3; Paid</div>
+  ` val<di="kk <${!:nv.asd:'2026-?`<="btn btn-primary" id=sm" id=asd:cv(this)"><<da''on 17:('${inv.id}'s">&#8594;1 17:</div>
+  ` val<di="kk <div   td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`}` val`;)ogT DATAE CONTASKS ────────────────────────────────── */EED = {
+T──────── */EED = {
+T─{
+T─IBLE()'_'+Mp"r-v='}(cs{="DEls',ovieuMiFe=S.SBb.SB_KViewnu'list'S="DEls',o-v',staeF=S.SBb.SB_KAv',stalnu''S="DEls',otlacF=S.SBb.SB_K lacnu''S="DEls',oau026-r=S.SBb.SB_KSu026-nu''S="DON.stv='}=!r.SB_KE.feater(t=>B[dbKeutt-v',staeF&&){-v',stee!==-v',staeF)DY='e=" etS=";.<bblth)tlacF&&){tlac!==tlacF)DY='e=" etS=";.<bblth)au026-r&&){au026-!==au026-r)DY='e=" etS=";.<bblY='e=" 5-31S="D}aS="DEls',ohasreater=-v',staeF||tlacF||at026-rows.Els',oallAv',stalc=[...px( Se.i!r.SB_KE.t:r,t=>){-v',stee).feater(Bo"lran))rowws.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2d-v='}</h2d<p>${DB.tv='}.feater(t=>t.au026-!=='nd n'aae)"awa}oopen SB_Ks</p>v id="contb-uiay:none;margin--bar;gap:8px"
+    <sb-bottom">
+SBbs"oay:none12px" o <div :0a class="sb-uinfo"><sSBb${vieuMiFe==='list'?'orpabas' valav(this)"><S.SBb.SB_KView='list';ron trViewesclList <div class="sb-uinfo"><sSBb${vieuMiFe==='kanb; '?'orpabas' valav(this)"><S.SBb.SB_KView='kanb; ';ron trViewesclKanb; s<div classs<div cla="t="btn btn-primary" id=pri12pyav(this)"><open-v='MiF(l(ss=ta-vsc-v='</div>
+  clav id=" <div clasb-boay:none;margin--bar;gap:8px;-bar-wrap:wrap;12px" o <div :16px;als HR="res:cnnualclass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.SB_KAv',stal� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"Av',stalc</op'+Mplt('okkk${allAv',stalc.t:r,a=>`sop'+Mp"drafp="${a}"${-v',staeF===-?'oselod'ccept'}>${a}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.SB_K lac� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll" lac'</op'+Mplt('okkk${[2finlue=p:-20">){ss-0:'ipek="n',etacts',og''].t:r,t=>`sop'+Mp"drafp="${t}"${tlacF===t?'oselod'ccept'}>${t'y';NAt(0-GB'UpIEWC:{ses+t. today1)}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="tselod'vtn-primfeater-sel"v(th'; }
+><S.SBb.SB_KSu026-� cla.drafptron trViewesclt('okkksop'+Mp"drafp="clAll"Su026-:'</op'+Mplt('okkk${[2tiFo','inpp:'D0">a,'dd n']it:r,s=>`sop'+Mp"drafp="${s}"${su026-r===a?'oselod'ccept'}>${s==='inpp:'D0">a?'Inamp:'D0">a:s'y';NAt(0-GB'UpIEWC:{ses+s. today1)}</op'+Mpl`).joi-v''-}t('ok>
+ elod'lass="${hasreater?`<="btn btn-primfeater-mer);av(this)"><S.SBb.SB_KAv',stal�''tS.SBb.SB_K lac�''tS.SBb.SB_KSu026-�''Sron trViewescl&#dtiF5; Cer);</div>
+  ` val<di <div cs="${vieuMiFe==='list'?`clasb-bottom">
+c="na classsies(;earch">
+  a"><thead><tr><th
+</th
+<th
+-v='</th
+<th
+-lac</th
+<th
+Av',stal</th
+<th
+dfp</th
+<th
+Prior26-</th
+<th
+Su026-</th
+<th
+Add</b<dith
+</tr></thead>classsibody>${SB_KE.t:r,t=>B[dbKey]Els',oov=t.dfp<tiF().t&&){au026-!=='dd n';[dbKey]Els',opriBadge=t.prior26-==='hewB-?'b-red':t.prior26-==='medium-?'b-apx('tevb-iumy';[dbKey]Els',ostBadge=t.au026-==='-d n'?vb-iumKn::t.au026-==='inpp:'D0">a?'b-bluet:vb-iumy';[dbKey]Y='e="`<troay:none${t'au026-==='-d n'?vopact6-0.5' vala>[dbKey]y]<td>tinpuuetlaceicheckbox" ${t'au026-==='-d n'?vcheckccept'}v(th'; }
+><toggle-v='('${t.id}', cla.checkcc)"   td>[dbKey]y]<td>tb-bo1"></divv>
+-wiewBo:600;vv>
+-size:12pxa>${){ttitl} <div ${tt=g ac?`<lex:1"></divv>
+-size:10px;c-wid:var(--muISO)" ${tt=g ac. today0,60)}v div ` val  td>[dbKey]y]<td>"sync-dot" idbadge b-iumycl${t' lac}>
+       td>[dbKey]y]<td:1"></divv>
+-size:12pxa>${){-v',stee}v td>[dbKey]y]<td:1"></divv>
+-size:11px;c-wid:${ov?'var(--13.etio@gm*yinher26'};vv>
+-wiewBo:${ov?700:400}a>${){dfp}${ov?' &#9888;' val  td>[dbKey]y]<td>"sync-dot" idbadge ${priBadge}a>${){prior26-}>
+       td>[dbKey]y]<td>tsync-dot" idbadge ${stBadge}">${t'au026-==='inpp:'D0">a?'Inamp:'D0">a:t.au026-}>
+       td>[dbKey]y]<td>tb-bottom">
+a1's"
+ass="   <kks="btn btn-primary" id=sm" id=Outk="nav(this)"><open-v='MiF(l('${t.id}'s">Edil</div>
+  class="okkk<="btn btn-primary" id=sm" id=d; }
+;av(this)"><dey �-v='('${t.id}'ss=&#dtiF5;</div>
+  <di="kk <<<div   td></tr>`;[dbKe}).joi-v''-}s/tbody>s/tes(; clas clas`:cla`sb-bottom">
+kanb; o <="na class${[{key06tiFo',label:'TF Do'},{key06inpp:'D0">a,label:'Inamp:'D0">a},{key06-d n',label:'Dd n'}]it:r,c-w=>B[dbKey]Els',oiol-v='}=tv='}.feater(t=>t.au026-e==col{keyaS="DKey]Y='e="`<lex:nfo"><skanb; ocRO">[dbKey]"Dtlex:nfo"><skanb; ocRO-hdrs="sync>${col{label} <     tsync-dot" idbadge b-iumycl${iol-v='}ue)"awa} <div>
+  div class="ok${iol-v='}ut:r,t=>B[dbKey]Key]Els',oov=t.dfp<tiF().t&&){au026-!=='dd n';[dbKey]Key]Els',opriBadge=t.prior26-==='hewB-?'b-red':t.prior26-==='medium-?'b-apx('tevb-iumy';[dbKey]Key]Y='e="`<lex:nfo"><skanb; oc="na:(this)"><open-v='MiF(l('${t.id}'s">
+ss=""D"D  ="tb-t:nfo"><skanb; oc="n- titl">${){ttitl} <div 
+ss=""D"D  ="tb-t:nfo"><skanb; oc="n-meta">${){-v',stee}s· "sync-1"></dic-wid:${ov?'var(--13.etio@gm*yinher26'}a>${){dfp}>
+       div class=""D"D  tb-boay:none12px" otop:6px;;margin--bar;gap:4pxa>class=""D"D    tsync-dot" idbadge ${priBadge}a>${){prior26-}>
+     class=""D"D    tsync-dot" idbadge b-iumycl${t' lac}>
+     [dbKey]"D"D   <div class="okkks clas`;"dbKey]"D}).joi-v''-}t('okkks<div `;"dbKe}).joi-v''-}t('>
+div `}`;"DTT()'_'+Mp"toggle-v='(id,checkcc){getEls',o =!r.SB_KE.fend(x=>x.id===:nno.<bth)t){t'au026-=checkcc?'dd n'06tiFo'oobacts;ron trViewes;}
+ogin()n:14 dey �-v='(ids{edbth)!Elsfirm('Dey �  cladSB_K?'))ro'e="ot('Lr.SB_KE=!r.SB_KE.feater(t=>t.id!==:nnoobacts;ron trViewes;"DTT()'_'+Mp"open-v='MiF(l(ic){getEls',o =:n?Lr.SB_KE.fend(x=>x.id===:nn:){  <edbretuMiF(l(`sb-bottom">
+mhdrs="h3>${t?'Edila-v='m*y-vsc-v='m} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>-v='"Ttitl</label><inpuueid="tm- titl"ltlaceiwC �" drafp="${t?){ttitl:''}" rgiceholder="e.g. S3.d Q3sinvtgId"   div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>-lac</label><selod'vid="tm- lac"
+t('okkkkk${[2finlue=p:-20">){ss-0:'ipek="n',etacts',og''].t:r,tp=>`sop'+Mp"drafp="${t4la${t&&){tlac===tp?'oselod'ccept'}>${tp'y';NAt(0-GB'UpIEWC:{ses+tp. today1)}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Av',stal</label><selod'vid="tm--v',stae"lt('okkkkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la${t&&){-v',stee===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Prior26-</label><selod'vid="tm-pri">[dbKey]"Dtop'+Mp"drafp="hewB"${t&&){prior26-==='hewB-?'oselod'ccept'}>HewB</op'+Mpl[dbKey]"Dtop'+Mp"drafp="mediuma${!t||t.prior26-==='medium-?'oselod'ccept'}>Medium</op'+Mpl[dbKey]"Dtop'+Mp"drafp="lowc${t&&){prior26-==='low-?'oselod'ccept'}>Low</op'+Mplt('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Due d ti</label><inpuuetlaceit se"vid="tm-due"vdrafp="${t?){dfp:tiF().t}">s<div classs<div cla="${t?`sb-bottom">
+fgs="label>Su026-</label><selod'vid="tm-au026-clt('okkksop'+Mp"drafp="tiFoe${t'au026-==='tiFo'?'oselod'ccept'}>TF Do</op'+Mplt('okkktop'+Mp"drafp="inpp:'D0">"${t'au026-==='inpp:'D0">a?'oselod'ccept'}>Inamp:'D0"></op'+Mplt('okkktop'+Mp"drafp="dd ne${t'au026-==='-d n'?voselod'ccept'}>Dd n</op'+Mplt('ok>
+ elod'l>
+div ` val<di="tb-title" idfgs="label>Notis>
+label><wC �areavid="tm-=g ac" row id3cl${t?){=g ac val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obac-v='('${idnu''}'s">Sbac -v='</div>
+  classs<div clas clas`s;)ogT()'_'+Mp"obac-v='(ids{edbEls',o titl=docu,og'.getEl',og'ById('tm- titl'aadrafp.umFmetS="Dth)! titl)ro'e="Dalar.i'Pleassd:'t
+;v o titl.2aS="DEls',oau026-=id&&docu,og'.getEl',og'ById('tm-au026-')?docu,og'.getEl',og'ById('tm-au026-').drafp:'tiFo'o="Dth)ids{edbetEls',o =!r.SB_KE.fend(x=>x.id===:nno.<b<bth)t){t' titl= titl;){tlac=docu,og'.getEl',og'ById('tm- laca)adrafpt){-v',stee=docu,og'.getEl',og'ById('tm--v',stae'aadrafp;){prior26-=docu,og'.getEl',og'ById('tm-pri'aadrafp;){dfp=docu,og'.getEl',og'ById('tm-due'aadrafp;t'au026-=au026-;t'=g ac=docu,og'.getEl',og'ById('tm-=g ac'aadrafp.umFmeto}
+y]} elssd{edbetLr.SB_KE.unshift(iFd_h.ss=, titl,p:noedocu,og'.getEl',og'ById('tm- laca)adrafp,-v',stae:docu,og'.getEl',og'ById('tm--v',stae'aadrafp,prior26-:docu,og'.getEl',og'ById('tm-pri'aadrafp,due:docu,og'.getEl',og'ById('tm-due'aadrafp,'2026-06tiFo',=g ac:docu,og'.getEl',og'ById('tm-=g ac'aadrafp.umFmet,ref:){  }no.<bbladdAct(9;"�',`-v='"}, ],
+da ${ttitl}`Do[db}[dbobacts;cip()MiF(l(s;ron trViewes;)ogT DATAE CONREPORTS ────────────────────────────────── */EED = {
+T──────── */EED = {
+T─IBLE()'_'+Mp"rReport}(cs{="DEls',oreport}=[t('okiFd_:'ipek="n',iEls:9;"�',ttitl:'1ipek="n Report:gdesc:'Deal au0ges,"drafps,"wip"ra acs  <{i,itiondp,oformlue= acrossothe f{  ,opportunity pipek="n.'},t('okiFd_:tacts',og'',iEls:9;"�',ttitl:'4px rammen Report:gdesc:'26-01e"tacts',og',, 20">){soi3}},,, compy �+Mp"ra acs  <{revenue byetlacs  <{i,ition.'},t('okiFd_:finlue=p:iEls:9;"�',ttitl:'Finlue= Report:gdesc:''ontgIdd,,paid,ooutau0ld,m: ballue=cs  <{anold,d<ina'daotFee:s"with{ 17: D0px '2026-.'},t('okiFd_:quotta-p:iEls:9;"�',ttitl:'Quotta- Report:gdesc:'Quotes bye'2026-s  <{drafp, 0pproval ra acs  <{ElsveEE+Mp"fromoqug aoto"tacts',og'.'},t('okiFd_:SB_KEp:iEls:9;"�',ttitl:'-v='"Report:gdesc:'-v='} byetlac,o-v',stae, prior26-s  <{oveEdues  alysic acrossoall atu{{anpx('-.'},t('okiFd_:rpaba26-p:iEls:9;"�',ttitl:'Apaba26- Log:gdesc:'Chronological feedfofoall ty tformorpabls' ithiudta- invtgIds, 20">){scs  <{deal-.'},t(']ows.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dReport}</h2d<p>Op,oSB_d=al insewBocs  <{  alytics</p>v id=" <div clasb-bottom">
+report-griF" cla="${report}it:r,r=>`<di="tb-title" idreport-c="na class="sb-ui1"></divv>
+-size:24px;c-wid:var(--13.etio@gcl${r.iEls} <div 
+ss=""D"h3>${r{ttitl} <h3
+ass="  <p>${r.desc}</p>class="s="btn btn-primary" id=Outk="n" id=smcl(this)"><buildReport('${r.id}'s">View"Report</div>
+  classs<div `).joi-v''-}t('>
+div `;"DTT()'_'+Mp"buildReport(tlacs{="DON.shtml=''o="Dth)tlace==''ipek="n's{edbetEls',owB_eLr.opportunitiac.feater(o=>o.au0ge==='Cip()d WB_2aS="D"DEls',oopen=!r.opportunitiac.feater(o=>!['Cip()d WB_2,'Cip()d Los,p].ithiudes(o.au0getaS="D shtml=`sb-bottom">
+mhdrs="h3>1ipek="n Report <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classsssb-uiay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],(3,1fr);gap:10px;12px" o <div :16px">[dbKey]"Dtlex:nfo"><skpi accnnua>sb-bottom">
+kpi-labela>TFee:a1ipek="n</div tlex:ttom">
+kpi-dra"/${umbe!r.opportunitiac.reduce)('ro)=>s+oadrafp,0a)}ipt>
+/ <div class="oktlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>Cip()d WB_</div tlex:ttom">
+kpi-dra"/${umbewon.reduce)('ro)=>s+oadrafp,0a)}ipt>
+/ <div class="oktlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Open Deals</div tlex:ttom">
+kpi-dra"/${openue)"awa} <div t clas
+ss=""D< clas[dbKey]<tes(;earch">
+  a"><thead><tr><th
+Deal</th
+<th
+Su0ge</th
+<th
+Vrafp</th
+<th
+P,ition</th
+<th
+C3}},SB</th
+</tr></thead>classsssibody>${!r.opportunitiac.t:r,o=>`<tr><tdo1"></divv>
+-wiewBo:600">${ot=:'r} <td><td>"sync-dot" idbadge b-iumycl${o.au0ge}>
+       td><td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbeoadrafp)l  td><td>${ot',itionnu'dm�'}  td><td>${oti3}},SBnu'dm�'}v td></tr>`).joi-v''-}s/tbody>s/tes(; clakks<div `;"db} elssdth)tlace=='tacts',og''s{edbethtml=`sb-bottom">
+mhdrs="h3>4px rammen Report <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classsssb-uiay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],(3,1fr);gap:10px;12px" o <div :16px">[dbKey]"Dtlex:nfo"><skpi accnnua>sb-bottom">
+kpi-labela>26-01e</div tlex:ttom">
+kpi-dra"/${!r.tacts',og',.feater(e=>e'au026-==='rpabas')ue)"awa} <div t clas
+ss=""Doktlex:ttom">
+kpia>sb-bottom">
+kpi-labela>S0">){sc</div tlex:ttom">
+kpi-dra"/${!r.20">){sc.feater(s=>s'au026-==='compy �ed')ue)"awa} <div t clas
+ss=""Doktlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>Revenue</div tlex:ttom">
+kpi-dra"/${umbe!r.ida'i1'ontgIda.feater(i=>i.au026-e=='n,rpa).reduce)('ri)=>s+i.eam-be,0a)} <div t clas
+ss=""D< clas[dbKey]<tes(;earch">
+  a"><thead><tr><th
+4px rammen</th
+<th
+-lac</th
+<th
+Su026-</th
+<th
+P,ition</th
+<th
+Vrafp</th
+</tr></thead>classsssibody>${!r.tacts',og',.t:r,e=>BEls',ov=e.annualFalnue.wFee:Falnu0;Y='e="`<tr><tdo1"></divv>
+-wiewBo:600cl${eG=:'r} <td><td>"sync-dot" idbadge ${eGBlace=='iatu{c?' lac-tatu{c:eGBlace=='3.,statu{c?' lac-3.,statu{c:' lac-atu{c}cl${eGBlac}>
+       td><td>"sync-dot" idbadge ${eGau026-==='rpabas'?vb-iumKn::'b-apx('t}cl${e.au026-}>
+       td><td>${et',itionnu'dm�'}  td><td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbev)}v td></tr>`}).joi-v''-}s/tbody>s/tes(; clakks<div `;"db} elssdth)tlace=='finlue=ps{edbethtml=`sb-bottom">
+mhdrs="h3>Finlue= Report <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classsssb-uiay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],(2,1fr);gap:10px;12px" o <div :16px">[dbKey]"Dtlex:nfo"><skpi accnnua>sb-bottom">
+kpi-labela>TFee:a'ontgIdd</div tlex:ttom">
+kpi-dra"/${umbe!r.ida'i1'ontgIda.reduce)('ri)=>s+i.eam-be,0a)} <div t clas
+ss=""Dsstlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Paid</div tlex:ttom">
+kpi-dra"/${umbe!r.ida'i1'ontgIda.feater(i=>i.au026-e=='n,rpa).reduce)('ri)=>s+i.eam-be,0a)} <div t clas
+ss=""Doktlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>Outau0ld,m:</div tlex:ttom">
+kpi-dra"/${umbe!r.ida'i1'ontgIda.feater(i=>i.au026-e=='s'i1a).reduce)('ri)=>s+i.eam-be,0a)} <div t clas
+ss=""Dsstlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Mnold,dPina'datipt>
+/ lex:ttom">
+kpi-dra"/${umbe!r.ida'dp1',data-.reduce)('ro)=>s+p.eam-be,0a)} <div t clas
+ss=""D< clas[dbKey]<tes(;earch">
+  a"><thead><tr><th
+'ontgId</th
+<th
+eapepx</th
+<th
+Aam-be <th
+<th
+Su026-</th
+<th
+ 17:</th
+</tr></thead>classsssibody>${!r.ida'i1'ontgIda.t:r,inv=>BEls',oid=!r.i,d<ina'.fend(c=>c.id===:nv.ida'i1'd);Y='e="`<tr><tdo1"></divv>
+-wiewBo:600cl${:nv.idGB'UpIEWC:{ses}v td><td>${cl?.=:'rnu'dm�'}v td><td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbe:nv.eam-be)} <td><td>tsync-dot" idbadge ${:nv.au026-e=='n,rpa?vb-iumKn:::nv.au026-==='20',p?'b-bluet:vb-iumy'}cl${:nv.au026-}>
+       td><td>tsync-dot" idbadge ${:nv.asd:'2026-?vb-asd:::'b-apx('t}cl${:nv.asd:'2026-?v&#dtiF3;::'nold,m:2}</div>
+  td></tr>`}).joi-v''-}s/tbody>s/tes(; clakks<div `;"db} elssdth)tlace=='quotta-ps{edbethtml=`sb-bottom">
+mhdrs="h3>Quotta- Report <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classsssb-uiay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],(4,1fr);gap:10px;12px" o <div :16px">[dbKey]"D${[2-01'op:'20',p,'0pproved','deck="nd']it:r,s=>BEls',oqs=Lr.qug ac.feater(q=>q.au026-===s);Y='e="`<lex:ttom">
+kpia>sb-bottom">
+kpi-labela>${s'y';NAt(0-GB'UpIEWC:{ses+s. today1)}</t>
+/ lex:ttom">
+kpi-dra"/${qsue)"awa} <div tlex:ttom">
+kpi-sub"/${umbeq-.reduce)('um,q)=>sum+qadrafp,0a)}ipt>
+/ <div `)}).joi-v''-}t('okkk< clas[dbKey]<tes(;earch">
+  a"><thead><tr><th
+Quote</th
+<th
+Su026-</th
+<th
+Vrafp</th
+<th
+P,ition</th
+</tr></thead>classsssibody>${!r.qug ac.t:r,q=>`<tr><tdo1"></divv>
+-wiewBo:600">${qG=:'r} <td><td>"sync-dot" idbadge ${qGau026-==='rpproved'?vb-iumKn::q.au026-==='20',p?'b-bluet:q.au026-==='deck="nd'?'b-red':vb-iumy'}cl${q.au026-}>
+       td><td:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-wiewBo:700"/${umbeqadrafp)l  td><td>${qt',itionnu'dm�'}  td></tr>`).joi-v''-}s/tbody>s/tes(; clakks<div `;"db} elssdth)tlace=='SB_KEps{edbethtml=`sb-bottom">
+mhdrs="h3>-v='"Report <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classsssb-uiay:none;margin-griF;griF-at.ty ti-c-wumns:rep ],(3,1fr);gap:10px;12px" o <div :16px">[dbKey]"Dtlex:nfo"><skpi accnnua>sb-bottom">
+kpi-labela>Open</div tlex:ttom">
+kpi-dra"/${!r.tv='}.feater(t=>t.au026-!=='nd n'aae)"awa} <div t clas
+ss=""Doktlex:ttom">
+kpi golda>sb-bottom">
+kpi-labela>OveEdue</div tlex:ttom">
+kpi-dra"/${!r.tv='}.feater(t=>t.au026-!=='nd n'&&){dfp<tiF().t)ue)"awa} <div t clas
+ss=""Doktlex:ttom">
+kpia>sb-bottom">
+kpi-labela>Dd n</div tlex:ttom">
+kpi-dra"/${!r.tv='}.feater(t=>t.au026-==='nd n'aae)"awa} <div t clas
+ss=""D< clas[dbKey]<tes(;earch">
+  a"><thead><tr><th
+-v='</th
+<th
+-lac</th
+<th
+Av',stal</th
+<th
+Prior26-</th
+<th
+Su026-</th
+</tr></thead>classsssibody>${!r.SB_KE.t:r,t=>`<tr><tdo1"></divv>
+-wiewBo:600">${){ttitl} <td><td>"sync-dot" idbadge b-iumycl${tGBlac}>
+       td><td>${){-v',stee}v td><td>"sync-dot" idbadge ${t.prior26-==='hewB-?'b-red':t.prior26-==='medium-?'b-apx('tevb-iumy'}a>${){prior26-}>
+       td><td>"sync-dot" idbadge ${t.au026-==='-d n'?vb-iumKn::t.au026-==='inpp:'D0">a?'b-bluet:vb-iumy'}">${t'au026-}</div>
+  td></tr>`).joi-v''-}s/tbody>s/tes(; clakks<div `;"db} elssd{edbethtml=`sb-bottom">
+mhdrs="h3>Apaba26- Log <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clalasb-bottom">
+mbodyp classss${!r.rpaba26ilc.t:r,a=>`sb-bottom">
+a1'R="re">tb-bottom">
+a1'-do,a>${a.iEls} <div <div tlex:1"></divv>
+-size:12pxa>${a.wC �} <div tlex:1"></divv>
+-size:10px;c-wid:var(--muISO)" ${a.ws} <div t class<div `).joi-v''-}t('kks<div `;"db}edbretuMiF(l(html,5-31s;)ogT DATAE CONMENTORS ────────────────────────────────── */EED = {
+T──────── */EED = {
+T─IBLE()'_'+Mp"rMnold,}(cs{="DEls',otes=S.SBb.ida'dpCa1nu'tatu{cows.Els',oallMnold,}=!r.i,d<ina'.feater(x=>x.tlace=='ida'dp'aS=ws.// Derive pri12py c tigopy fromotacts',og',; defaultoto"'',opx" g'ws.()'_'+Mp"ida'dpCa1(ms{edbetEls',otacs=!r.tacts',og',.feater(e=>e''e4',ame===m.:nno.<b<bth)!tacsae)"awa)DY='e=" '',opx" g'S="D"DEls',otlacs=tacsat:r,e=>eGBlac);.<bblth)tlacs.ithiudes('tatu{c))DY='e=" 'tatu{cows.blth)tlacs.ithiudes('3.,statu{c))DY='e=" '3.,statu{c;.<bblY='e=" '',opx" g'S="D}=="DEls',otatu{s=allMnold,}.feater(m=>ida'dpCa1(mse=='iatu{caS="DEls',o3.,statu{s=allMnold,}.feater(m=>ida'dpCa1(mse=='3.,statu{c)S="DEls',o3,opx" g=allMnold,}.feater(m=>ida'dpCa1(mse=='3,opx" g'aS="DEls',oaetun=tes==='iatu{c?tatu{s:tes==='3.,statu{c?3.,statu{s:3,opx" gS=="DEls',ose_'+MpMesa={="D"DEatu{:{label:'5 srshM,400)s',badge:' lac-tatu{codesc:'Senior leaders specialista- in  <="n-levels  <{E srshm,400)',g'},t('ok3.,statu{:{label:'E.,statu{hM,400)s',badge:' lac-3.,statu{codesc:'C-su="rs  <{senior 3.,statu{hm,400)',g specialists'},t('ok3,opx" g:{label:'E,opx" g Leaders M,400)s',badge:'b-bluet,desc:'Coachesssup"ort" g hewB-po
+</dials  <{3,opx" g leadersal<di}owws.E.inionHTML=`s="sb-bottom">
+phdrs="b-s><h2dM,400)s LibraSB</h2d<p>${allMnold,}.e)"awa}oida'dpss· ${tatu{s.e)"awa}o5 srsh· ${3.,statu{s.e)"awa}oE.,statu{h· ${3,opx" g.e)"awa}oE,opx" g Leaders</p>v id="cont="btn btn-primary" id=pri12pyav(this)"><openC,d<inaMiF(l(){  ,'ida'dp'a">+ Add M,400)</div>
+   <div clasb-bottom">
+SBbs"
+    <sb-bottom">
+SBb${tes==='iatu{c?'orpabas' valav(this)"><S.SBb.ida'dpCa1='iatu{ctron trViewesclt('okkk5 srshM,400)s "sync-1"></divv>
+-size:10px;opact6-0.7">(${tatu{s.e)"awa})>
+     [dbKe</div cla="tb-title" idSBb${tes==='3.,statu{c?'orpabas' valav(this)"><S.SBb.ida'dpCa1='3.,statu{c;ron trViewesclt('okkkE.,statu{hM,400)s "sync-1"></divv>
+-size:10px;opact6-0.7">(${3.,statu{s.e)"awa})>
+     [dbKe</div cla="tb-title" idSBb${tes==='3,opx" g'?'orpabas' valav(this)"><S.SBb.ida'dpCa1='3,opx" g'Sron trViewesclt('okkkE,opx" g Leaders "sync-1"></divv>
+-size:10px;opact6-0.7">(${3,opx" g.e)"awa})>
+     [dbKe</div cla <div clasb-boay:nonebackg)l di:var(--wh="r);bI der:1px solid var(--bI der);bI deroradius:8px;paddta-:12px 18px;12px" o <div :16px;vv>
+-size:12px;c-wid:var(--muISO)" cla="${se_'+MpMesa[SBb].desc}s="s class="sb-bottom">
+ida'dp-griF" cla="${aetunat:r,m=>B[dbKey]Els',o)"aC3}},=!r.tacts',og',.feater(e=>e''e4',ame===m.:nn.e)"awa;[dbKey]Els',osb=mGau026-==='rpabas'?vb-iumKn::'b-apx('t;[dbKey]Els',oc tBadge=se_'+MpMesa[SBb].badgeS="DKey]Y='e="`<lex:nfo"><sida'dp-c="na class="  tlex:1"></di;margin--bar;als HR="res:-bar-au0rt;gap:12px;12px" o <div :12pxa>class=""D"D<lex:nfo"><sida'dp-avcl${:nidials(mG=:'r)}  div class="okkk<lex:1"></div>
+    <class=""D"D  tlex:1"></divv>
+-famil3.,sormoranu0GaramowedaGeopx"a,serif;vv>
+-size:15px;vv>
+-wiewBo:700cl${mt=:'r} <div class=""D"D  <lex:1"></divv>
+-size:11px;c-wid:var(--muISO)cl${mtopxnu'dm�'}v id="class=""D"Dv id="class=""D"Dvsync-dot" idbadge ${sb}cl${m'au026-}</div>
+class=""D< clas
+ss=""D"Dsb-bo1"></divv>
+-size:11px;c-wid:var(--muISO);12px" o <div :8px;k="n-hiewBo:1.5a>class=""D"D<lexl${m'email}  div class="okkk<lexl${m'phd nnu'dm�'}v id="class=""D  div class="ok${mt=g ac?`<lex:1"></divv>
+-size:11px;paddta-:8px;backg)l di:var(--halfnarrow);bI deroradius:5px;12px" o <div :10px;c-wid:var(--nearblack)cl${mt=g ac}>
+div ` val<di="  kktlex:1"></di;margin--bar;als HR="res:cnnual;justify-iv>
+</d:divce-betwmen" class="okkksb-uiay:none;margin--bar;gap:6px;als HR="res:cnnualclass="ss=""D"Dvsync-dot" idbadge ${c tBadge}play:nonevv>
+-size:9pxa>${se_'+MpMesa[SBb].labelk="t fmt '){Lo}>
+     [dbKey]"D"D   sync-1"></divv>
+-size:11px;c-wid:var(--muISO)cl${)"aC3}},}otacts',og'${)"aC3}},!==1?'steve}>
+     [dbKey]"D"D  div class="okkk<="btn btn-primary" id=sm" id=Outk="nav(this)"><openC,d<inaMiF(l('${mtid}'s">Edil</div>
+  class="ok< clas
+ss=""D< clas`;"dbKe}).joi-v''-}t('="${aetunae)"awa===0?`sb-bottom">
+emptyio1"></digriF-c-wumn:1/-1iv>b-bottom">
+ei">◉v id="vp>Nod${se_'+MpMesa[SBb].labelktoLowEWC:{ses} added yet</p>v="btn btn-primary" id=Outk="navay:none12px" otop:12pxav(this)"><openC,d<inaMiF(l(){  ,'ida'dp'a">+ Add M,400)</div>
+   <div ` val<di <div `;)ogT DATAE CONMODAL FORMS ────────────────────────────────── */EED = {
+T──────── */IBLE()'_'+Mp"openEngMiF(l(ic){getEls',oe=:n?Lr.tacts',og',.fend(x=>x.id===:nn:){  <edbEls',oida'i1}=!r.i,d<ina'.feater(c=>c.Blace=='ida'i1a)<edbEls',omnold,}=!r.i,d<ina'.feater(c=>c.Blace=='ida'dp'aS=dbretuMiF(l(`sb-bottom">
+mhdrs="h3>${e?'Edila4px rammenm*y-vsc4px rammenm} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>4px rammen N:'r</label><inpuueid="em-=:'r"ltlaceiwC �" drafp="${e?e.=:'r:''}" rgiceholder="e.g. HSBC"callE.,statu{hM,400)',g: J. Smith"   div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>-lac</label><selod'vid="em- lac"
+t('okkkkktop'+Mp"drafp="tatu{"${e&&eGBlace=='iatu{c?'oselod'ccept'}>5 srshM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="3.,statu{"${!lnue.wlace=='3.,statu{c?'oselod'ccept'}>E.,statu{hM,400)',g</op'+Mplt('okkkkktop'+Mp"drafp="atu{"${e&&eGBlace=='atu{c?'oselod'ccept'}>Ttu{ 4px rammen</op'+Mplt('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Su026-</label><selod'vid="em-au026-clt('okkkkktop'+Mp"drafp="rginn',g"${e&&eGau026-e=='nginn',gc?'oselod'ccept'}>Pginn',g</op'+Mplt('okkkkktop'+Mp"drafp="rpabas"${!lnue.au026-==='rpabas'?voselod'ccept'}>26-01e</op'+Mplt('okkkkktop'+Mp"drafp="compy �ed"${e&&eGau026-e=='compy �ed'?'oselod'ccept'}>5ompy �ed</op'+Mplt('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>eapepx</label><selod'vid="em-ida'i1clt('okkkkktop'+Mp"drafp="">�allSelod'v�al</op'+Mplt('okkkkk${cliog',.t:r,cl=>`sop'+Mp"drafp="${cltid}"${e&&eGida'i1'de==cltid?'oselod'ccept'}>${clt=:'r} <op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>M,400)</label><selod'vid="em-ida'dpclt('okkkkktop'+Mp"drafp="">�allSelod'v�al</op'+Mplt('okkkkk${mnold,}at:r,m=>`sop'+Mp"drafp="${mtid}"${e&&eG'e4',ame===m.:n?'oselod'ccept'}>${mt=:'r} <op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>P,ition</label><selod'vid="em-',ition"lt('okkkkk${PARTNERSit:r,p=>`sop'+Mp"drafp="${4la${e&&eG',ition===p?'oselod'ccept'}>${4}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>eoI dina00)</label><inpuueid="em-coI d"ltlaceiwC �" drafp="${e?e.coI dina00):S.usert=:'r}"l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Su0rt d ti</label><inpuueid="em-au0rt"etlaceit se"vdrafp="${e?e.au0rtd ti tiF().t}">s<div classsssb-bottom">
+fgs="label>4pd d ti</label><inpuueid="em-end"etlaceit se"vdrafp="${e?e.endd ti vala>  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>e3}},SB</label><selod'vid="em-i3}},SB"lt('okkkkk${COUNTRIESit:r,cn=>`sop'+Mp"drafp="${cn}"${e&&eGi3}},SBe==cn?'oselod'ccept'}>${cn}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>Annual Fee (£)</label><inpuueid="em-fer"ltlaceinupx('"vdrafp="${e?e.annualFalnue.wFee:Falnu'':''}" rgiceholder="0a>  div class  div classsb-bottom">
+fgs="label>Notis>
+label><wC �areavid="em-=g ac" row id3cl${e?e.=g ac val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obac4px('${idnu''}'s">Sbac 4px rammen</div>
+  classs<div clas clas`,5-31s;)ogT()'_'+Mp"obac4px(ic){getEls',o=:'r=docu,og'.getEl',og'ById('em-=:'r'aadrafp.umFmetS="Dth)!=:'r)ro'e="Dalar.i'Pleassd:'t
+;v notacts',og'o=:'r.2aS="DEls',otlac=docu,og'.getEl',og'ById('em- laca)adrafpt="DEls',ofer=',iseFloat(docu,og'.getEl',og'ById('em-fae'aadrafp)nu0;="DEls',ot sa={=:'r,p:no,'2026-0docu,og'.getEl',og'ById('em-au026-').drafp,ida'i1'd0docu,og'.getEl',og'ById('em-ida'i1a).drafp,'e4',ame0docu,og'.getEl',og'ById('em-ida'dp'aadrafp,p,ition0docu,og'.getEl',og'ById('em-p,ition').drafp,ioI dina00):docu,og'.getEl',og'ById('em-ioI d'aadrafp,'20rtd ti docu,og'.getEl',og'ById('em-au0r1a).drafp,endd ti docu,og'.getEl',og'ById('em-end').drafp,io}},SB:docu,og'.getEl',og'ById('em-io}},SB').drafp,=g ac:docu,og'.getEl',og'ById('em-=g ac'aadrafp.umFmet}o="Dth)tlace=='iatu{ca{t sa.annualFal=fae;t sa.20">){sR ti=t sa.20">){sR ti||Math.)l di(fae/12);t sa.20">){ssIthiuded=t sa.20">){ssIthiuded||12;t sa.20">){ssUsed=t sa.20">){ssUsednu0;}t('elssdth)tlace=='t.,statu{c){t sa.annualFal=fae;t sa.qu0r1erlyFal=Math.)l di(fae/4);}t('elss{t sa.wFee:Fal=fae;}="Dth)ids{Els',oe(!r.tacts',og',.fend(x=>x.id===:nnoth)e)st S)){-v',st(e,t sa);}t('elss{!r.tacts',og',.ida'tiFd_h.ss=,...t sa,}, ],
+dAt tiF().t});addAct(9;"�',`-vsctacts',og'a ${=:'r}`);}t('obacts;cip()MiF(l(s;ron trViewes;)ogT()'_'+Mp"openC,d<inaMiF(l(id,defaultTlacs{="DEls',oi =:n?Lr.i,d<ina'.fend(x=>x.id===:nn:){  <edbretuMiF(l(`sb-bottom">
+mhdrs="h3>${ct?'EdilaC,d<inam*y-vscC,d<inam} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>-lac</label><selod'vid="cm- lac"
+t('okkktop'+Mp"drafp="mea'dpc${(!ct||ct.Blace=='ida'dp'a?'oselod'ccept'}>Me400)</op'+Mplt('okkktop'+Mp"drafp="ida'i1c${ct&&ct.Blace=='ida'i1a?'oselod'ccept'}>5apepx</op'+Mplt('ok>
+ elod'l>
+div classsb-bottom">
+fgs="label>N:'r</label><inpuueid="cm-=:'r"ltlaceiwC �" drafp="${ct?ct.=:'r:''}"l>
+div classsb-bottom">
+fgs="label>OrganisSB_d=</label><inpuueid="cm-org"ltlaceiwC �" drafp="${ct?ct.opxnu'':''}"l>
+div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Email</label><inpuueid="cm-email"ltlaceiemail"ldrafp="${ct?ct.emailnu'':''}"l>
+div classsssb-bottom">
+fgs="label>Phd n</label><inpuueid="cm-phd n"ltlaceiwCl"ldrafp="${ct?ct.phd nnu'' vala>  div class  div classsb-bottom">
+fgs="label>Notis>
+label><wC �areavid="cm-=g ac" row id3cl${ct?ct.=g acnu'' val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="${ct?`<="btn btn-primary" id=d; }
+;" id=smcl(this)"><dey �C,d('${ct.id}'s;cip()MiF(l(s;ron trViewes">Dey �</div>
+  ` val<di="kk ="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obacC,d<ina('${idnu''}'s">Sbac C,d<ina</div>
+  classs<div clas clas`,5-31s;)"Dth)defaultTlacsosetTimeOut(()=>BEls',oel=docu,og'.getEl',og'ById('cm- laca)oth)el)eladrafp=defaultTlac;},50s;)og()'_'+Mp"obacC,d<ina(ic){getEls',ot sa={p:noedocu,og'.getEl',og'ById('cm- laca)adrafp,=:'r:docu,og'.getEl',og'ById('cm-=:'r'aadrafp.umFmet,opx:docu,og'.getEl',og'ById('cm-opx'aadrafp.umFmet,email:docu,og'.getEl',og'ById('cm-email'aadrafp.umFmet,phd n:docu,og'.getEl',og'ById('cm-phd n'aadrafp.umFmet,=g ac:docu,og'.getEl',og'ById('cm-=g ac'aadrafp.umFmet,'2026-06rpabas'}o="Dth)!t sa.=:'r)ro'e="Dalar.i'Pleassd:'t
+;v o=:'r.2aS="Dth)ids{Els',oc=Lr.i,d<ina'.fend(x=>x.id===:nnoth)c)st S)){-v',st(c,t sa);}t('elss{!r.i,d<ina'.ida'tiFd_h.ss=,...t sa});addAct(9;"�',`C,d<ina addeda ${t sa.=:'r}`);}t('obacts;cip()MiF(l(s;ron trViewes;)og()'_'+Mp"openS0">){sMiF(l(tacIc){getEls',oeacs=!r.tacts',og',.feater(e=>e'au026-!=='clue=lled')<edbretuMiF(l(`sb-bottom">
+mhdrs="h3>Log S0">){s <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgs="label>4px rammen</label><selod'vid="sm-engclt('okkksop'+Mp"drafp="cl�allSelod'v�al</op'+Mplt('okkk${)"asat:r,e=>`sop'+Mp"drafp="${etid}"${eacIc===e.:n?'oselod'ccept'}>${e.=:'r. today0,50)}</op'+Mpl`).joi-v''-}t('ok>
+ elod'l>
+div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>d ti</label><inpuueid="sm-t se"vtlaceit se"vdrafp="${tiF().t}">s<div classsssb-bottom">
+fgs="label>DuoSB_d= (min)</label><inpuueid="sm-tur"ltlaceinupx('"vdrafp="90" min="15avayep="15a>  div class  div classsb-bottom">
+fgs="label>Notis>
+label><wC �areavid="sm-=g ac" row id3c rgiceholder="S0">){s sum12py...s="\/wC �area>s<div classsb-uittom">
+fgrowclass="sssb-bottom">
+fgs="label>Su026-</label><selod'vid="sm-au026-clt('okkkkktop'+Mp"drafp="scheduled">Scheduled</op'+Mplt('okkkkktop'+Mp"drafp="compy �ed"oselod'cc>5ompy �ed</op'+Mplt('okkkkktop'+Mp"drafp="clue=lled">Clue=lled</op'+Mplt('okkks
+ elod'l  div class  div classsb-boay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obacS0">){s(s">Sbac S0">){s <div>
+  classs<div clas clas`,5-31s;)og()'_'+Mp"obacS0">){s(s{getEls',oeacIc=docu,og'.getEl',og'ById('sm-enga)adrafpt="Dth)!tacIc)ro'e="Dalar.i'Pleassdselod'v notacts',og'.2aS="DEls',ot sa={Fd_h.ss=,tacIc,t sn:docu,og'.getEl',og'ById('sm-t se'aadrafp,duoSB_d=:',iseInt(docu,og'.getEl',og'ById('sm-tur'aadrafp)nu90,=g ac:docu,og'.getEl',og'ById('sm-=g ac'aadrafp.umFmet,'2026-0docu,og'.getEl',og'ById('sm-au026-').drafp,ida'dp1'Fd_etS="}ot('Lr.20">){sc.ida'tt sa);)"Dth)d sa.2u026-==='compy �ed'){Els',oe(!r.tacts',og',.fend(x=>x.id===tacIc)oth)e){e.a0">){ssUsed=(e.20">){ssUsednu0)+1;}}t('addAct(9;"�',`S0">){s loggeda ${!r.tacts',og',.fend(x=>x.id===tacIc)?.=:'r?. today0,40)nutacIc}`Do[dbobacts;cip()MiF(l(s;ron trViewes;)og()'_'+Mp"open'ontgIdMiF(l(id,tacIc){getEls',oinv=:n?Lr.ida'i1'ontgIda.fend(x=>x.id===:nn:){  <edbEls',oeacs=!r.tacts',og',.feater(e=>e'au026-!=='clue=lled')<edbretuMiF(l(`sb-bottom">
+mhdrs="h3>${:nv?'Edila'ontgIdm*y-vsc'ontgIdm} <h3> ="btn btn-primmcip()av(this)"><cip()MiF(l(ss=&#dtiF5;</div>
+   <div clasb-bottom">
+mbodyp classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Epx rammen</label><selod'vid="ivm-engclt('okkkkktop'+Mp"drafp="">�allSelod'v�al</op'+Mplt('okkkkk${)"asat:r,e=>`sop'+Mp"drafp="${etid}"${e:nv?:nv.tacIc:tacIc)===e.:n?'oselod'ccept'}>${e.=:'r. today0,50)}</op'+Mpl`).joi-v''-}t('okkks
+ elod'l  div classsssb-bottom">
+fgs="label>-lac</label><selod'vid="ivm- lac"
+t('okkkkktop'+Mp"drafp="tatu{-annual"${:nv&&:nv.tlace=='iatu{-annualc?'oselod'ccept'}>5 srshAnnual</op'+Mplt('okkkkktop'+Mp"drafp="3.,s-qu0r1erly"${!:nv||:nv.tlace=='3.,s-qu0r1erlyc?'oselod'ccept'}>E.,s Qu0r1erly</op'+Mplt('okkkkktop'+Mp"drafp="atu{-adhoc"${:nv&&:nv.tlace=='atu{-adhocc?'oselod'ccept'}>Ttu{ Ad-hoc</op'+Mplt('okkks
+ elod'l  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Aam-be (£)</label><inpuueid="ivm-eam-be"ltlaceinupx('"vdrafp="${:nv?:nv.eam-be:''}" rgiceholder="0a>  div classsssb-bottom">
+fgs="label>Period</label><inpuueid="ivm-period"ltlaceiwC �" drafp="${:nv?:nv.period:''}" rgiceholder="e.g. Q3 2026a>  div class  div classsb-bottom">
+fgrowclass="sssb-bottom">
+fgs="label>Issue d ti</label><inpuueid="ivm-issued"etlaceit se"vdrafp="${:nv?:nv.issued:tiF().t}">s<div classsssb-bottom">
+fgs="label>Due d ti</label><inpuueid="ivm-due"vtlaceit se"vdrafp="${:nv?:nv.due:vala>  div class  div classsb-bottom">
+fgs="label>Notis>
+label><wC �areavid="ivm-=g ac" row id2cl${:nv?:nv.=g acnu'' val \/wC �area>s<div classsb-uiay:none;margin--bar;gap:8px;justify-iv>
+</d:-bar-3.d;12px" otop:16px" class="s="btn btn-primary" id=Outk="nav(this)"><cip()MiF(l(s">Clue=l</div>
+  t('okkk<="btn btn-primary" id=pri12pyav(this)"><obac'ontgId('${idnu''}','${eacIcnu''}'s">Sbac 'ontgId</div>
+  classs<div clas clas`,5-31s;)og()'_'+Mp"obac'ontgId(id,tacIc){getEls',oeam-be=',iseFloat(docu,og'.getEl',og'ById('ivm-eam-be'aadrafp)nu0;="DEls',oeIc=docu,og'.getEl',og'ById('ivm-enga)adrafpt="DEls',oeng(!r.tacts',og',.fend(x=>x.id===tIdaS="DEls',ot sa={tacIc:tIc,ida'i1'd0tac?tacGida'i1'd va,eam-be,p:noedocu,og'.getEl',og'ById('ivm- lac'aadrafp,period:docu,og'.getEl',og'ById('ivm-period'aadrafp,'2026-06-01'op:asd:'2026-_etS=",issued:docu,og'.getEl',og'ById('ivm-issued'aadrafp,due:docu,og'.getEl',og'ById('ivm-due').drafp,=g ac:docu,og'.getEl',og'ById('ivm-=g ac'aadrafp.umFmet}o="Dth)ids{Els',oinv=Lr.ida'i1'ontgIda.fend(x=>x.id===:nnoth)inv)st S)){-v',st(inv,t sa);}t('elss{!r.ida'i1'ontgIda.ida'tiFd_h.ss=,...t sa});addAct(9;"�',`'ontgId"}, ],
+da ${umbeeam-be)}"call${t sa.period}`);}t('obacts;cip()MiF(l(s;ron trViewes;)ogT DATAE CONCLAUDE CHAT BAR ────────────────────────────── */EED = {
+T──────── */IBLEaD0px ()'_'+Mp"tn-udeAsk(s{getEls',oq=docu,og'.getEl',og'ById('cn-ude-inpuu'aadrafp.umFmetS="Dth)!q)ro'e="ot('docu,og'.getEl',og'ById('cn-ude-inpuu'aadrafp=''o="DEls',opanel=docu,og'.getEl',og'ById('cn-ude-panel')<edbpanel.tn-prN:'r='open'<edbpanel.ay:no.posi'+Mp='fixed'ot('docu,og'.getEl',og'ById('cn-ude-msgc'aainionHTML='sb-bottom">
+cp-q">'+q+'</div tlex:ttom">
+cp-a"vid="cp-think',g">Think',g…</div 'o="DEls',okey=localS'dpts'.getItem('gmg_cn-ude_key')nu''S="Dth)!keyaB[dbKedocu,og'.getEl',og'ById('cn-ude-msgc'aainionHTML='sb-bottom">
+cp-q">'+q+'</div tlex:ttom">
+cp-a">NodAPIokeyoset"callhis)" ⚙oto"add youshAnthropicdAPIokey.</div 'o="Dy]Y='e=";"db}edbEls',oi x=`You are a helpfulo-v',au0l,o3,bedded inothe GMG Op,oSB_d=s Py tformofor GlobalhM,400)s Group. Currog'ot saa ${!r.tacts',og',.e)"awa}otacts',og',, ${!r.i,d<ina'.e)"awa}oi,d<ina', ${!r.tv='}.feater(t=>t.au026-!=='nd n'aae)"awa}"opendSB_K', ${!r.opportunitiac.feater(o=>!'Cip()d WB_,Cip()d Los,p.ithiudes(o.au0getaae)"awa}"rpabas pipek="n{deal-. The user is ${S.usert=:'r} (${ROLES[S.usertrole]||S.usertrole}). Beoi,dcisrs  <{helpful.`;"dbtry{edbetEls',oresp=awai,ofetch('https://api.anthropic.i,m/v1/mess0ges',B[dbKey]method:'POST',[dbKey]headers:{'x-api-key':key,'anthropic-veEE+Mp' v2023-06-01','iv>
+</d- lac':'rppis)SB_d=/jsB_2,'anthropic-d; }
+;ous-allow-brow ('tev5-31'},t('ok  body:JSON.au)',gify({model:'cn-ude- srku-4-5-20251001',max_tokens:1024,system:i x,mess0ges:[{role:'user',iv>
+</d:q}]})"dbKe})S="D"DEls',od=awai,oresp.jsB_()S="D"DEls',owC �=d.iv>
+</d?.[0]?.wC �nu'Nodrespls'e.'o="Dy]docu,og'.getEl',og'ById('cn-ude-msgc'aainionHTML='sb-bottom">
+cp-q">'+q+'</div tlex:ttom">
+cp-a">'+wC �.rergice(/\n/g,'<br>')+'</div 'S="D})SBch(eaB[dbKedocu,og'.getEl',og'ById('cn-ude-msgc'aainionHTML='sb-bottom">
+cp-q">'+q+'</div tlex:ttom">
+cp-a">Error: '+eG'ess0ge+'</div 'S="D})og()'_'+Mp"cn-udeCip()(s{docu,og'.getEl',og'ById('cn-ude-panel').tn-prN:'r='';og()'_'+Mp"oetCn-udeKey(s{getEls',ok=prompt(9E't
+;vyoushAnthropicdAPIokey (s00)ed inoyoushbrow ('v(tly):',localS'dpts'.getItem('gmg_cn-ude_key')nu''tS="Dth)k!==){  )localS'dpts'.setItem('gmg_cn-ude_key',k.umFmets;)ogT DATAE CONINIT ─── */EED = {
+T──────── */IBLEdocu,og'.addEvog'L,aueion('keydow_2,e=>B[dbth)e{keye=='Escaac'a{cip()MiF(l(s;cn-udeCip()(s;}
+oaS=waD0px ()'_'+Mp":nidApp(s{getEls',{t sa:{20">){s}}=awai,osb.auth.getS0">){s(sS="Dth)20">){s){awai,oboodApp(20">){s.user);}t('ob.auth.onAuthSu02eCh; }
+(aD0px(event,20">){s)=>B[dbKeth)evente=='SIGNED_IN'&&20">){s)awai,oboodApp(20">){s.user);[dbKeth)evente=='SIGNED_OUT's{docu,og'.getEl',og'ById('rpp').ay:no.;margin='nd n';docu,og'.getEl',og'ById('login').ay:no.;margin='-bar'o}
+y]}s;)og:nidApp(s;
+</script>
+
+<!--NCLAUDE CHAT BAR -->
+tlex:id="cn-ude-bar"iay:none;margin-nd n" cla<svg width="20" hiewBo="20" viewBox="0 0 97 96" feal="nd n":1"></div>
+ -sh)',k:0;opact6-0.55a>class<path feal-ru</dievenodd"lhisp-ru</dievenodd"ld="M55.5191 4.27168C55.5121 4.32926 55.5263 4.37853 55.5617 4.41943C55.5547 4.47701 55.5689 4.52627 55.6043 4.56718C55.6779 4.80539 55.7276 5.05162 55.7534 5.30592C55.7499 5.44442 55.7641 5.57809 55.796 5.70695C55.7995 6.2206 55.796 6.73419 55.7853 7.24774C55.776 7.35763 55.7583 7.46316 55.7321 7.56435C55.6984 7.6356 55.6842 7.71298 55.6895 7.79652C55.6886043e8587 55.6745 7.97029 55.6469 8.0498C55.6168 8.10719 55.6026 8.17051 55.6043 8.23977C55.556 8.37498 55.5205 8.5157 55.4978 8.6619C55.3212 9.32848 55.0905 9.97576 54.8057 10.6037C54.229 11.8383 53.5475 13.0132 52.7612 14.1286C51.744 15.5533 50.6649 16.9324 49.5241 18.2655C47.2981 20.8338 44.9803 23.328 42.5708 25.7479C42.0804 25.7924 41.5906 25.789 41.1013 25.7373C41.5835 25.0801 42.0698 24.4257 42.5602 23.7744C44.4049 21.2454 46.0021 18.5576 47.3519 15.7116C47.793 14.7457 48.2047 13.7678 48.5871 12.7777C48.6185 12.6809 48.6433 12.5824 48.6616 12.4822C48.6548 12.458 48.6407 12.4404 48.619 12.4295C46.3766 12.0556 44.7616 10.8561 43.7741 8.83076C43.2934 7.78303 43.1159 6.68548 43.2416 5.53809C43.5208 3.60834 44.4756 2.10623 46.106 1.03178C48.0163 -0.136879 50.0182 -0.312763 52.1117 0.504114C53.5776 1.16898 54.6459 2.22785 55.3168 3.68069C55.3992 3.87293 55.4666 4.06994 55.5191 4.27168Z" feal="#CE2702"/>class<path d="M16.2445 84.2587L24.087 89.499L38.2711 74.1239L36.9907 73.2683L16.2445 84.2587Z" feal="#CE2702"/>class<path d="M80.7561 11.6704L72.9136 6.43003L58.7295 21.8052L60.0099 22.6608L80.7561 11.6704Z" feal="#CE2702"/>cla</svg cla<sync-1"></divv>
+-size:11px;vv>
+-wiewBo:600;c-wid:var(--muISO);wh="r-divce-ndwrap;v>
+ -sh)',k:0">Ask Cn-ude>
+     [db<inpuueid="cn-ude-inpuu"ltlaceiwC �" rgiceholder="S0archothe ty tformoor ask Cn-udes  ything…av(tkeydow_="th)event{keye=='E't
+;')tn-udeAsk(s""cont="btn bay:nonebackg)l di:var(--13.etio@g;c-wid:#fff;bI der:nd n;bI deroradius:20px;paddta-:6px 14px;vv>
+-size:12px;vv>
+-wiewBo:600;cursid:poinual;v>
+ -sh)',k:0;wh="r-divce-ndwrapav(this)"><ci-udeAsk(s""A='</div>
+  clat="btn bay:nonebackg)l di:nd n;bI der:1px solid var(--bI der);bI deroradius:20px;cursid:poinual;vv>
+-size:12px;c-wid:var(--muISO);v>
+ -sh)',k:0;paddta-:6px 10pxav(this)"><oetCn-udeKey(s"o titl="S0thAnthropicdAPIokey">⚙oAPIoKey</div>
+  clat="btn bay:nonebackg)l di:nd n;bI der:nd n;cursid:poinual;vv>
+-size:16px;c-wid:var(--muISO);v>
+ -sh)',k:0;paddta-:4px 8pxav(this)"><cn-udeCip()(s">✕</div>
+  cs<div ctlex:id="cn-ude-panel""cont="btn btn-primcp-cip()av(this)"><ci-udeCip()(s">✕</div>
+  csssb-uiid="cn-ude-msgca>  div c  div cc  body>c  html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMG Platform — Global Mentors Group</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 :root {
