@@ -1225,7 +1225,7 @@ function setSyncDot(state){
 let DB=JSON.parse(JSON.stringify(SEED));
 try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
 
-const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''}};
+const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorCom:'',mentorCat:'',mentorId:null};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
 const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
@@ -1367,7 +1367,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports};
   if(r[S.view]) r[S.view](c);
 }
 
@@ -2967,36 +2967,68 @@ function buildReport(type){
 }
 
 /* ── MENTORS ─────────────────────────────────────────────────── */
+function mentorCategory(m){
+  const t=(m.title||'').toLowerCase();
+  if(/\bchair\b/.test(t) && !/non.exec|former/.test(t)) return 'chair';
+  if(/\bchair\b/.test(t) && /former/.test(t)) return 'chair';
+  if(/\bchair\b/.test(t)) return 'chair';
+  if(/\bceo\b|\bcfo\b|\bcoo\b|\bpresident\b|\bpremier\b|\bminister\b|\bmd\b|\bmanaging director\b|\bchief executive\b/.test(t)) return 'executive';
+  if(/former ceo|former president|former md/.test(t)) return 'executive';
+  return 'emerging';
+}
+
 function rMentors(c){
   const allMentors=DB.contacts.filter(x=>x.type==='mentor');
+  const chairs=allMentors.filter(m=>mentorCategory(m)==='chair');
+  const executives=allMentors.filter(m=>mentorCategory(m)==='executive');
+  const emerging=allMentors.filter(m=>mentorCategory(m)==='emerging');
+
   const q=(S.search||'').toLowerCase();
   const filterSector=S.mentorSector||'';
   const filterCom=S.mentorCom||'';
+  const filterCat=S.mentorCat||'';
 
   let shown=allMentors.filter(m=>{
-    if(q){
-      const hay=(m.name+' '+(m.title||'')+' '+(m.org||'')+' '+(m.bio||'')+(m.sectors||[]).join(' ')).toLowerCase();
-      if(!hay.includes(q)) return false;
-    }
+    if(filterCat && mentorCategory(m)!==filterCat) return false;
     if(filterSector && !(m.sectors||[]).some(s=>s===filterSector)) return false;
     if(filterCom && (m.community||'')!==filterCom) return false;
+    if(q){
+      const hay=(m.name+' '+(m.title||'')+' '+(m.org||'')+' '+(m.bio||'')+' '+(m.sectors||[]).join(' ')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
     return true;
   });
 
-  // Collect all sectors for dropdown
   const allSectors=[...new Set(allMentors.flatMap(m=>m.sectors||[]))].sort();
   const allComs=[...new Set(allMentors.map(m=>m.community||'').filter(Boolean))].sort();
-
+  const catLabels={chair:'Chair',executive:'Executive',emerging:'Emerging Leader'};
+  const catColours={chair:'#5E1100',executive:'#A0191A',emerging:'#2c3e50'};
   const communityBadge={CMi:'b-black',Merryck:'type-executive',GMG:'b-blue'};
 
   c.innerHTML=`
   <div class="phdr">
-    <div><h2>Mentor Library</h2><p>${allMentors.length} mentors</p></div>
+    <div><h2>Mentor Library</h2></div>
     <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap">
+
+  <!-- Stat cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">
+    ${[
+      {label:'Total Mentors',val:allMentors.length,cat:'',colour:'#1a1a2e'},
+      {label:'Chair Mentors',val:chairs.length,cat:'chair',colour:'#5E1100'},
+      {label:'Executive Mentors',val:executives.length,cat:'executive',colour:'#A0191A'},
+      {label:'Emerging Leaders',val:emerging.length,cat:'emerging',colour:'#2c3e50'}
+    ].map(s=>`
+    <div onclick="S.mentorCat='${s.cat}';S.search='';renderView()" style="background:var(--white);border:1px solid ${filterCat===s.cat&&s.cat?s.colour:'var(--border)'};border-radius:8px;padding:16px 20px;cursor:pointer;transition:.15s;${filterCat===s.cat&&s.cat?`box-shadow:0 0 0 1px ${s.colour};`:''}">
+      <div style="font-size:26px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif;color:${s.colour}">${s.val}</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-top:2px">${s.label}</div>
+    </div>`).join('')}
+  </div>
+
+  <!-- Filters -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
     <div style="flex:1;min-width:200px;position:relative">
-      <input id="mentor-search" class="inp" placeholder="Search mentors by name, sector, background…" value="${S.search||''}"
+      <input class="inp" placeholder="Search by name, sector, background…" value="${S.search||''}"
         oninput="S.search=this.value;renderView()" style="padding-left:32px;width:100%;box-sizing:border-box">
       <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px">&#128269;</span>
     </div>
@@ -3006,16 +3038,19 @@ function rMentors(c){
     </select>
     <select class="inp" style="min-width:140px" onchange="S.mentorCom=this.value;renderView()">
       <option value="">All Communities</option>
-      ${allComs.map(c=>`<option value="${c}"${filterCom===c?' selected':''}>${c}</option>`).join('')}
+      ${allComs.map(com=>`<option value="${com}"${filterCom===com?' selected':''}>${com}</option>`).join('')}
     </select>
-    ${(filterSector||filterCom||q)?`<button class="btn btn-sm btn-outline" onclick="S.search='';S.mentorSector='';S.mentorCom='';renderView()">Clear filters</button>`:''}
+    ${(filterSector||filterCom||q||filterCat)?`<button class="btn btn-sm btn-outline" onclick="S.search='';S.mentorSector='';S.mentorCom='';S.mentorCat='';renderView()">Clear filters</button>`:''}
   </div>
-  <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${shown.length} mentor${shown.length!==1?'s':''} shown</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:14px">${shown.length} mentor${shown.length!==1?'s':''} shown${filterCat?' · '+catLabels[filterCat]:''}</div>
+
+  <!-- Grid -->
   <div class="mentor-grid">
     ${shown.length===0?`<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">No mentors match your search.</div>`:
     shown.map(m=>{
       const comBadge=communityBadge[m.community]||'b-grey';
-      const hasProfile=!!(m.bio||m.career_highlights?.length);
+      const cat=mentorCategory(m);
+      const catC=catColours[cat]||'#888';
       return`<div class="mentor-card" style="cursor:pointer" onclick="viewContact('${m.id}')">
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
           <div class="mentor-av">${initials(m.name)}</div>
@@ -3025,64 +3060,121 @@ function rMentors(c){
           </div>
         </div>
         <div style="font-size:11px;color:var(--nearblack);margin-bottom:8px;font-weight:500">${m.org||'—'}</div>
-        ${(m.sectors||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(m.sectors||[]).slice(0,3).map(s=>`<span style="font-size:9px;font-weight:600;padding:2px 7px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;color:var(--nearblack)">${s}</span>`).join('')}${(m.sectors||[]).length>3?`<span style="font-size:9px;color:var(--muted);padding:2px 4px">+${m.sectors.length-3}</span>`:''}</div>`:''}
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto">
+        ${(m.sectors||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(m.sectors||[]).slice(0,3).map(s=>`<span style="font-size:9px;font-weight:600;padding:2px 7px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px">${s}</span>`).join('')}${(m.sectors||[]).length>3?`<span style="font-size:9px;color:var(--muted);padding:2px 4px">+${m.sectors.length-3}</span>`:''}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:8px;border-top:1px solid var(--border)">
           ${m.community?`<span class="badge ${comBadge}" style="font-size:9px">${m.community}</span>`:'<span></span>'}
-          <span style="font-size:10px;color:var(--muted)">${hasProfile?'View profile →':'No profile yet'}</span>
+          <span style="font-size:10px;font-weight:600;color:${catC}">${catLabels[cat]||''}</span>
         </div>
       </div>`;
     }).join('')}
   </div>`;
 }
 
-
 function viewContact(id){
-  const m=DB.contacts.find(c=>c.id===id);
-  if(!m) return;
-  const comBadge={CMi:'b-black',Merryck:'type-executive',GMG:'b-blue'};
-  const cb=comBadge[m.community]||'b-grey';
-  const engCount=DB.engagements.filter(e=>e.mentorId===m.id||( e.mentorIds&&e.mentorIds.includes(m.id))).length;
-  openModal(`
-    <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px">
-      <div class="mentor-av" style="width:62px;height:62px;font-size:22px;flex-shrink:0">${initials(m.name)}</div>
-      <div style="flex:1">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700;line-height:1.2">${m.name}</div>
-        ${m.title?`<div style="font-size:13px;color:var(--muted);margin-top:4px">${m.title}</div>`:''}
-        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-          ${m.community?`<span class="badge ${cb}">${m.community}</span>`:''}
-          ${m.status?`<span class="badge ${m.status==='active'?'b-green':'b-amber'}">${m.status}</span>`:''}
-          ${engCount?`<span class="badge b-grey">${engCount} engagement${engCount!==1?'s':''}</span>`:''}
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <button class="btn btn-sm btn-outline" onclick="openContactModal('${m.id}')">Edit</button>
-        ${m.profile_url?`<a href="${m.profile_url}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none;text-align:center">GMG Profile ↗</a>`:''}
+  S.mentorId=id;
+  S.view='mentorProfile';
+  renderView();
+}
+
+function rMentorProfile(c){
+  const m=DB.contacts.find(x=>x.id===S.mentorId);
+  if(!m){S.view='mentors';renderView();return;}
+
+  const communityBadge={CMi:'b-black',Merryck:'type-executive',GMG:'b-blue'};
+  const cb=communityBadge[m.community]||'b-grey';
+  const cat=mentorCategory(m);
+  const catLabel={chair:'Chair Mentor',executive:'Executive Mentor',emerging:'Emerging Leader'}[cat]||'';
+  const catColour={chair:'#5E1100',executive:'#A0191A',emerging:'#2c3e50'}[cat]||'#888';
+  const engs=DB.engagements.filter(e=>e.mentorId===m.id||(e.mentorIds&&e.mentorIds.includes(m.id)));
+
+  c.innerHTML=`
+  <!-- Back nav -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px">
+    <button class="btn btn-sm btn-outline" onclick="S.view='mentors';renderView()">&#8592; Mentor Library</button>
+    ${m.profile_url?`<a href="${m.profile_url}" target="_blank" class="btn btn-sm btn-outline" style="text-decoration:none">View on GMG website ↗</a>`:''}
+    <button class="btn btn-sm btn-outline" onclick="openContactModal('${m.id}')" style="margin-left:auto">Edit Profile</button>
+  </div>
+
+  <!-- Hero -->
+  <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:28px 32px;margin-bottom:20px;display:flex;gap:24px;align-items:flex-start">
+    <div class="mentor-av" style="width:72px;height:72px;font-size:26px;flex-shrink:0">${initials(m.name)}</div>
+    <div style="flex:1">
+      <h2 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;margin:0 0 6px">${m.name}</h2>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:10px">${m.title||''}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--nearblack);margin-bottom:12px">${m.org||''}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${m.community?`<span class="badge ${cb}">${m.community}</span>`:''}
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:${catColour}18;color:${catColour};border:1px solid ${catColour}44">${catLabel}</span>
+        <span class="badge ${m.status==='active'?'b-green':'b-amber'}">${m.status||'active'}</span>
+        ${engs.length?`<span class="badge b-grey">${engs.length} engagement${engs.length!==1?'s':''} on platform</span>`:''}
       </div>
     </div>
-    ${m.org?`<div style="font-size:13px;font-weight:600;margin-bottom:14px;color:var(--nearblack)">${m.org}</div>`:''}
-    ${(m.sectors||[]).length?`
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Sectors</div>
-      <div style="display:flex;flex-wrap:wrap;gap:5px">${(m.sectors||[]).map(s=>`<span style="font-size:11px;font-weight:600;padding:3px 10px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:12px">${s}</span>`).join('')}</div>
-    </div>`:''}
-    ${m.bio?`
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Biography</div>
-      <div style="font-size:13px;line-height:1.65;color:var(--nearblack)">${m.bio}</div>
-    </div>`:''}
-    ${(m.career_highlights||[]).length?`
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Career Highlights</div>
-      <ul style="margin:0;padding-left:18px;list-style:disc">${(m.career_highlights||[]).map(h=>`<li style="font-size:12px;line-height:1.6;color:var(--nearblack);margin-bottom:3px">${h}</li>`).join('')}</ul>
-    </div>`:''}
-    ${(m.email||m.phone||m.notes)?`
-    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Contact</div>
-      ${m.email?`<div style="font-size:12px;margin-bottom:4px">&#9993; ${m.email}</div>`:''}
-      ${m.phone?`<div style="font-size:12px;margin-bottom:4px">&#9990; ${m.phone}</div>`:''}
-      ${m.notes?`<div style="font-size:12px;color:var(--muted);margin-top:8px;font-style:italic">${m.notes}</div>`:''}
-    </div>`:''}
-  `,true);
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start">
+    <!-- Left column -->
+    <div>
+      ${m.bio?`
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Biography</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--nearblack)">${m.bio}</div>
+      </div>`:''}
+
+      ${(m.career_highlights||[]).length?`
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px">Career Highlights</div>
+        <ul style="margin:0;padding:0;list-style:none">
+          ${(m.career_highlights||[]).map((h,i)=>`
+          <li style="display:flex;gap:12px;padding:9px 0;${i>0?'border-top:1px solid var(--border)':''}">
+            <span style="color:var(--venetian);font-weight:700;flex-shrink:0;margin-top:1px">›</span>
+            <span style="font-size:13px;line-height:1.5;color:var(--nearblack)">${h}</span>
+          </li>`).join('')}
+        </ul>
+      </div>`:''}
+
+      ${engs.length?`
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:14px">Platform Engagements</div>
+        ${engs.map(e=>{
+          const cl=DB.contacts.find(c=>c.id===e.clientId);
+          const sb=e.status==='active'?'b-green':e.status==='completed'?'b-grey':'b-amber';
+          return`<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-size:13px;font-weight:600">${e.name}</div>
+                <div style="font-size:11px;color:var(--muted)">${cl?cl.name:'—'} · ${e.type}</div>
+              </div>
+              <span class="badge ${sb}">${e.status}</span>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`:''}
+    </div>
+
+    <!-- Right column -->
+    <div>
+      ${(m.sectors||[]).length?`
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Sectors</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${(m.sectors||[]).map(s=>`<span style="font-size:11px;font-weight:600;padding:4px 12px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:14px">${s}</span>`).join('')}
+        </div>
+      </div>`:''}
+
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Contact</div>
+        ${m.email?`<div style="font-size:12px;margin-bottom:8px;display:flex;gap:8px"><span style="color:var(--muted)">Email</span><span>${m.email}</span></div>`
+          :`<div style="font-size:12px;color:var(--muted);font-style:italic">Contact details to be added</div>`}
+        ${m.phone?`<div style="font-size:12px;display:flex;gap:8px"><span style="color:var(--muted)">Phone</span><span>${m.phone}</span></div>`:''}
+      </div>
+
+      ${m.notes?`
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Notes</div>
+        <div style="font-size:12px;color:var(--nearblack);line-height:1.6">${m.notes}</div>
+      </div>`:''}
+    </div>
+  </div>`;
 }
 
 function openEngModal(id){
