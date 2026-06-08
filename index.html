@@ -1250,6 +1250,166 @@ function saveProjTask(engId){
   DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
 }
 
+function toggleEngTypeFields(type){
+  document.getElementById('em-exec-fields').style.display=type==='executive'?'':'none';
+  document.getElementById('em-team-fields').style.display=type==='team'?'':'none';
+}
+
+function openProjDetail(id){
+  const e=DB.engagements.find(x=>x.id===id); if(!e) return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  const stages=e.stages||[];
+  const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
+  const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
+  const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||e.annualFee||0;
+  const totalMentorCost=stages.reduce((s,st)=>s+((st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0)),0);
+  const profit=totalClientFee-totalMentorCost;
+  const margin=totalClientFee>0?Math.round((profit/totalClientFee)*100):0;
+  const costPct=totalClientFee>0?Math.min(100,Math.round((totalMentorCost/totalClientFee)*100)):0;
+  const profitPct=totalClientFee>0?Math.max(0,100-costPct):0;
+  const stBadge={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
+  const completedStages=stages.filter(s=>s.status==='completed').length;
+  const avail=DB.contacts.filter(c=>c.type==='mentor'&&!mentorIds.includes(c.id));
+  const stageRows=stages.length>0?stages.map(st=>{
+    const stMentorCost=(st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0);
+    const stProfit=(st.clientFee||0)-stMentorCost;
+    const pip=st.status==='completed'?'#27ae60':st.status==='active'?'#d68910':'#bdc3c7';
+    const sb=st.status==='completed'?'b-green':st.status==='active'?'b-amber':'b-grey';
+    const mfStr=(st.mentorFees||[]).map(mf=>{const m=DB.contacts.find(c=>c.id===mf.mentorId);return`${m?m.name.split(' ')[0]:'?'}: ${fmt(mf.fee)}`;}).join(', ')||'—';
+    return`<tr>
+      <td><div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:50%;background:${pip};flex-shrink:0"></div><span style="font-size:12px;font-weight:600">${st.name}</span></div></td>
+      <td><span class="badge ${sb}">${st.status}</span></td>
+      <td style="font-size:12px;font-weight:600;color:var(--cadmium)">${fmt(st.clientFee||0)}</td>
+      <td style="font-size:11px;color:var(--muted)">${mfStr}</td>
+      <td style="font-size:12px;font-weight:600;color:${stProfit>=0?'var(--success)':'#c0392b'}">${fmt(stProfit)}</td>
+      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openStageModal('${id}','${st.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteStage('${id}','${st.id}')">&#10005;</button></div></td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No stages yet &#8212; click + Add Stage below</td></tr>`;
+  showModal(`<div class="mhdr"><h3>${e.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div style="display:flex;gap:7px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
+      <span class="badge type-team">Team</span><span class="badge ${stBadge}">${e.status}</span>
+      ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
+      ${cl?`<span style="font-size:11px;color:var(--muted)">Client: <strong style="color:var(--nearblack)">${cl.name}</strong></span>`:''}
+      ${e.startDate?`<span style="font-size:11px;color:var(--muted)">${e.startDate}${e.endDate?' &#8594; '+e.endDate:''}</span>`:''}
+    </div>
+    <div class="fstitle" style="margin-bottom:7px">Team Mentors</div>
+    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
+      ${mentors.map(m=>`<span class="mentor-tag">${m.name}<button onclick="removeProjMentor('${id}','${m.id}')" title="Remove">&#215;</button></span>`).join('')}
+      ${mentors.length===0?`<span style="font-size:11px;color:var(--muted)">No mentors assigned</span>`:''}
+    </div>
+    ${avail.length>0?`<div style="display:flex;gap:6px;margin-bottom:16px">
+      <select id="proj-add-mentor" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);color:var(--nearblack)">
+        <option value="">Add mentor to project&#8230;</option>
+        ${avail.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-sm btn-outline" onclick="addProjMentor('${id}')">+ Add</button>
+    </div>`:`<div style="margin-bottom:16px"></div>`}
+    <div class="fstitle" style="margin-bottom:7px">Project Stages (${completedStages}/${stages.length} complete)</div>
+    <table class="tbl" style="margin-bottom:10px">
+      <thead><tr><th>Stage</th><th>Status</th><th>Client Fee</th><th>Mentor Costs</th><th>Stage Profit</th><th>Actions</th></tr></thead>
+      <tbody>${stageRows}</tbody>
+      ${stages.length>0?`<tfoot><tr style="background:var(--halfnarrow)"><td colspan="2" style="font-size:12px;font-weight:700">Total</td><td style="font-size:12px;font-weight:700;color:var(--cadmium)">${fmt(totalClientFee)}</td><td style="font-size:12px;font-weight:700">${fmt(totalMentorCost)}</td><td style="font-size:12px;font-weight:700;color:${profit>=0?'var(--success)':'#c0392b'}">${fmt(profit)}</td><td></td></tr></tfoot>`:''}
+    </table>
+    ${stages.length>0?`<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+        <span style="font-weight:600">Project Profitability</span>
+        <span style="font-weight:700;font-size:13px;color:${margin>=0?'var(--success)':'#c0392b'}">${margin}% margin &nbsp;&#183;&nbsp; ${fmt(profit)} profit</span>
+      </div>
+      <div class="profit-bar-track">
+        <div class="pbar-cost" style="width:${costPct}%"></div>
+        <div class="pbar-profit" style="width:${profitPct}%"></div>
+      </div>
+      <div style="display:flex;gap:14px;font-size:10px;margin-top:4px;color:var(--muted)">
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#c0392b;margin-right:3px"></span>Cost ${fmt(totalMentorCost)}</span>
+        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#27ae60;margin-right:3px"></span>Profit ${fmt(profit)}</span>
+      </div>
+    </div>`:''}
+    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px">
+      <button class="btn btn-primary" onclick="openStageModal('${id}',null)">+ Add Stage</button>
+      <button class="btn btn-outline" onclick="openProjTaskModal('${id}')">+ Task</button>
+      <button class="btn btn-outline" onclick="closeModal();openEngModal('${id}')">Edit Details</button>
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+    </div>
+  </div>`,true);
+}
+
+function addProjMentor(engId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const sel=document.getElementById('proj-add-mentor');
+  const mid=sel.value; if(!mid) return;
+  if(!e.mentorIds) e.mentorIds=[];
+  if(e.mentorId&&!e.mentorIds.includes(e.mentorId)) e.mentorIds.unshift(e.mentorId);
+  if(!e.mentorIds.includes(mid)) e.mentorIds.push(mid);
+  if(!e.mentorId) e.mentorId=mid;
+  save();closeModal();openProjDetail(engId);
+}
+
+function removeProjMentor(engId,mentorId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  e.mentorIds=(e.mentorIds||[]).filter(id=>id!==mentorId);
+  if(e.mentorId===mentorId) e.mentorId=e.mentorIds[0]||'';
+  save();closeModal();openProjDetail(engId);
+}
+
+function openStageModal(engId,stageId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const st=stageId?(e.stages||[]).find(s=>s.id===stageId):null;
+  const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
+  const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
+  const mFeeFields=mentors.map(m=>{
+    const ex=(st&&st.mentorFees||[]).find(mf=>mf.mentorId===m.id);
+    return`<div class="fgrow" style="align-items:center;gap:10px">
+      <div style="flex:1;font-size:12px;font-weight:600;min-width:100px">${m.name}</div>
+      <div class="fg" style="flex:1"><label>Fee (&#163;)</label><input class="mfee-inp" data-mid="${m.id}" type="number" value="${ex?ex.fee:''}" placeholder="0"></div>
+    </div>`;
+  }).join('');
+  showModal(`<div class="mhdr"><h3>${st?'Edit Stage':'New Stage'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div class="fgrow">
+      <div class="fg"><label>Stage Name</label><input id="stg-name" type="text" value="${st?st.name:''}" placeholder="e.g. Discovery, Design, Delivery"></div>
+      <div class="fg"><label>Status</label><select id="stg-status">
+        <option value="pending"${!st||st.status==='pending'?' selected':''}>Pending</option>
+        <option value="active"${st&&st.status==='active'?' selected':''}>Active</option>
+        <option value="completed"${st&&st.status==='completed'?' selected':''}>Completed</option>
+      </select></div>
+    </div>
+    <div class="fg"><label>Client Fee for this Stage (&#163;)</label><input id="stg-client-fee" type="number" value="${st?st.clientFee:''}" placeholder="0"></div>
+    ${mentors.length>0?`<div class="fstitle" style="margin:10px 0 6px">Mentor Fees for this Stage</div>${mFeeFields}`:'<div style="font-size:11px;color:var(--muted);padding:6px 0">Assign mentors to the project first to set their per-stage fees.</div>'}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal();openProjDetail('${engId}')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStage('${engId}','${stageId||''}')">Save Stage</button>
+    </div>
+  </div>`);
+}
+
+function saveStage(engId,stageId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const name=document.getElementById('stg-name').value.trim();
+  if(!name) return alert('Please enter a stage name.');
+  const clientFee=parseFloat(document.getElementById('stg-client-fee').value)||0;
+  const status=document.getElementById('stg-status').value;
+  const mentorFees=[];
+  document.querySelectorAll('.mfee-inp').forEach(inp=>{
+    mentorFees.push({mentorId:inp.dataset.mid,fee:parseFloat(inp.value)||0});
+  });
+  if(!e.stages) e.stages=[];
+  if(stageId){
+    const idx=e.stages.findIndex(s=>s.id===stageId);
+    if(idx!==-1) e.stages[idx]={...e.stages[idx],name,status,clientFee,mentorFees};
+  } else {
+    e.stages.push({id:uid(),name,status,clientFee,mentorFees});
+  }
+  save();closeModal();openProjDetail(engId);
+}
+
+function deleteStage(engId,stageId){
+  if(!confirm('Delete this stage?')) return;
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  e.stages=(e.stages||[]).filter(s=>s.id!==stageId);
+  save();closeModal();openProjDetail(engId);
+}
+
 /* ── QUOTING ─────────────────────────────────────────────────── */
 function rQuoting(c){
   if(!DB.quotes) DB.quotes=[];
