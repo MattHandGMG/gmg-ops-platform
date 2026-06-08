@@ -32,7 +32,7 @@ input,select,textarea{font-family:inherit;outline:none}
 /* Sidebar */
 .sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;background:var(--burnt)}
 .sb-icon{width:36px;height:36px;flex-shrink:0}
-.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;color:#fff;line-height:1.2}
+.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1.2}
 .sb-brand span{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.8px;text-transform:uppercase}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
 .sb-section{padding:8px 16px 2px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px}
@@ -325,7 +325,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
-    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentors Library</div>
+    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
@@ -515,7 +515,7 @@ try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''}};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentors Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -829,15 +829,17 @@ function openEngDetail(id){
     <div class="ir"><span class="lbl">Rate per Session</span><span class="val">${fmt(e.sessionRate)}</span></div>`;
   else if(e.type==='executive') typeInfo=`<div class="ir"><span class="lbl">Quarterly Fee (client)</span><span class="val" style="color:var(--cadmium)">${fmt(e.quarterlyFee)}</span></div>
     <div class="ir"><span class="lbl">Annual Value</span><span class="val">${fmt(e.annualFee)}</span></div>
-    <div class="ir"><span class="lbl">Mentor Monthly (40%)</span><span class="val">${fmt(Math.round(e.quarterlyFee/3*0.4))}</span></div>`;
+    <div class="ir"><span class="lbl">Mentor Monthly (40%)</span><span class="val">${fmt(Math.round(e.quarterlyFee/3*0.4))}</span></div>
+    ${e.retreatDate?`<div class="ir"><span class="lbl">Retreat Date</span><span class="val">${e.retreatDate}</span></div>`:''}
+    ${e.retreatFee?`<div class="ir"><span class="lbl">Retreat Fee</span><span class="val">${fmt(e.retreatFee)}</span></div>`:''}`;
   else typeInfo=`<div class="ir"><span class="lbl">Total Programme Fee</span><span class="val" style="color:var(--cadmium)">${fmt(e.totalFee)}</span></div>
     <div class="ir"><span class="lbl">Agreed Mentor Fee</span><span class="val">${fmt(e.mentorFee)}</span></div>`;
   showModal(`<div class="mhdr"><h3>${e.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
     <div style="display:flex;gap:8px;margin-bottom:14px"><span class="badge ${tb}">${e.type}</span><span class="badge ${sb}">${e.status}</span></div>
     <div class="fstitle">Engagement Details</div>
-    <div class="ir"><span class="lbl">Client</span><span class="val">${cl?.name||'—'}</span></div>
-    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?.name||'—'}</span></div>
+    <div class="ir"><span class="lbl">Client</span><span class="val">${cl?`<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>viewContact('${cl.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${cl.name}</a>`:'—'}</span></div>
+    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?`<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>viewContact('${mn.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${mn.name}</a>`:'—'}</span></div>
     <div class="ir"><span class="lbl">Coordinator</span><span class="val">${e.coordinator}</span></div>
     <div class="ir"><span class="lbl">Partner</span><span class="val">${e.partner||'—'}</span></div>
     <div class="ir"><span class="lbl">Country</span><span class="val">${e.country||'—'}</span></div>
@@ -1097,7 +1099,7 @@ function rContacts(c){
     <tbody>${cons.map(ct=>{
       const tb=ct.type==='mentor'?'type-chair':'b-black';
       const sb=ct.status==='active'?'b-green':ct.status==='prospect'?'b-amber':'b-grey';
-      return`<tr><td><div style="font-weight:600;font-size:12px">${ct.name}</div></td>
+      return`<tr><td><div style="font-weight:600;font-size:12px"><a href="#" onclick="event.preventDefault();viewContact('${ct.id}')" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${ct.name}</a></div></td>
       <td><span class="badge ${tb}">${ct.type}</span></td>
       <td style="font-size:12px">${ct.org||'—'}</td>
       <td style="font-size:11px;color:var(--muted)">${ct.email}</td>
@@ -1803,7 +1805,7 @@ function rMentors(c){
   };
 
   c.innerHTML=`
-  <div class="phdr"><div><h2>Mentors Library</h2><p>${allMentors.length} mentors · ${chairs.length} Chair · ${executives.length} Executive · ${emerging.length} Emerging Leaders</p></div>
+  <div class="phdr"><div><h2>Mentor Library</h2><p>${allMentors.length} mentors · ${chairs.length} Chair · ${executives.length} Executive · ${emerging.length} Emerging Leaders</p></div>
   <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button></div>
   <div class="tabs">
     <div class="tab${tab==='chair'?' active':''}" onclick="S.tab.mentorCat='chair';renderView()">
@@ -1828,7 +1830,7 @@ function rMentors(c){
         <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px">
           <div class="mentor-av">${initials(m.name)}</div>
           <div style="flex:1">
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700">${m.name}</div>
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700"><a href="#" onclick="event.preventDefault();viewContact('${m.id}')" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${m.name}</a></div>
             <div style="font-size:11px;color:var(--muted)">${m.org||'—'}</div>
           </div>
           <span class="badge ${sb}">${m.status}</span>
@@ -1860,7 +1862,7 @@ function openEngModal(id){
   <div class="mbody">
     <div class="fg"><label>Engagement Name</label><input id="em-name" type="text" value="${e?e.name:''}" placeholder="e.g. HSBC — Executive Mentoring: J. Smith"></div>
     <div class="fgrow">
-      <div class="fg"><label>Type</label><select id="em-type">
+      <div class="fg"><label>Type</label><select id="em-type" onchange="document.getElementById('em-exec-fields').style.display=this.value==='executive'?'':'none'">
         <option value="chair"${e&&e.type==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!e||e.type==='executive'?' selected':''}>Executive Mentoring</option>
         <option value="team"${e&&e.type==='team'?' selected':''}>Team Engagement</option>
@@ -1897,6 +1899,13 @@ function openEngModal(id){
       </select></div>
       <div class="fg"><label>Annual Fee (£)</label><input id="em-fee" type="number" value="${e?e.annualFee||e.totalFee||'':''}" placeholder="0"></div>
     </div>
+    <div id="em-exec-fields" style="${(!e||e.type==='executive')?'':'display:none'}">
+      <div class="fstitle" style="margin:8px 0 4px">Retreat</div>
+      <div class="fgrow">
+        <div class="fg"><label>Retreat Date</label><input id="em-retreat-date" type="date" value="${e?e.retreatDate||'':''}"></div>
+        <div class="fg"><label>Retreat Fee (£)</label><input id="em-retreat-fee" type="number" value="${e?e.retreatFee||'':''}" placeholder="0"></div>
+      </div>
+    </div>
     <div class="fg"><label>Notes</label><textarea id="em-notes" rows="3">${e?e.notes:''}<\/textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
@@ -1912,7 +1921,7 @@ function saveEng(id){
   const fee=parseFloat(document.getElementById('em-fee').value)||0;
   const data={name,type,status:document.getElementById('em-status').value,clientId:document.getElementById('em-client').value,mentorId:document.getElementById('em-mentor').value,partner:document.getElementById('em-partner').value,coordinator:document.getElementById('em-coord').value,startDate:document.getElementById('em-start').value,endDate:document.getElementById('em-end').value,country:document.getElementById('em-country').value,notes:document.getElementById('em-notes').value.trim()};
   if(type==='chair'){data.annualFee=fee;data.sessionRate=data.sessionRate||Math.round(fee/12);data.sessionsIncluded=data.sessionsIncluded||12;data.sessionsUsed=data.sessionsUsed||0;}
-  else if(type==='executive'){data.annualFee=fee;data.quarterlyFee=Math.round(fee/4);}
+  else if(type==='executive'){data.annualFee=fee;data.quarterlyFee=Math.round(fee/4);data.retreatDate=document.getElementById('em-retreat-date').value;data.retreatFee=parseFloat(document.getElementById('em-retreat-fee').value)||0;}
   else{data.totalFee=fee;}
   if(id){const e=DB.engagements.find(x=>x.id===id);if(e)Object.assign(e,data);}
   else{DB.engagements.push({id:uid(),...data,createdAt:today()});addAct('◈',`New engagement: ${name}`);}
@@ -1948,6 +1957,38 @@ function saveContact(id){
   if(id){const c=DB.contacts.find(x=>x.id===id);if(c)Object.assign(c,data);}
   else{DB.contacts.push({id:uid(),...data});addAct('◈',`Contact added: ${data.name}`);}
   save();closeModal();renderView();
+}
+function viewContact(id){
+  const ct=DB.contacts.find(x=>x.id===id); if(!ct) return;
+  const engs=DB.engagements.filter(e=>e.clientId===id||e.mentorId===id);
+  const tb=ct.type==='mentor'?'type-chair':'b-black';
+  const sb=ct.status==='active'?'b-green':ct.status==='prospect'?'b-amber':'b-grey';
+  const engRows=engs.map(e=>{
+    const partner=e.clientId===id?DB.contacts.find(c=>c.id===e.mentorId):DB.contacts.find(c=>c.id===e.clientId);
+    const role=e.clientId===id?'Client':'Mentor';
+    const val=e.type==='mentee'?e.totalFee:e.type==='executive'?e.annualFee:e.type==='chair'?e.annualFee:e.totalFee;
+    const sb2={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
+    return`<tr><td style="font-size:12px;font-weight:600"><a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>openEngDetail('${e.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${e.name}</a></td><td><span class="badge ${sb2}">${e.type}</span></td><td style="font-size:11px">${role}</td><td style="font-size:12px">${partner?.name||'—'}</td><td style="font-size:12px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val||0)}</td><td><span class="badge ${sb2}">${e.status}</span></td></tr>`;
+  }).join('');
+  showModal(`<div class="mhdr"><h3>${ct.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+      <span class="badge ${tb}">${ct.type}</span>
+      <span class="badge ${sb}">${ct.status}</span>
+    </div>
+    <div class="fstitle">Contact Details</div>
+    ${ct.org?`<div class="ir"><span class="lbl">Organisation</span><span class="val">${ct.org}</span></div>`:''}
+    ${ct.email?`<div class="ir"><span class="lbl">Email</span><span class="val"><a href="mailto:${ct.email}" style="color:inherit">${ct.email}</a></span></div>`:''}
+    ${ct.phone?`<div class="ir"><span class="lbl">Phone</span><span class="val">${ct.phone}</span></div>`:''}
+    ${ct.notes?`<div style="margin:12px 0;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${ct.notes}</div>`:''}
+    ${engs.length>0?`<div class="fstitle" style="margin-top:14px">Engagements (${engs.length})</div>
+    <table class="tbl" style="margin-top:6px"><thead><tr><th>Engagement</th><th>Type</th><th>Role</th><th>Partner</th><th>Value</th><th>Status</th></tr></thead>
+    <tbody>${engRows}</tbody></table>`:'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No engagements</div>'}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal();openContactModal('${ct.id}')">Edit Contact</button>
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+    </div>
+  </div>`,true);
 }
 function openSessionModal(engId){
   const engs=DB.engagements.filter(e=>e.status!=='cancelled');
@@ -2039,7 +2080,7 @@ async function claudeAsk(){
     document.getElementById('claude-msgs').innerHTML='<div class="cp-q">'+q+'</div><div class="cp-a">No API key set — click ⚙ to add your Anthropic API key.</div>';
     return;
   }
-  const ctx=`You are a helpful assistant embedded in the GMG Operations Platform for Global Mentors Group. Current data: ${DB.engagements.length} engagements, ${DB.contacts.length} contacts, ${DB.tasks.filter(t=>t.status!=='done').length} open tasks, ${DB.opportunities.filter(o=>!'Closed Won,Closed Lost'.includes(o.stage)).length} active pipeline deals. The user is ${S.user.name} (${ROLES[S.user.role]||S.user.role}). Be concise and helpful.`;
+  const ctx=`You are a helpful assistant embedded in the GMG Operations Platform for Global Mentors Group. Current data: ${DB.engagements.length} engagements, ${DB.contacts.length} contacts, ${DB.tasks.filter(t=>t.status!=='done').length} open tasks, ${DB.opportunities.filter(o=>!['Closed Won','Closed Lost'].includes(o.stage)).length} active pipeline deals. The user is ${S.user.name} (${ROLES[S.user.role]||S.user.role}). Be concise and helpful.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
