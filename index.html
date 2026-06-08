@@ -258,6 +258,15 @@ input,select,textarea{font-family:inherit;outline:none}
 .cp-close{position:absolute;top:10px;right:16px;background:none;border:none;font-size:16px;cursor:pointer;color:var(--muted);line-height:1}
 /* Extra bottom padding so content doesn't hide behind Claude bar */
 #content{padding-bottom:64px}
+/* Project Management — stages & profitability */
+.proj-stage-pip{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block}
+.profit-bar-track{height:10px;border-radius:5px;overflow:hidden;background:var(--border);display:flex;margin:4px 0}
+.pbar-cost{background:#c0392b;height:100%;transition:.3s}
+.pbar-profit{background:#27ae60;height:100%;transition:.3s}
+.mentor-tag{display:inline-flex;align-items:center;gap:4px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:12px;padding:3px 9px;font-size:11px;font-weight:600}
+.mentor-tag button{background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted);padding:0;line-height:1;margin-left:2px}
+.mentor-tag button:hover{color:#c0392b}
+.mc-list{display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:var(--halfnarrow);border-radius:6px;border:1px solid var(--border);max-height:180px;overflow-y:auto}
 </style>
 </head>
 <body>
@@ -1114,72 +1123,104 @@ function deleteCon(id){if(!confirm('Delete contact?'))return;DB.contacts=DB.cont
 /* ── PROJECT MANAGEMENT ──────────────────────────────────────── */
 function rProjects(c){
   const statusFilter=S.tab.projStatus||'';
-  const partnerFilter=S.tab.projPartner||'';
-  let engs=DB.engagements.filter(e=>{
+  const typeFilter=S.tab.projType||'';
+  const engs=DB.engagements.filter(e=>{
     if(statusFilter&&e.status!==statusFilter) return false;
-    if(partnerFilter&&e.partner!==partnerFilter) return false;
+    if(typeFilter&&e.type!==typeFilter) return false;
     return true;
   });
-  const hasFilter=statusFilter||partnerFilter;
-  const partnerOpts=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
   c.innerHTML=`
-  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active projects · ${DB.engagements.length} total</p></div></div>
+  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.type==='team').length} team projects · ${DB.engagements.filter(e=>e.status==='active').length} active</p></div>
+  <button class="btn btn-primary" onclick="openEngModal(null)" style="cursor:pointer">+ New Project</button></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+    <select class="filter-sel" onchange="S.tab.projType=this.value;renderView()">
+      <option value="">All Types</option>
+      <option value="team"${typeFilter==='team'?' selected':''}>Team</option>
+      <option value="executive"${typeFilter==='executive'?' selected':''}>Executive</option>
+      <option value="chair"${typeFilter==='chair'?' selected':''}>Chair</option>
+    </select>
     <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
       <option value="">All Statuses</option>
       ${['active','planning','completed'].map(s=>`<option value="${s}"${statusFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
     </select>
-    <select class="filter-sel" onchange="S.tab.projPartner=this.value;renderView()">
-      <option value="">All Partners</option>
-      ${partnerOpts.map(p=>`<option value="${p}"${partnerFilter===p?' selected':''}>${p}</option>`).join('')}
-    </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.tab.projStatus='';S.tab.projPartner='';renderView()">&#10005; Clear</button>`:''}
+    ${(statusFilter||typeFilter)?`<button class="filter-clear" onclick="S.tab.projStatus='';S.tab.projType='';renderView()">&#10005; Clear</button>`:''}
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
     ${engs.map(e=>{
       const client=DB.contacts.find(x=>x.id===e.clientId);
-      const mentor=DB.contacts.find(x=>x.id===e.mentorId);
+      const stages=e.stages||[];
+      const mentorIds=e.mentorIds||[];
+      if(e.mentorId&&!mentorIds.includes(e.mentorId)) mentorIds.unshift(e.mentorId);
+      const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
+      const singleMentor=!mentors.length&&e.mentorId?DB.contacts.find(c=>c.id===e.mentorId):null;
       const engSess=DB.sessions.filter(s=>s.engId===e.id);
-      const done=engSess.filter(s=>s.status==='completed').length;
-      const total=e.sessionsPlanned||engSess.length||1;
-      const pct=Math.min(100,Math.round((done/total)*100));
       const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
       const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
       const engTasks=DB.tasks.filter(t=>t.ref===e.id);
       const openTasks=engTasks.filter(t=>t.status!=='done').length;
+      // Stage progress
+      const completedStages=stages.filter(s=>s.status==='completed').length;
+      const stagePct=stages.length>0?Math.min(100,Math.round((completedStages/stages.length)*100)):0;
+      // Financials
+      const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||e.annualFee||0;
+      const totalMentorCost=stages.reduce((s,st)=>s+((st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0)),0);
+      const profit=totalClientFee-totalMentorCost;
+      const margin=totalClientFee>0?Math.round((profit/totalClientFee)*100):null;
+      const costPct=totalClientFee>0?Math.min(100,Math.round((totalMentorCost/totalClientFee)*100)):0;
+      const profitPct=totalClientFee>0?Math.max(0,100-costPct):0;
+      const isTeam=e.type==='team';
       return`<div class="card" style="padding:18px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
           <div style="flex:1">
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} · ${mentor?mentor.name:'No mentor'}</div>
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:3px">${e.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
           <span class="badge ${typeBadge}">${e.type}</span>
           ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
         </div>
-        <div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
-            <span>Sessions</span><span>${done} / ${total} completed</span>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
+          ${isTeam&&mentors.length>0?`<div style="display:flex;flex-wrap:wrap;gap:4px">${mentors.slice(0,3).map(m=>`<span style="background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600">${m.name.split(' ')[0]}</span>`).join('')}${mentors.length>3?`<span style="font-size:10px;color:var(--muted)">+${mentors.length-3} more</span>`:''}</div>`:
+          singleMentor?singleMentor.name:'No mentor assigned'}
+        </div>
+        ${isTeam&&stages.length>0?`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+            <span>Stages</span><span>${completedStages}/${stages.length} complete</span>
           </div>
           <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
+            <div style="width:${stagePct}%;height:100%;background:${stagePct===100?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
           </div>
-        </div>
+        </div>`:`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+            <span>Sessions</span><span>${engSess.filter(s=>s.status==='completed').length} completed</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${Math.min(100,Math.round((engSess.filter(s=>s.status==='completed').length/Math.max(1,e.sessionsIncluded||engSess.length||1))*100))}%;height:100%;background:var(--venetian);border-radius:3px"></div>
+          </div>
+        </div>`}
+        ${isTeam&&totalClientFee>0?`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+            <span>Profitability</span><span style="font-weight:600;color:${margin>=0?'var(--success)':'#c0392b'}">${margin!==null?margin+'% margin':'—'}</span>
+          </div>
+          <div class="profit-bar-track">
+            <div class="pbar-cost" style="width:${costPct}%"></div>
+            <div class="pbar-profit" style="width:${profitPct}%"></div>
+          </div>
+        </div>`:''}
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} open task${openTasks>1?'s':''}</span>`:'No open tasks'}</div>
-          <div style="display:flex;gap:6px">
+          <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} task${openTasks>1?'s':''}</span>`:'—'}</div>
+          <div style="display:flex;gap:5px">
+            <button class="btn btn-sm btn-outline" onclick="openProjDetail('${e.id}')">View</button>
             <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
-            <button class="btn btn-sm btn-outline" onclick="openProjTaskModal('${e.id}')">+ Task</button>
           </div>
         </div>
       </div>`;
     }).join('')}
-    ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects match the selected filters.</div>`:''}
+    ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects. Create a Team Engagement to get started.</div>`:''}
   </div>`;
 }
-
 function openProjTaskModal(engId){
   const e=DB.engagements.find(x=>x.id===engId);
   showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
@@ -1862,7 +1903,7 @@ function openEngModal(id){
   <div class="mbody">
     <div class="fg"><label>Engagement Name</label><input id="em-name" type="text" value="${e?e.name:''}" placeholder="e.g. HSBC — Executive Mentoring: J. Smith"></div>
     <div class="fgrow">
-      <div class="fg"><label>Type</label><select id="em-type" onchange="document.getElementById('em-exec-fields').style.display=this.value==='executive'?'':'none'">
+      <div class="fg"><label>Type</label><select id="em-type" onchange="toggleEngTypeFields(this.value)">
         <option value="chair"${e&&e.type==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!e||e.type==='executive'?' selected':''}>Executive Mentoring</option>
         <option value="team"${e&&e.type==='team'?' selected':''}>Team Engagement</option>
@@ -1906,6 +1947,14 @@ function openEngModal(id){
         <div class="fg"><label>Retreat Fee (£)</label><input id="em-retreat-fee" type="number" value="${e?e.retreatFee||'':''}" placeholder="0"></div>
       </div>
     </div>
+    <div id="em-team-fields" style="${e&&e.type==='team'?'':'display:none'}">
+      <div class="fstitle" style="margin:8px 0 4px">Team Mentors</div>
+      <div class="mc-list">
+        ${mentors.map(m=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px 0">
+          <input type="checkbox" value="${m.id}" ${e&&(e.mentorIds||[]).includes(m.id)?' checked':''}> ${m.name}<span style="color:var(--muted);font-size:10px;font-weight:400"> — ${m.org||m.type}</span>
+        </label>`).join('')}
+      </div>
+    </div>
     <div class="fg"><label>Notes</label><textarea id="em-notes" rows="3">${e?e.notes:''}<\/textarea></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
@@ -1922,7 +1971,12 @@ function saveEng(id){
   const data={name,type,status:document.getElementById('em-status').value,clientId:document.getElementById('em-client').value,mentorId:document.getElementById('em-mentor').value,partner:document.getElementById('em-partner').value,coordinator:document.getElementById('em-coord').value,startDate:document.getElementById('em-start').value,endDate:document.getElementById('em-end').value,country:document.getElementById('em-country').value,notes:document.getElementById('em-notes').value.trim()};
   if(type==='chair'){data.annualFee=fee;data.sessionRate=data.sessionRate||Math.round(fee/12);data.sessionsIncluded=data.sessionsIncluded||12;data.sessionsUsed=data.sessionsUsed||0;}
   else if(type==='executive'){data.annualFee=fee;data.quarterlyFee=Math.round(fee/4);data.retreatDate=document.getElementById('em-retreat-date').value;data.retreatFee=parseFloat(document.getElementById('em-retreat-fee').value)||0;}
-  else{data.totalFee=fee;}
+  else{
+    data.totalFee=fee;
+    const checks=document.querySelectorAll('#em-team-fields input[type=checkbox]:checked');
+    data.mentorIds=[...checks].map(cb=>cb.value);
+    if(data.mentorIds.length>0) data.mentorId=data.mentorIds[0];
+  }
   if(id){const e=DB.engagements.find(x=>x.id===id);if(e)Object.assign(e,data);}
   else{DB.engagements.push({id:uid(),...data,createdAt:today()});addAct('◈',`New engagement: ${name}`);}
   save();closeModal();renderView();
