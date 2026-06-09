@@ -3232,21 +3232,39 @@ function buildReport(type){
     </div>`;
   } else if(type==='commission'){
     const engs=DB.engagements;
-    const totalFees=engs.reduce((s,e)=>s+(e.annualFee||e.totalFee||0),0);
-    const totalPartner=engs.reduce((s,e)=>{const fee=e.annualFee||e.totalFee||0;const splits=e.partnerSplits||[];return s+splits.reduce((ps,sp)=>ps+(fee*sp.percentage/100),0);},0);
+    const totalFees=engs.reduce(function(s,e){return s+(e.annualFee||e.totalFee||0);},0);
+    const totalPartner=engs.reduce(function(s,e){const fee=e.annualFee||e.totalFee||0;const splits=e.partnerSplits||[];return s+splits.reduce(function(ps,sp){return ps+(fee*sp.percentage/100);},0);},0);
     const totalGMG=totalFees-totalPartner;
-    html=`<div class="mhdr"><h3>Commission Report</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-    <div class="mbody" style="max-height:75vh;overflow-y:auto">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-        <div class="kpi gold"><div class="kpi-label">Total Engagement Value</div><div class="kpi-val">${fmt(totalFees)}</div></div>
-        <div class="kpi accent"><div class="kpi-label">Partner Commission</div><div class="kpi-val">${fmt(totalPartner)}</div></div>
-        <div class="kpi"><div class="kpi-label">GMG Retained</div><div class="kpi-val">${fmt(totalGMG)}</div></div>
-      </div>
-      <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Total Fee</th><th>Partner</th><th>Split %</th><th>Partner £</th><th>GMG %</th><th>GMG £</th></tr></thead>
-      <tbody>${engs.map(e=>{const fee=e.annualFee||e.totalFee||0;const splits=e.partnerSplits||[];const partnerPct=splits.reduce((s,sp)=>s+sp.percentage,0);const gmgPct=100-partnerPct;const gmgAmt=fee*gmgPct/100;if(!splits.length)return`<tr><td style="font-weight:600">${e.name}</td><td><span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team'}">${e.type}</span></td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(fee)}</td><td colspan="2" style="color:var(--muted);font-size:11px">No splits set</td><td>—</td><td>100%</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(fee)}</td></tr>`;return splits.map((sp,i)=>`<tr><td style="font-weight:600">${i===0?e.name:''}</td><td>${i===0?`<span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team'}">${e.type}</span>`:''}</td><td>${i===0?fmt(fee):''}</td><td style="font-size:12px">${sp.name}</td><td style="font-weight:600;color:var(--venetian)">${sp.percentage}%</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--venetian)">${fmt(fee*sp.percentage/100)}</td>${i===0?`<td rowspan="${splits.length}" style="vertical-align:middle;font-weight:600">${gmgPct}%</td><td rowspan="${splits.length}" style="vertical-align:middle;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(gmgAmt)}</td>`:''}</tr>`).join('');}).join('')}</tbody></table>
-      <div style="margin-top:16px;padding:12px;background:var(--halfnarrow);border-radius:8px;display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">TOTALS</span><span style="font-size:12px">Partner: <strong>${fmt(totalPartner)}</strong> &nbsp;|&nbsp; GMG: <strong>${fmt(totalGMG)}</strong></span></div>
-    </div>`;
-    } else {
+    const rows=[];
+    engs.forEach(function(e){
+      const fee=e.annualFee||e.totalFee||0;
+      const splits=e.partnerSplits||[];
+      const partnerPct=splits.reduce(function(s,sp){return s+sp.percentage;},0);
+      const gmgPct=100-partnerPct;
+      const gmgAmt=fee*gmgPct/100;
+      const typeBadge=e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team';
+      if(!splits.length){
+        rows.push('<tr><td style="font-weight:600">'+e.name+'</td><td><span class="badge '+typeBadge+'">'+e.type+'</span></td><td style="font-family:Cormorant Garamond,serif;font-weight:700">'+fmt(fee)+'</td><td colspan="2" style="color:var(--muted);font-size:11px">No splits set</td><td>—</td><td>100%</td><td style="font-family:Cormorant Garamond,serif;font-weight:700;color:var(--cadmium)">'+fmt(fee)+'</td></tr>');
+      } else {
+        splits.forEach(function(sp,i){
+          var firstCols=i===0?('<td style="font-weight:600">'+e.name+'</td><td><span class="badge '+typeBadge+'">'+e.type+'</span></td><td style="font-family:Cormorant Garamond,serif;font-weight:700">'+fmt(fee)+'</td>'):('<td></td><td></td><td></td>');
+          var lastCols=i===0?('<td rowspan="'+splits.length+'" style="vertical-align:middle;font-weight:600">'+gmgPct+'%</td><td rowspan="'+splits.length+'" style="vertical-align:middle;font-family:Cormorant Garamond,serif;font-weight:700;color:var(--cadmium)">'+fmt(gmgAmt)+'</td>'):'';
+          rows.push('<tr>'+firstCols+'<td style="font-size:12px">'+sp.name+'</td><td style="font-weight:600;color:var(--venetian)">'+sp.percentage+'%</td><td style="font-family:Cormorant Garamond,serif;font-weight:700;color:var(--venetian)">'+fmt(fee*sp.percentage/100)+'</td>'+lastCols+'</tr>');
+        });
+      }
+    });
+    html='<div class="mhdr"><h3>Commission Report</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
+      +'<div class="mbody" style="max-height:75vh;overflow-y:auto">'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
+      +'<div class="kpi gold"><div class="kpi-label">Total Engagement Value</div><div class="kpi-val">'+fmt(totalFees)+'</div></div>'
+      +'<div class="kpi accent"><div class="kpi-label">Partner Commission</div><div class="kpi-val">'+fmt(totalPartner)+'</div></div>'
+      +'<div class="kpi"><div class="kpi-label">GMG Retained</div><div class="kpi-val">'+fmt(totalGMG)+'</div></div>'
+      +'</div>'
+      +'<table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Total Fee</th><th>Partner</th><th>Split %</th><th>Partner £</th><th>GMG %</th><th>GMG £</th></tr></thead>'
+      +'<tbody>'+rows.join('')+'</tbody></table>'
+      +'<div style="margin-top:16px;padding:12px;background:var(--halfnarrow);border-radius:8px;display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">TOTALS</span><span style="font-size:12px">Partner: <strong>'+fmt(totalPartner)+'</strong> &nbsp;|&nbsp; GMG: <strong>'+fmt(totalGMG)+'</strong></span></div>'
+      +'</div>';
+  } else {
     html=`<div class="mhdr"><h3>Activity Log</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
     <div class="mbody">
       ${DB.activities.map(a=>`<div class="act-item"><div class="act-dot">${a.icon}</div><div><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted)">${a.ts}</div></div></div>`).join('')}
