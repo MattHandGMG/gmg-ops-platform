@@ -43,6 +43,10 @@ input,select,textarea{font-family:inherit;outline:none}
 .sb-item .nb{margin-left:auto;background:var(--venetian);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px}
 .sb-item.active .nb{background:rgba(255,255,255,.25)}
 .sb-bottom{padding:12px 14px;border-top:1px solid rgba(255,255,255,.1)}
+.sb-admin{padding:8px 14px;display:none}
+.sb-admin-btn{display:flex;align-items:center;gap:8px;width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:8px 12px;color:rgba(255,255,255,.75);font-size:12px;font-weight:500;cursor:pointer;transition:.15s}
+.sb-admin-btn:hover{background:rgba(255,255,255,.12);color:#fff}
+.sb-admin-btn .ic{font-size:13px}
 .sb-user{display:flex;align-items:center;gap:10px}
 .sb-av{width:32px;height:32px;border-radius:50%;background:var(--venetian);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;flex-shrink:0}
 .sb-uinfo strong{font-size:12px;font-weight:600;display:block;color:#fff}
@@ -341,7 +345,12 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
   </div>
-  <div class="sb-bottom">
+  <div class="sb-admin" id="sb-admin-section">
+  <button class="sb-admin-btn" onclick="navAdmin()">
+    <span class="ic">&#9881;</span> Admin Settings
+  </button>
+</div>
+<div class="sb-bottom">
     <div class="sb-user">
       <div class="sb-av" id="sav">M</div>
       <div class="sb-uinfo"><strong id="sun">Matt Hand</strong><span id="sur">Relationship Manager</span></div>
@@ -2096,6 +2105,7 @@ async function bootApp(user){
   document.getElementById('sun').textContent=S.user.name;
   document.getElementById('sav').textContent=S.user.name.charAt(0).toUpperCase();
   document.getElementById('sur').textContent=ROLES[S.user.role]||S.user.role;
+  if(S.user.role==='admin') document.getElementById('sb-admin-section').style.display='block';
   setupRealtime();
   nav(document.querySelector('[data-v="dashboard"]'));
 }
@@ -2150,6 +2160,12 @@ async function doLogout(){
   showLogin();
 }
 
+function navAdmin(){
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  S.view='admin';
+  document.getElementById('tbt').textContent='Admin Settings';
+  renderView();
+}
 function nav(el){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
   el.classList.add('active');
@@ -2166,7 +2182,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin};
   if(r[S.view]) r[S.view](c);
 }
 
@@ -2453,7 +2469,7 @@ async function rAdmin(c){
   const roleLabels={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
   c.innerHTML=`
   <div class="phdr"><div><h2>&#9881; Admin</h2><p>${profiles.length} registered user${profiles.length!==1?'s':''}</p></div>
-    <button class="btn btn-primary" onclick="openAdminUserModal(null)">+ Add User Slot</button></div>
+    <button class="btn btn-primary" onclick="openCreateUserModal()">+ Create User</button></div>
   <div class="card">
     <table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Entity</th><th>Partner (for EAs)</th><th>Last Active</th><th>Actions</th></tr></thead>
     <tbody>
@@ -2495,7 +2511,51 @@ function openAdminUserModal(userId, dataStr){
   </div>`);
 }
 
-async function saveAdminUser(userId){
+async function openCreateUserModal(){
+  showModal(`<div class="mhdr"><h3>Create New User</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div class="fg"><label>Full Name</label><input id="cu-name" class="fi" placeholder="e.g. Sarah Chen"></div>
+    <div class="fg"><label>Email</label><input id="cu-email" type="email" class="fi" placeholder="user@globalmentorsgroup.com"></div>
+    <div class="fg"><label>Password</label><input id="cu-pass" type="password" class="fi" placeholder="Min. 8 characters"></div>
+    <div class="fgrow">
+      <div class="fg"><label>Role</label><select id="cu-role" class="fi" onchange="document.getElementById('cu-partner-row').style.display=this.value==='ea'?'block':'none'">
+        ${['rm','ea','partner','finance','admin','ops'].map(r=>`<option value="${r}">${{rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'}[r]}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Entity</label><select id="cu-entity" class="fi">
+        ${['GMG','CMi','Merryck'].map(e=>`<option>${e}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="fg" id="cu-partner-row" style="display:none">
+      <label>Partner Name (EA only)</label><input id="cu-partner" class="fi" placeholder="Name of partner they support">
+    </div>
+    <div id="cu-err" style="display:none;color:#b91c1c;font-size:12px;margin-top:6px;padding:6px 10px;background:rgba(185,28,28,.08);border-radius:5px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="cu-btn" onclick="createUser()">Create User</button>
+    </div>
+  </div>`);
+}
+async function createUser(){
+  const name=document.getElementById('cu-name').value.trim();
+  const email=document.getElementById('cu-email').value.trim();
+  const pass=document.getElementById('cu-pass').value;
+  const role=document.getElementById('cu-role').value;
+  const entity=document.getElementById('cu-entity').value;
+  const partnerName=document.getElementById('cu-partner')?.value.trim()||'';
+  const err=document.getElementById('cu-err');
+  err.style.display='none';
+  if(!name||!email||!pass) return (err.textContent='Please fill in all fields.',err.style.display='block');
+  if(pass.length<8) return (err.textContent='Password must be at least 8 characters.',err.style.display='block');
+  const btn=document.getElementById('cu-btn');
+  btn.textContent='Creating...';btn.disabled=true;
+  const{data,error}=await sb.auth.signUp({email,password:pass});
+  if(error){err.textContent=error.message;err.style.display='block';btn.textContent='Create User';btn.disabled=false;return;}
+  if(data.user){
+    await sb.from('profiles').upsert({id:data.user.id,data:{name,role,entity,partnerName},updated_at:new Date().toISOString()});
+    closeModal();S.view='admin';renderView();
+  }
+}
+function saveAdminUser(userId){
   if(!userId) return closeModal();
   const n=k=>document.getElementById(k);
   const data={name:n('au-name').value.trim(),role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?.value.trim()||''};
@@ -3696,4 +3756,12 @@ initApp();
   <span style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;flex-shrink:0">Ask Claude</span>
   <input id="claude-input" type="text" placeholder="Search the platform or ask Claude anything…" onkeydown="if(event.key==='Enter')claudeAsk()">
   <button style="background:var(--venetian);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap" onclick="claudeAsk()">Ask</button>
-  <button style="background:none;border:1px solid var(--border);border-radiu
+<button class="btn btn-primary btn-sm" onclick="askClaude()" style="flex-shrink:0;white-space:nowrap">Ask Claude</button>
+</div>
+<div id="claude-panel">
+  <button class="cp-close" onclick="document.getElementById('claude-panel').classList.remove('open')">&#10005;</button>
+  <div id="cp-content"></div>
+</div>
+</div>
+</body>
+</html>
