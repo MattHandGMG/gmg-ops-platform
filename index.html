@@ -2171,7 +2171,65 @@ function renderView(){
 }
 
 /* ── DASHBOARD ───────────────────────────────────────────────── */
+
+/* ââ DASHBOARD (role-aware) âââââââââââââââââââââââââââââââ */
 function rDashboard(c){
+  const role=S.user.role||'rm';
+  if(role==='partner') return rDashboardPartner(c, S.user.name);
+  if(role==='ea') return rDashboardEA(c);
+  if(role==='finance') return rDashboardFinance(c);
+  if(role==='admin') return rDashboardAdmin(c);
+  return rDashboardRM(c);
+}
+
+function _dashHeader(title, sub, customBtn){
+  const d=new Date(); const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const mons=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateStr=`${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]} ${d.getFullYear()}`;
+  return`<div class="phdr"><div><h2>${title}</h2><p>${sub}</p></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span style="font-size:11px;color:var(--muted)">${dateStr}</span>
+    ${customBtn||''}
+    <button class="btn btn-sm btn-outline" onclick="openDashSettings()" title="Customise dashboard" style="padding:5px 8px">&#9881;</button>
+  </div></div>`;
+}
+
+function openDashSettings(){
+  const key='dash_cfg_'+S.user.role;
+  const cfg=JSON.parse(localStorage.getItem(key)||'{}');
+  const widgets={
+    rm:['kpis','tasks','engagements','finance','pipeline','activity'],
+    partner:['kpis','engagements','pipeline'],
+    ea:['partner_view','ea_tasks'],
+    finance:['kpis','invoice_queue','mentor_queue'],
+    admin:['kpis','users','tasks','engagements']
+  };
+  const labels={kpis:'KPI Cards',tasks:'Outstanding Tasks',engagements:'Active Engagements',finance:'Finance Actions',
+    pipeline:'Pipeline Activity',activity:'Recent Activity',partner_view:"Partner's Overview",ea_tasks:'My Actions',
+    invoice_queue:'Invoice Queue',mentor_queue:'Mentor Payments',users:'User Management'};
+  const role=S.user.role||'rm';
+  const ws=widgets[role]||widgets.rm;
+  showModal(`<div class="mhdr"><h3>&#9881; Customise Dashboard</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Choose which widgets to show on your dashboard.</p>
+    ${ws.map(w=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">
+      <input type="checkbox" ${cfg[w]!==false?'checked':''} onchange="(function(w,v){const k='dash_cfg_'+S.user.role;const c=JSON.parse(localStorage.getItem(k)||'{}');c[w]=v;localStorage.setItem(k,JSON.stringify(c));}('${w}',this.checked))" style="width:15px;height:15px">
+      ${labels[w]||w}
+    </label>`).join('')}
+    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal();renderView()">Apply</button>
+    </div>
+  </div>`);
+}
+
+function _dashCfg(widget){
+  const key='dash_cfg_'+S.user.role;
+  const cfg=JSON.parse(localStorage.getItem(key)||'{}');
+  return cfg[widget]!==false;
+}
+
+function rDashboardRM(c){
   const activeEngs=DB.engagements.filter(e=>e.status==='active');
   const pendingPay=DB.mentorPayments.filter(p=>p.status==='pending');
   const pendingPayVal=pendingPay.reduce((s,p)=>s+p.amount,0);
@@ -2179,1256 +2237,275 @@ function rDashboard(c){
   const overdueT=DB.tasks.filter(t=>t.status!=='done'&&t.due<today());
   const todoT=DB.tasks.filter(t=>t.status==='todo');
   const ytdInv=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
-  const fyTarget=520000;
+  const fyTarget=520000; const ytdPct=Math.round(ytdInv/fyTarget*100);
   const pipelineVal=DB.opportunities.filter(p=>!['Closed Won','Closed Lost'].includes(p.stage)).reduce((s,p)=>s+p.value,0);
   const wonVal=DB.opportunities.filter(p=>p.stage==='Closed Won').reduce((s,p)=>s+p.value,0);
-  const ytdPct=Math.round(ytdInv/fyTarget*100);
-
+  const unsynced=unsyncedInv.length?`<span class="badge b-amber" style="cursor:pointer" onclick="nav(document.querySelector('[data-v=finance]'))">&#9888; ${unsyncedInv.length} unsynced to Xero</span>`:'';
   c.innerHTML=`
-  <div class="phdr"><div><h2>Dashboard</h2><p>Good morning, ${S.user.name.split(' ')[0]}. Here's your operational overview.</p></div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span style="font-size:11px;color:var(--muted)">Friday 5 June 2026</span>
-    ${unsyncedInv.length?`<span class="badge b-amber">&#9888; ${unsyncedInv.length} unsynced to Xero</span>`:''}
-  </div></div>
-  <div class="kpi-grid">
+  ${_dashHeader(`Dashboard`,`Good morning, ${S.user.name.split(' ')[0]}. Here's your operational overview.`,unsynced)}
+  ${_dashCfg('kpis')?`<div class="kpi-grid">
     <div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdInv)}</div>
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${ytdPct}%"></div></div>
       <div class="kpi-sub">${ytdPct}% of ${fmt(fyTarget)} FY target</div></div>
     <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
-      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
+      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair Â· ${activeEngs.filter(e=>e.type==='executive').length} Exec Â· ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
     <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
-      <div class="kpi-sub">${pendingPay.length} payments · next run end of month</div></div>
+      <div class="kpi-sub">${pendingPay.length} payments Â· next run end of month</div></div>
     <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
       <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
-  </div>
+  </div>`:''}
   <div class="g2" style="margin-bottom:18px">
-    <div class="card">
+    ${_dashCfg('tasks')?`<div class="card">
       <div class="card-hdr"><h3>Outstanding Tasks <span class="badge b-red" style="margin-left:6px">${overdueT.length} overdue</span></h3>
         <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=tasks]'))">View all</button></div>
-      <div class="card-body" style="padding:0">
-        <table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>
-        ${todoT.concat(DB.tasks.filter(t=>t.status==='inprogress')).slice(0,6).map(t=>{
-          const ov=t.due<today()&&t.status!=='done';
-          return`<tr><td><span style="font-weight:600">${t.title}</span><div style="font-size:10px;color:var(--muted)">${t.assignee}</div></td>
-          <td><span class="badge b-grey">${t.type}</span></td>
-          <td style="color:${ov?'var(--venetian)':'inherit'};font-weight:${ov?700:400}">${t.due}${ov?' &#9888;':''}</td>
-          <td><span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span></td></tr>`;
-        }).join('')}
-        </tbody></table>
-      </div>
-    </div>
-    <div class="card">
+      <div class="card-body" style="padding:0"><table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>
+      ${todoT.concat(DB.tasks.filter(t=>t.status==='inprogress')).slice(0,6).map(t=>{
+        const ov=t.due<today()&&t.status!=='done';
+        return`<tr><td><span style="font-weight:600">${t.title}</span><div style="font-size:10px;color:var(--muted)">${t.assignee}</div></td>
+        <td><span class="badge b-grey">${t.type}</span></td>
+        <td style="color:${ov?'var(--venetian)':'inherit'};font-weight:${ov?700:400}">${t.due}${ov?' &#9888;':''}</td>
+        <td><span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span></td></tr>`;
+      }).join('')}
+      </tbody></table></div></div>`:''}
+    ${_dashCfg('engagements')?`<div class="card">
       <div class="card-hdr"><h3>Active Engagements</h3></div>
       <div class="card-body" style="padding:0">
-        ${activeEngs.map(e=>{
-          const client=DB.contacts.find(c=>c.id===e.clientId);
-          const mentor=DB.contacts.find(m=>m.id===e.mentorId);
-          const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
-          return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-            <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
-            <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'…':e.name}</div>
-            <div style="font-size:10px;color:var(--muted)">${mentor?.name||'—'} · ${e.coordinator}</div></div>
-            <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
-        }).join('')}
-      </div>
-    </div>
+      ${activeEngs.map(e=>{const cl=DB.contacts.find(c=>c.id===e.clientId);const mn=DB.contacts.find(m=>m.id===e.mentorId);
+        const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+        return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'â¦':e.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${mn?.name||'â'} Â· ${e.coordinator}</div></div>
+          <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
+      }).join('')}
+      </div></div>`:''}
   </div>
   <div class="g2">
-    <div class="card">
-      <div class="card-hdr"><h3>Finance — Pending Actions</h3></div>
+    ${_dashCfg('finance')?`<div class="card">
+      <div class="card-hdr"><h3>Finance â Pending Actions</h3></div>
       <div class="card-body" style="padding:0 18px">
         ${unsyncedInv.length===0&&pendingPay.length===0?'<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced &#10003;</p>':''}
         ${unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>Invoice Â· ${inv.type} Â· ${inv.status}</span></div>
           <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
           <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
-        ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);
-          const e=DB.engagements.find(x=>x.id===p.engId);
+        ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]||''} · ${p.type}</span></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]||''} Â· ${p.type}</span></div>
           <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
           <span class="badge b-amber">pending</span></div>`;
         }).join('')}
-        ${pendingPay.length>3?`<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+${pendingPay.length-3} more pending</div>`:''}
-      </div>
-    </div>
-    <div class="card">
+      </div></div>`:''}
+    ${_dashCfg('activity')?`<div class="card">
       <div class="card-hdr"><h3>Recent Activity</h3></div>
       <div class="card-body" style="padding:0 18px">
-        ${DB.activities.slice(0,6).map(a=>`
-          <div class="act-item"><div class="act-dot">${a.icon}</div>
-          <div style="flex:1"><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${a.ts}</div></div></div>`).join('')}
-      </div>
-    </div>
+        ${(DB.activities||[]).slice(0,8).map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--halfnarrow);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${a.icon||'â'}</div>
+          <div><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted)">${a.ts}</div></div>
+        </div>`).join('')}
+      </div></div>`:''}
   </div>`;
 }
 
-/* ── ENGAGEMENTS ─────────────────────────────────────────────── */
-function rEngagements(c){
-  const tab=S.tab.eng||'all';
-  const pf=S.engFilters.partner; const cf=S.engFilters.country; const sf=S.engFilters.solution;
-  let engs=DB.engagements.filter(e=>{
-    if(tab!=='all'&&e.type!==tab&&e.status!==tab) return false;
-    if(pf&&e.partner!==pf) return false;
-    if(cf&&e.country!==cf) return false;
-    if(sf&&e.type!==sf) return false;
-    return true;
-  });
-  const allPartners=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
-  const allCountries=[...new Set(DB.engagements.map(e=>e.country).filter(Boolean))];
-  const hasFilter=pf||cf||sf;
+function rDashboardPartner(c, forName){
+  const myEngs=DB.engagements.filter(e=>e.partner===forName);
+  const activeEngs=myEngs.filter(e=>e.status==='active');
+  const ytdInv=DB.clientInvoices.filter(i=>{const e=DB.engagements.find(x=>x.id===i.engId);return e&&e.partner===forName&&i.status==='paid';}).reduce((s,i)=>s+i.amount,0);
+  const pipelineVal=DB.opportunities.filter(p=>p.partner===forName&&!['Closed Won','Closed Lost'].includes(p.stage)).reduce((s,p)=>s+p.value,0);
+  const wonVal=DB.opportunities.filter(p=>p.partner===forName&&p.stage==='Closed Won').reduce((s,p)=>s+p.value,0);
+  const isEA=S.user.role==='ea';
   c.innerHTML=`
-  <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active engagements across all types</p></div>
-  <button class="btn btn-primary" onclick="openEngModal()">+ New Engagement</button></div>
-  <div class="tabs">
-    ${['all','chair','executive','team','active','planning','completed'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.eng='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.engagements.length:DB.engagements.filter(e=>e.type===t||e.status===t).length})</div>`).join('')}
+  ${_dashHeader(isEA?`${forName}'s Dashboard`:'Dashboard',
+    isEA?`Managing on behalf of ${forName}`:`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${forName.split(' ')[0]}. Here's your portfolio overview.`)}
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">YTD Revenue (My Portfolio)</div><div class="kpi-val">${fmt(ytdInv)}</div></div>
+    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
+      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair Â· ${activeEngs.filter(e=>e.type==='executive').length} Exec Â· ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
+    <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
+      <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
+    <div class="kpi"><div class="kpi-label">Total Engagements</div><div class="kpi-val">${myEngs.length}</div>
+      <div class="kpi-sub">${myEngs.filter(e=>e.status==='completed').length} completed</div></div>
   </div>
-  <div class="filter-row">
-    <select onchange="S.engFilters.partner=this.value;renderView()">
-      <option value="">All Partners</option>
-      ${allPartners.map(p=>`<option value="${p}" ${pf===p?'selected':''}>${p}</option>`).join('')}
-    </select>
-    <select onchange="S.engFilters.country=this.value;renderView()">
-      <option value="">All Countries</option>
-      ${allCountries.map(p=>`<option value="${p}" ${cf===p?'selected':''}>${p}</option>`).join('')}
-    </select>
-    <select onchange="S.engFilters.solution=this.value;renderView()">
-      <option value="">All Solutions</option>
-      <option value="chair" ${sf==='chair'?'selected':''}>Chair Mentoring</option>
-      <option value="executive" ${sf==='executive'?'selected':''}>Executive Mentoring</option>
-      <option value="team" ${sf==='team'?'selected':''}>Team Engagement</option>
-    </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.engFilters={partner:'',country:'',solution:''};renderView()">&#10005; Clear filters</button>`:''}
-    <span style="font-size:11px;color:var(--muted);margin-left:4px">${engs.length} result${engs.length!==1?'s':''}</span>
-  </div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Engagement</th><th>Solution</th><th>Entity</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${engs.length?engs.map(e=>{
-      const cl=DB.contacts.find(x=>x.id===e.clientId);
-      const mn=DB.contacts.find(x=>x.id===e.mentorId);
-      const val=e.type==='chair'?e.annualFee:e.type==='executive'?e.annualFee:e.totalFee;
-      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
-      const sb={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
-      return`<tr><td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.coordinator} · ${e.startDate}</div></td>
-      <td><span class="badge ${tb}">${e.type}</span></td>
-      <td style="font-size:12px">${cl?.name||'—'}</td>
-      <td style="font-size:12px">${mn?.name||'—'}</td>
-      <td style="font-size:12px">${e.partner||'—'}</td>
-      <td><span class="badge ${e.entity==='CMi'?'b-black':e.entity==='Merryck'?'type-executive':'b-blue'}" style="font-size:10px">${e.entity||'—'}</span></td>
-      <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val||0)}</td>
-      <td><span class="badge ${sb}">${e.status}</span></td>
-      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button><button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></div></td></tr>`;
-    }).join(''):`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">No engagements match the selected filters.</td></tr>`}</tbody></table>
+  <div class="card" style="margin-bottom:18px">
+    <div class="card-hdr"><h3>My Engagements</h3>
+      <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=engagements]'))">View all</button></div>
+    <div class="card-body" style="padding:0">
+      ${activeEngs.length===0?'<p style="padding:20px;text-align:center;color:var(--muted);font-size:12px">No active engagements</p>':
+      activeEngs.map(e=>{const cl=DB.contacts.find(x=>x.id===e.clientId);const mn=DB.contacts.find(x=>x.id===e.mentorId);
+        const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+        const val=e.annualFee||e.totalFee||0;
+        return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <span class="badge ${tb}">${e.type}</span>
+          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${cl?.name||'â'} Â· ${mn?.name||'â'}</div></div>
+          <div style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val)}</div>
+          <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
+      }).join('')}
+    </div>
   </div>`;
 }
 
-function openEngDetail(id){
-  const e=DB.engagements.find(x=>x.id===id); if(!e) return;
-  const cl=DB.contacts.find(c=>c.id===e.clientId);
-  const mn=DB.contacts.find(m=>m.id===e.mentorId);
-  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
-  const sb={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
-  const enSess=DB.sessions.filter(s=>s.engId===id);
-  const enInv=DB.clientInvoices.filter(i=>i.engId===id);
-  const enPay=DB.mentorPayments.filter(p=>p.engId===id);
-  let typeInfo='';
-  if(e.type==='chair') typeInfo=`<div class="ir"><span class="lbl">Annual Fee</span><span class="val" style="color:var(--cadmium)">${fmt(e.annualFee)}</span></div>
-    <div class="ir"><span class="lbl">Sessions Included</span><span class="val">${e.sessionsIncluded}</span></div>
-    <div class="ir"><span class="lbl">Sessions Used</span><span class="val">${e.sessionsUsed} / ${e.sessionsIncluded}</span></div>
-    <div class="ir"><span class="lbl">Rate per Session</span><span class="val">${fmt(e.sessionRate)}</span></div>`;
-  else if(e.type==='executive') typeInfo=`<div class="ir"><span class="lbl">Quarterly Fee (client)</span><span class="val" style="color:var(--cadmium)">${fmt(e.quarterlyFee)}</span></div>
-    <div class="ir"><span class="lbl">Annual Value</span><span class="val">${fmt(e.annualFee)}</span></div>
-    <div class="ir"><span class="lbl">Mentor Monthly (40%)</span><span class="val">${fmt(Math.round(e.quarterlyFee/3*0.4))}</span></div>
-    ${e.retreatDate?`<div class="ir"><span class="lbl">Retreat Date</span><span class="val">${e.retreatDate}</span></div>`:''}
-    ${e.retreatFee?`<div class="ir"><span class="lbl">Retreat Fee</span><span class="val">${fmt(e.retreatFee)}</span></div>`:''}`;
-  else typeInfo=`<div class="ir"><span class="lbl">Total Programme Fee</span><span class="val" style="color:var(--cadmium)">${fmt(e.totalFee)}</span></div>
-    <div class="ir"><span class="lbl">Agreed Mentor Fee</span><span class="val">${fmt(e.mentorFee)}</span></div>`;
-  showModal(`<div class="mhdr"><h3>${e.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div style="display:flex;gap:8px;margin-bottom:14px"><span class="badge ${tb}">${e.type}</span><span class="badge ${sb}">${e.status}</span></div>
-    <div class="fstitle">Engagement Details</div>
-    <div class="ir"><span class="lbl">Client</span><span class="val">${cl?`<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>viewContact('${cl.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${cl.name}</a>`:'—'}</span></div>
-    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?`<a href="#" onclick="event.preventDefault();closeModal();setTimeout(()=>viewContact('${mn.id}'),150)" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${mn.name}</a>`:'—'}</span></div>
-    <div class="ir"><span class="lbl">Coordinator</span><span class="val">${e.coordinator}</span></div>
-    <div class="ir"><span class="lbl">Partner</span><span class="val">${e.partner||'—'}</span></div>
-    <div class="ir"><span class="lbl">Country</span><span class="val">${e.country||'—'}</span></div>
-    <div class="ir"><span class="lbl">Entity</span><span class="val"><span class="badge ${e.entity==='CMi'?'b-black':e.entity==='Merryck'?'type-executive':'b-blue'}">${e.entity||'GMG'}</span></span></div>
-    <div class="ir"><span class="lbl">Billing Entity</span><span class="val">${e.billingEntity||'<span style="color:var(--muted);font-style:italic">Not set</span>'}</span></div>
-    <div class="ir"><span class="lbl">Dates</span><span class="val">${e.startDate} &#8594; ${e.endDate}</span></div>
-    <div class="fstitle" style="margin-top:12px">Financial Terms</div>
-    ${typeInfo}
-    ${e.notes?`<div style="margin:12px 0;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${e.notes}</div>`:''}
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px">
-      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700">${enSess.length}</div>
-        <div style="font-size:10px;color:var(--muted)">Sessions</div></div>
-      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700">${enInv.length}</div>
-        <div style="font-size:10px;color:var(--muted)">Invoices</div></div>
-      <div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center">
-        <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700">${enPay.length}</div>
-        <div style="font-size:10px;color:var(--muted)">Payments</div></div>
-    </div>
-    <!-- Notes / Comments -->
-    <div class="fstitle" style="margin-top:16px">Notes &amp; Comments</div>
-    <div id="eng-comments-${e.id}" style="max-height:180px;overflow-y:auto;margin-bottom:8px">
-      ${(e.comments||[]).length===0?'<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px 0">No comments yet.</div>':
-        (e.comments||[]).map(cm=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-          <div style="font-size:11px;color:var(--muted)">${cm.author||''}  ·  ${cm.date||''}</div>
-          <div style="font-size:12px;margin-top:2px">${cm.text||''}</div>
-        </div>`).join('')}
-    </div>
-    <div style="display:flex;gap:6px;margin-bottom:14px">
-      <input id="new-comment-${e.id}" type="text" class="inp" placeholder="Add a comment…" style="flex:1" onkeydown="if(event.key==='Enter')addEngComment('${e.id}')">
-      <button class="btn btn-sm btn-primary" onclick="addEngComment('${e.id}')">Post</button>
-    </div>
-
-    <!-- Files -->
-    <div class="fstitle" style="margin-top:4px">Files</div>
-    <div style="margin-bottom:8px">
-      ${(e.files||[]).length===0?'<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px 0">No files attached.</div>':
-        (e.files||[]).map((f,fi)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
-          <span style="font-size:13px">&#128196;</span>
-          <span style="font-size:12px;flex:1">${f.name||'File'}</span>
-          <span style="font-size:11px;color:var(--muted)">${f.size||''}</span>
-          <a href="${f.data||'#'}" download="${f.name||'file'}" style="font-size:11px;color:var(--cadmium)">Download</a>
-          <button onclick="removeEngFile('${e.id}',${fi})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:13px">&#10005;</button>
-        </div>`).join('')}
-    </div>
-    <div style="margin-bottom:14px">
-      <label class="btn btn-sm btn-outline" style="cursor:pointer">&#128206; Attach File
-        <input type="file" style="display:none" onchange="addEngFile('${e.id}',this)">
-      </label>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <button class="btn btn-sm btn-outline" onclick="closeModal();openEngModal('${e.id}')">&#9999; Edit</button>
-      ${e.type==='chair'?`<button class="btn btn-sm btn-outline" onclick="closeModal();openSessionModal('${e.id}')">+ Log Session</button>`:''}
-      <button class="btn btn-sm btn-outline" onclick="closeModal();openInvoiceModal(null,'${e.id}')">+ Invoice</button>
-      ${(e.type==='executive'||e.type==='team')&&mn?`<button class="btn btn-sm btn-outline" style="border-color:#A0191A;color:#A0191A" onclick="generateMentorFee('${e.id}','${mn.id}')">&#128196; Fee Summary</button>`:''}
-      ${(e.type==='executive'||e.type==='team')?`<button class="btn btn-sm btn-outline" style="border-color:#5E1100;color:#5E1100" onclick="generateSOW('${e.id}')">&#128221; SOW</button>`:''}
-      <button class="btn btn-sm btn-danger" onclick="deleteEng('${e.id}')">Delete</button>
-    </div>
-  </div>`,true);
-}
-
-function addEngComment(engId){
-  const inp=document.getElementById('new-comment-'+engId);
-  if(!inp||!inp.value.trim()) return;
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  if(!e.comments) e.comments=[];
-  const now=new Date();
-  e.comments.push({text:inp.value.trim(),author:S.user.name,date:now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})});
-  save(); openEngDetail(engId);
-}
-function addEngFile(engId,input){
-  const file=input.files[0]; if(!file) return;
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  if(!e.files) e.files=[];
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    e.files.push({name:file.name,size:(file.size/1024).toFixed(0)+'KB',data:ev.target.result,uploaded:new Date().toISOString().slice(0,10)});
-    save(); openEngDetail(engId);
-  };
-  reader.readAsDataURL(file);
-}
-function removeEngFile(engId,idx){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e||!e.files) return;
-  e.files.splice(idx,1); save(); openEngDetail(engId);
-}
-function deleteEng(id){
-  if(!confirm('Delete this engagement? This cannot be undone.')) return;
-  DB.engagements=DB.engagements.filter(e=>e.id!==id);
-  save(); closeModal(); renderView();
-}
-
-function generateMentorFee(engId, mentorId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  const mentor=DB.contacts.find(c=>c.id===mentorId); if(!mentor) return;
-  const client=DB.contacts.find(c=>c.id===e.clientId);
-  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const fmt2=n=>'£'+Math.round(n||0).toLocaleString('en-GB');
-  const dateLabel=d=>{if(!d) return 'TBC'; const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});};
-
-  let feeSectionHTML='';
-  if(e.type==='executive'){
-    const qMentorFee=Math.round((e.quarterlyFee||0)*0.4);
-    const startDt=e.startDate?new Date(e.startDate):null;
-    const quarters=['Q1','Q2','Q3','Q4'].map((q,i)=>{
-      let dStr='TBC';
-      if(startDt&&!isNaN(startDt)){const d=new Date(startDt);d.setMonth(d.getMonth()+i*3);dStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
-      return`<tr><td style="padding:9px 14px">${q}</td><td style="padding:9px 14px">${dStr}</td><td style="padding:9px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#A0191A">${fmt2(qMentorFee)}</td></tr>`;
-    }).join('');
-    feeSectionHTML=`<div style="margin-bottom:24px">
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;margin-bottom:4px">Executive Mentoring Programme</div>
-      <div style="font-size:11px;color:#666;margin-bottom:14px">Programme Period: ${dateLabel(e.startDate)} &ndash; ${dateLabel(e.endDate)}</div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600;letter-spacing:.3px">Quarter</th><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Due Date</th><th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600">Mentor Fee</th></tr></thead>
-        <tbody>${quarters}</tbody>
-        <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:10px 14px;font-weight:700;font-size:12px">Annual Total</td><td style="padding:10px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:#A0191A">${fmt2(qMentorFee*4)}</td></tr></tfoot>
-      </table>
-      <div style="margin-top:8px;font-size:10px;color:#999">Mentor fees represent 40% of the quarterly client fee of ${fmt2(e.quarterlyFee||0)}</div>
-      ${e.retreatFee?`<div style="margin-top:20px;background:#f8f6f3;border-radius:6px;padding:14px"><div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;margin-bottom:10px">Retreat</div><table style="width:100%;border-collapse:collapse"><tr><td style="padding:5px 0;font-size:12px;color:#666;width:160px">Date</td><td style="padding:5px 0;font-size:12px;font-weight:600">${dateLabel(e.retreatDate)}</td></tr><tr><td style="padding:5px 0;font-size:12px;color:#666">Retreat Fee</td><td style="padding:5px 0;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#A0191A">${fmt2(e.retreatFee)}</td></tr></table></div>`:''}
+function rDashboardEA(c){
+  const partnerName=S.user.partnerName;
+  if(!partnerName){
+    c.innerHTML=`${_dashHeader('Dashboard',`Welcome, ${S.user.name.split(' ')[0]}.`)}
+    <div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:32px;margin-bottom:12px">&#128101;</div>
+      <h3 style="margin-bottom:8px">Set your partner assignment</h3>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px">As an Executive Assistant, your dashboard shows your partner's portfolio. Ask your admin to set your partner name, or update your profile.</p>
     </div>`;
-  } else if(e.type==='team'){
-    const stages=e.stages||[];
-    const mentorStages=stages.map(st=>{const mf=(st.mentorFees||[]).find(f=>f.mentorId===mentorId);return{...st,mFee:mf?mf.fee:0};});
-    const total=mentorStages.reduce((s,st)=>s+(st.mFee||0),0);
-    const stBadge={completed:'#16a34a',active:'#d97706',planning:'#9ca3af'};
-    const stRows=mentorStages.length>0?mentorStages.map(st=>`<tr style="border-bottom:1px solid #eee"><td style="padding:9px 14px;font-size:12px;font-weight:600">${st.name}</td><td style="padding:9px 14px"><span style="font-size:11px;font-weight:600;color:${stBadge[st.status]||'#9ca3af'}">${(st.status||'pending').charAt(0).toUpperCase()+(st.status||'pending').slice(1)}</span></td><td style="padding:9px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:${st.mFee>0?'#A0191A':'#999'}">${fmt2(st.mFee)}</td></tr>`).join(''):`<tr><td colspan="3" style="padding:18px 14px;text-align:center;color:#999;font-size:12px">No stages defined for this engagement</td></tr>`;
-    feeSectionHTML=`<div style="margin-bottom:24px">
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;margin-bottom:4px">Team Engagement — Stage Fees</div>
-      <div style="font-size:11px;color:#666;margin-bottom:14px">Programme Period: ${dateLabel(e.startDate)} &ndash; ${dateLabel(e.endDate)}</div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Stage</th><th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:600">Status</th><th style="padding:10px 14px;text-align:right;font-size:11px;font-weight:600">Mentor Fee</th></tr></thead>
-        <tbody>${stRows}</tbody>
-        <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:10px 14px;font-weight:700;font-size:12px">Total Fees</td><td style="padding:10px 14px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:#A0191A">${fmt2(total)}</td></tr></tfoot>
-      </table>
-      <div style="margin-top:8px;font-size:10px;color:#999">Fees are released upon stage completion and client invoice settlement</div>
-    </div>`;
+    return;
   }
-
-  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Mentor Fee Summary &#8212; ${mentor.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;color:#1a1a1a;background:#fff;font-size:13px;line-height:1.6}
-.page{max-width:720px;margin:0 auto;padding:48px 48px 64px}
-@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.page{padding:24px 32px 40px}}
-</style></head>
-<body>
-<div class="no-print" style="background:#1a1a1a;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
-  <span style="color:#fff;font-size:12px;font-family:'Inter',sans-serif">Mentor Fee Summary &mdash; Click &ldquo;Save as PDF&rdquo; or Ctrl+P to save</span>
-  <button onclick="window.print()" style="background:#A0191A;color:#fff;border:none;border-radius:5px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif">&#128196; Save as PDF / Print</button>
-</div>
-<div class="page">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:36px;padding-bottom:20px;border-bottom:2.5px solid #A0191A">
-    <div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;color:#A0191A;letter-spacing:-0.5px">Global<span style="color:#1a1a1a">Mentors</span>Group</div>
-      <div style="font-size:10px;color:#999;margin-top:2px;font-weight:500;letter-spacing:.3px">MENTORING &amp; LEADERSHIP ADVISORY</div>
+  // Show partner's view
+  rDashboardPartner(c, partnerName);
+  // Append EA task layer
+  const myTasks=DB.tasks.filter(t=>t.assignee===S.user.name&&t.status!=='done');
+  const partnerTasks=DB.tasks.filter(t=>t.assignee===partnerName&&t.status!=='done');
+  const combined=[...myTasks,...partnerTasks].slice(0,8);
+  const existingContent=c.innerHTML;
+  c.innerHTML=existingContent+`
+  <div class="card" style="border-left:3px solid var(--cadmium)">
+    <div class="card-hdr"><h3>&#128101; EA Actions <span style="font-size:11px;font-weight:400;color:var(--muted)">for ${partnerName}</span></h3>
+      <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=tasks]'))">All tasks</button></div>
+    <div class="card-body" style="padding:0">
+      ${combined.length===0?'<p style="padding:16px;color:var(--muted);font-size:12px;text-align:center">No outstanding tasks</p>':
+      combined.map(t=>{const ov=t.due<today();
+        return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.title}</div>
+          <div style="font-size:10px;color:var(--muted)">${t.assignee} Â· ${t.type}</div></div>
+          <span style="font-size:11px;color:${ov?'var(--venetian)':'var(--muted)'};font-weight:${ov?700:400}">${t.due}</span>
+          <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span>
+        </div>`;
+      }).join('')}
     </div>
-    <div style="text-align:right">
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:700">Mentor Fee Summary</div>
-      <div style="font-size:10px;font-weight:700;color:#A0191A;letter-spacing:.5px;margin-top:2px">CONFIDENTIAL</div>
-      <div style="font-size:10px;color:#888;margin-top:2px">Generated: ${today}</div>
-    </div>
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:28px;padding:18px;background:#f8f6f3;border-left:3px solid #A0191A;border-radius:0 6px 6px 0">
-    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Prepared For</div><div style="font-size:14px;font-weight:700">${mentor.name}</div></div>
-    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Engagement</div><div style="font-size:13px;font-weight:600">${e.name}</div></div>
-    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Client</div><div style="font-size:13px;font-weight:600">${client?client.name:'—'}</div></div>
-    <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Programme Type</div><div style="font-size:13px;font-weight:600">${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Mentoring</div></div>
-  </div>
-  ${feeSectionHTML}
-  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#999">
-    <span>Global Mentors Group &middot; Mentor Fee Summary &middot; ${today}</span>
-    <span style="color:#A0191A;font-weight:700">Confidential &mdash; For Recipient Only</span>
-  </div>
-</div>
-</body></html>`;
-
-  const win=window.open('','_blank');
-  if(!win){alert('Please allow pop-ups to generate the fee summary PDF.');return;}
-  win.document.write(html);
-  win.document.close();
-  setTimeout(()=>win.print(),900);
-}
-
-/* ── SESSIONS ────────────────────────────────────────────────── */
-function rSessions(c){
-  const tab=S.tab.sess||'all';
-  let sess=DB.sessions;
-  if(tab!=='all') sess=sess.filter(s=>s.status===tab);
-  c.innerHTML=`
-  <div class="phdr"><div><h2>Sessions</h2><p>Chair mentoring sessions — completed sessions trigger auto mentor payment</p></div></div>
-  <div class="tabs">
-    ${['all','scheduled','completed','cancelled'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.sess='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.sessions.length:DB.sessions.filter(s=>s.status===t).length})</div>`).join('')}
-  </div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Engagement</th><th>Date</th><th>Duration</th><th>Status</th><th>Mentor Payment</th><th>Actions</th></tr></thead>
-    <tbody>${sess.map(s=>{
-      const e=DB.engagements.find(x=>x.id===s.engId);
-      const mn=e?DB.contacts.find(m=>m.id===e.mentorId):null;
-      const sb={scheduled:'b-blue',completed:'b-green',cancelled:'b-grey'}[s.status];
-      return`<tr><td><div style="font-weight:600;font-size:12px">${e?.name||'—'}</div><div style="font-size:10px;color:var(--muted)">${mn?.name||'—'}</div></td>
-      <td style="font-size:12px">${s.date}</td>
-      <td style="font-size:12px">${s.duration} min</td>
-      <td><span class="badge ${sb}">${s.status}</span></td>
-      <td>${s.status==='completed'?`<span class="badge ${s.mentorPaid?'b-green':'b-amber'}">${s.mentorPaid?'&#10003; paid':'pending'}</span>`:'<span class="badge b-grey">n/a</span>'}</td>
-      <td><div class="acts">
-        ${s.status==='scheduled'?`<button class="btn btn-sm btn-success" onclick="completeSession('${s.id}')">&#10003; Complete</button>`:''}
-        ${s.status==='completed'&&!s.mentorPaid?`<button class="btn btn-sm btn-warn" onclick="paySession('${s.id}')">Pay Mentor</button>`:''}
-        <button class="btn btn-sm btn-outline" onclick="viewSession('${s.id}')">View</button>
-      </div></td></tr>`;
-    }).join('')}</tbody></table>
   </div>`;
 }
 
-function completeSession(id){
-  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
-  const e=DB.engagements.find(x=>x.id===s.engId);
-  s.status='completed';
-  if(e){e.sessionsUsed=(e.sessionsUsed||0)+1;}
-  DB.mentorPayments.push({id:uid(),mentorId:e?.mentorId,engId:s.engId,sessionId:id,
-    amount:e?.sessionRate||0,type:'chair-session',period:s.date.slice(0,7),
-    status:'pending',autoBillId:null,xeroSynced:false,created:today()});
-  addAct('◷',`Session completed: ${e?.name?.split('—')[0]||''} — mentor payment auto-generated (${fmt(e?.sessionRate||0)})`);
-  save(); renderView();
-}
-
-function paySession(id){
-  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
-  const mp=DB.mentorPayments.find(p=>p.sessionId===id);
-  if(mp){mp.status='paid';mp.xeroSynced=true;}
-  s.mentorPaid=true;
-  save(); renderView();
-}
-
-function viewSession(id){
-  const s=DB.sessions.find(x=>x.id===id); if(!s) return;
-  const e=DB.engagements.find(x=>x.id===s.engId);
-  const mn=e?DB.contacts.find(m=>m.id===e.mentorId):null;
-  showModal(`<div class="mhdr"><h3>Session Detail</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="ir"><span class="lbl">Engagement</span><span class="val">${e?.name||'—'}</span></div>
-    <div class="ir"><span class="lbl">Mentor</span><span class="val">${mn?.name||'—'}</span></div>
-    <div class="ir"><span class="lbl">Date</span><span class="val">${s.date}</span></div>
-    <div class="ir"><span class="lbl">Duration</span><span class="val">${s.duration} minutes</span></div>
-    <div class="ir"><span class="lbl">Status</span><span class="val"><span class="badge ${s.status==='completed'?'b-green':s.status==='scheduled'?'b-blue':'b-grey'}">${s.status}</span></span></div>
-    <div class="ir"><span class="lbl">Mentor Rate</span><span class="val">${fmt(e?.sessionRate||0)}</span></div>
-    <div class="ir"><span class="lbl">Payment</span><span class="val"><span class="badge ${s.mentorPaid?'b-green':'b-amber'}">${s.mentorPaid?'Paid':'Pending'}</span></span></div>
-    ${s.notes?`<div style="margin-top:12px;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px">${s.notes}</div>`:''}
-  </div>`);
-}
-
-/* ── CLIENT INVOICES ─────────────────────────────────────────── */
-function rInvoices(c){
-  const tab=S.tab.inv||'all';
-  let invs=DB.clientInvoices;
-  if(tab!=='all') invs=invs.filter(i=>i.status===tab||(!i.xeroSynced&&tab==='unsynced'));
-  const totalOut=DB.clientInvoices.filter(i=>i.status==='sent').reduce((s,i)=>s+i.amount,0);
-  const totalPaid=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+function rDashboardFinance(c){
+  const unsyncedInv=DB.clientInvoices.filter(i=>!i.xeroSynced);
+  const pendingPay=DB.mentorPayments.filter(p=>p.status==='pending');
+  const pendingPayVal=pendingPay.reduce((s,p)=>s+p.amount,0);
+  const ytdInv=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+  const totalOwed=DB.clientInvoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+i.amount,0);
   c.innerHTML=`
-  <div class="phdr"><div><h2>Client Invoices</h2></div>
-    <div style="display:flex;gap:10px;align-items:center">
-      <span style="font-size:12px;color:var(--muted)">Outstanding: <strong style="color:var(--venetian)">${fmt(totalOut)}</strong></span>
-      <span style="font-size:12px;color:var(--muted)">Paid: <strong style="color:var(--success)">${fmt(totalPaid)}</strong></span>
-    </div>
+  ${_dashHeader('Finance Dashboard',`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${S.user.name.split(' ')[0]}. Finance overview.`,
+    unsyncedInv.length?`<span class="badge b-amber">&#9888; ${unsyncedInv.length} unsynced</span>`:'')}
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdInv)}</div></div>
+    <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
+      <div class="kpi-sub">${pendingPay.length} payments pending</div></div>
+    <div class="kpi"><div class="kpi-label">Invoices Outstanding</div><div class="kpi-val">${fmt(totalOwed)}</div>
+      <div class="kpi-sub">${DB.clientInvoices.filter(i=>i.status!=='paid').length} invoices</div></div>
+    <div class="kpi"><div class="kpi-label">Unsynced to Xero</div><div class="kpi-val">${unsyncedInv.length}</div>
+      <div class="kpi-sub">${unsyncedInv.length===0?'All synced â':'Action required'}</div></div>
   </div>
-  ${DB.clientInvoices.filter(i=>!i.xeroSynced).length?`<div class="xero-banner"><div><h4>Xero Sync Required</h4><p>${DB.clientInvoices.filter(i=>!i.xeroSynced).length} invoices not yet pushed to Xero</p></div>
-    <button class="btn btn-sm" style="background:#fff;color:#13B5EA;font-weight:700" onclick="pushAllXero()">Push All to Xero &#8594;</button></div>`:''}
-  <div class="tabs">
-    ${['all','draft','sent','paid','unsynced'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.inv='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.clientInvoices.length:t==='unsynced'?DB.clientInvoices.filter(i=>!i.xeroSynced).length:DB.clientInvoices.filter(i=>i.status===t).length})</div>`).join('')}
-  </div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Invoice</th><th>Type</th><th>Client</th><th>Period</th><th>Amount</th><th>Due</th><th>Status</th><th>Xero</th><th>Actions</th></tr></thead>
-    <tbody>${invs.map(inv=>{
-      const cl=DB.contacts.find(c=>c.id===inv.clientId);
-      const e=DB.engagements.find(x=>x.id===inv.engId);
-      const sb={draft:'b-grey',sent:'b-blue',paid:'b-green'}[inv.status]||'b-grey';
-      const tb={'chair-annual':'type-chair','exec-quarterly':'type-executive','team-adhoc':'type-team'}[inv.type]||'b-grey';
-      return`<tr><td><div style="font-weight:600;font-size:11px">${inv.id.toUpperCase()}</div><div style="font-size:10px;color:var(--muted)">${e?.name?.split('—')[0]?.trim()||'—'}</div></td>
-      <td><span class="badge ${tb}" style="font-size:9px">${inv.type}</span></td>
-      <td style="font-size:12px">${cl?.name||'—'}</td>
-      <td style="font-size:11px">${inv.period}</td>
-      <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(inv.amount)}</td>
-      <td style="font-size:11px;color:${inv.due<today()&&inv.status!=='paid'?'var(--venetian)':'inherit'}">${inv.due}</td>
-      <td><span class="badge ${sb}">${inv.status}</span></td>
-      <td><span class="badge ${inv.xeroSynced?'b-xero':'b-amber'}">${inv.xeroSynced?'&#10003; synced':'pending'}</span></td>
-      <td><div class="acts">
-        ${inv.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendInvoice('${inv.id}')">Send</button>`:''}
-        ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">&#10003; Paid</button>`:''}
-        ${!inv.xeroSynced?`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button>`:''}
-      </div></td></tr>`;
-    }).join('')}</tbody></table>
-  </div>`;
-}
-
-function sendInvoice(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.status='sent';addAct('◎',`Invoice sent: ${fmt(i.amount)} — ${i.period}`);save();renderView();}}
-function markPaid(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.status='paid';save();renderView();}}
-function pushInvXero(id){const i=DB.clientInvoices.find(x=>x.id===id);if(i){i.xeroSynced=true;addAct('◎',`Invoice pushed to Xero: ${fmt(i.amount)}`);save();renderView();}}
-function pushAllXero(){DB.clientInvoices.forEach(i=>{if(!i.xeroSynced)i.xeroSynced=true});addAct('◎','All pending invoices pushed to Xero');save();renderView();}
-
-/* ── MENTOR PAYMENTS ─────────────────────────────────────────── */
-function rPayments(c){
-  const tab=S.tab.pay||'all';
-  let pays=DB.mentorPayments;
-  if(tab!=='all') pays=pays.filter(p=>p.status===tab);
-  const pending=DB.mentorPayments.filter(p=>p.status==='pending');
-  const pendVal=pending.reduce((s,p)=>s+p.amount,0);
-  c.innerHTML=`
-  <div class="phdr"><div><h2>Mentor Payments</h2><p>${pending.length} payments pending · ${fmt(pendVal)} due this month-end</p></div></div>
-  <div class="tabs">
-    ${['all','pending','paid'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.pay='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.mentorPayments.length:DB.mentorPayments.filter(p=>p.status===t).length})</div>`).join('')}
-  </div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Mentor</th><th>Engagement</th><th>Type</th><th>Period</th><th>Amount</th><th>Status</th><th>Auto-Bill</th><th>Xero</th></tr></thead>
-    <tbody>${pays.map(p=>{
-      const m=DB.contacts.find(x=>x.id===p.mentorId);
-      const e=DB.engagements.find(x=>x.id===p.engId);
-      const tb={'chair-session':'type-chair','exec-monthly':'type-executive','team-bespoke':'type-team'}[p.type]||'b-grey';
-      return`<tr><td style="font-weight:600;font-size:12px">${m?.name||'—'}</td>
-      <td style="font-size:11px">${e?.name?.split('—')[0]?.trim()||'—'}</td>
-      <td><span class="badge ${tb}" style="font-size:9px">${p.type}</span></td>
-      <td style="font-size:11px">${p.period}</td>
-      <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(p.amount)}</td>
-      <td><span class="badge ${p.status==='paid'?'b-green':'b-amber'}">${p.status}</span></td>
-      <td style="font-size:11px">${p.autoBillId||'<span style="color:var(--muted)">unassigned</span>'}</td>
-      <td><span class="badge ${p.xeroSynced?'b-xero':'b-amber'}">${p.xeroSynced?'&#10003;':'pending'}</span></td></tr>`;
-    }).join('')}</tbody></table>
-  </div>`;
-}
-
-/* ── AUTO-BILL ────────────────────────────────────────────────── */
-function rAutoBill(c){
-  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
-  const byMentor={};
-  pending.forEach(p=>{if(!byMentor[p.mentorId]) byMentor[p.mentorId]=[];byMentor[p.mentorId].push(p);});
-  const pendTotal=pending.reduce((s,p)=>s+p.amount,0);
-  c.innerHTML=`
-  <div class="phdr"><div><h2>Auto-Bill &amp; Xero</h2><p>Consolidate mentor payments and push to Xero at month-end</p></div></div>
-  <div class="xero-banner" style="margin-bottom:20px">
-    <div><h4>Xero Integration Active</h4><p>Auto-bills are pushed as individual supplier bills per mentor.</p></div>
-    <div style="text-align:right"><div style="font-size:18px;font-weight:700">${fmt(pendTotal)}</div><div style="font-size:10px;opacity:.8">pending this month</div></div>
-  </div>
-  <div class="g2" style="margin-bottom:18px">
+  <div class="g2">
     <div class="card">
-      <div class="card-hdr"><h3>June 2026 — Pending Payments</h3>
-        ${Object.keys(byMentor).length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill &#8594;</button>`:'<span class="badge b-green">&#10003; All processed</span>'}
-      </div>
-      <div class="card-body" style="padding:0">
-        ${Object.keys(byMentor).length===0?`<div class="empty"><div class="ei">&#10003;</div><p>No pending payments for this period</p></div>`:''}
-        ${Object.entries(byMentor).map(([mid,pays])=>{
-          const m=DB.contacts.find(x=>x.id===mid);
-          const total=pays.reduce((s,p)=>s+p.amount,0);
-          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border)">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-              <div><strong style="font-size:13px">${m?.name||'Unknown Mentor'}</strong>
-              <span class="badge b-amber" style="margin-left:8px">${pays.length} payment${pays.length>1?'s':''}</span></div>
-              <strong style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;color:var(--cadmium)">${fmt(total)}</strong>
-            </div>
-            ${pays.map(p=>{const e=DB.engagements.find(x=>x.id===p.engId);
-              return`<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0">
-                <span>${e?.name?.split('—')[0]?.trim()||'—'}</span>
-                <span>${fmt(p.amount)}</span></div>`;}).join('')}
-          </div>`;
+      <div class="card-hdr"><h3>Invoice Queue â Pending Xero Sync</h3></div>
+      <div class="card-body" style="padding:0 18px">
+        ${unsyncedInv.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All invoices synced &#10003;</p>':
+        unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
+          return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>${inv.type} Â· ${inv.status}</span></div>
+          <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
+          <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><h3>Previous Auto-Bill Runs</h3></div>
-      <div class="card-body" style="padding:0">
-        ${DB.autoBills.map(ab=>{
-          const pays=ab.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
-          const mentorIds=[...new Set(pays.map(p=>p.mentorId))];
-          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-            <div style="flex:1"><strong style="font-size:12px">Auto-Bill ${ab.id.toUpperCase()} — ${ab.period}</strong>
-            <div style="font-size:10px;color:var(--muted);margin-top:2px">${mentorIds.length} mentor${mentorIds.length>1?'s':''} · ${ab.payments.length} payments</div></div>
-            <div style="text-align:right"><div style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(ab.totalAmount)}</div>
-            <span class="badge ${ab.xeroSynced?'b-xero':'b-amber'}">${ab.xeroSynced?'&#10003; Xero':'pending'}</span></div>
-          </div>`;
-        }).reverse().join('')}
+      <div class="card-hdr"><h3>Mentor Payments â Pending</h3>
+        ${pendingPay.length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill &#8594;</button>`:''}
+      </div>
+      <div class="card-body" style="padding:0 18px">
+        ${pendingPay.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All payments processed &#10003;</p>':
+        pendingPay.slice(0,8).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
+          return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]?.trim()||''}</span></div>
+          <div class="fin-amount">${fmt(p.amount)}</div>
+          <span class="badge b-amber">pending</span></div>`;
+        }).join('')}
       </div>
     </div>
   </div>`;
 }
 
-function runAutoBill(){
-  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
-  if(!pending.length){alert('No pending payments to process.');return;}
-  const id=uid();
-  const total=pending.reduce((s,p)=>s+p.amount,0);
-  pending.forEach(p=>{p.autoBillId=id;p.status='paid';p.xeroSynced=true;});
-  DB.autoBills.push({id,period:'2026-06',payments:pending.map(p=>p.id),totalAmount:total,status:'paid',xeroSynced:true,created:today()});
-  addAct('◐',`Auto-bill run completed: June 2026 — ${fmt(total)} pushed to Xero`);
-  save(); renderView();
-  alert('Auto-bill run complete.\n'+pending.length+' payments totalling '+fmt(total)+' pushed to Xero.');
+function rDashboardAdmin(c){
+  rDashboardRM(c);
+  // Append quick admin link
+  c.innerHTML+=`<div class="card" style="border-left:3px solid #5E1100;margin-top:4px">
+    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+      <div><div style="font-size:13px;font-weight:600">&#9881; Admin Panel</div>
+      <div style="font-size:11px;color:var(--muted)">Manage users, roles and platform access</div></div>
+      <button class="btn btn-sm btn-outline" onclick="S.view='admin';renderView()">Open Admin</button>
+    </div>
+  </div>`;
 }
 
-/* ── CONTACTS ────────────────────────────────────────────────── */
-function rContacts(c){
-  const tab=S.tab.con||'all';
-  let cons=DB.contacts.filter(x=>tab==='all'||x.type===tab);
+/* ââ ADMIN PANEL âââââââââââââââââââââââââââââââ */
+async function rAdmin(c){
+  c.innerHTML=`<div class="phdr"><div><h2>&#9881; Admin</h2><p>User management and platform access</p></div></div>
+  <div class="card"><div style="padding:20px;text-align:center;color:var(--muted)">Loading usersâ¦</div></div>`;
+  // Fetch profiles from Supabase
+  let profiles=[];
+  try{const{data}=await sb.from('profiles').select('id,data,updated_at').order('updated_at',{ascending:false});profiles=data||[];}catch(e){}
+  const roleLabels={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
   c.innerHTML=`
-  <div class="phdr"><div><h2>Contacts</h2><p>${DB.contacts.filter(c=>c.type==='mentor').length} mentors · ${DB.contacts.filter(c=>c.type==='client').length} clients</p></div>
-  <button class="btn btn-primary" onclick="openContactModal()">+ Add Contact</button></div>
-  <div class="tabs">
-    ${['all','mentor','client'].map(t=>`<div class="tab${tab===t?' active':''}" onclick="S.tab.con='${t}';renderView()">${t.charAt(0).toUpperCase()+t.slice(1)} (${t==='all'?DB.contacts.length:DB.contacts.filter(c=>c.type===t).length})</div>`).join('')}
-  </div>
+  <div class="phdr"><div><h2>&#9881; Admin</h2><p>${profiles.length} registered user${profiles.length!==1?'s':''}</p></div>
+    <button class="btn btn-primary" onclick="openAdminUserModal(null)">+ Add User Slot</button></div>
   <div class="card">
-    <table class="tbl"><thead><tr><th>Name</th><th>Type</th><th>Organisation</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${cons.map(ct=>{
-      const tb=ct.type==='mentor'?'type-chair':'b-black';
-      const sb=ct.status==='active'?'b-green':ct.status==='prospect'?'b-amber':'b-grey';
-      return`<tr><td><div style="font-weight:600;font-size:12px"><a href="#" onclick="event.preventDefault();viewContact('${ct.id}')" style="color:inherit;text-decoration:none;border-bottom:1px solid var(--border)">${ct.name}</a></div></td>
-      <td><span class="badge ${tb}">${ct.type}</span></td>
-      <td style="font-size:12px">${ct.org||'—'}</td>
-      <td style="font-size:11px;color:var(--muted)">${ct.email}</td>
-      <td><span class="badge ${sb}">${ct.status}</span></td>
-      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openContactModal('${ct.id}')">Edit</button>
-      <button class="btn btn-sm btn-danger" onclick="deleteCon('${ct.id}')">&#10005;</button></div></td></tr>`;
-    }).join('')}</tbody></table>
-  </div>`;
-}
-function deleteCon(id){if(!confirm('Delete contact?'))return;DB.contacts=DB.contacts.filter(c=>c.id!==id);save();renderView();}
-
-function openContactModal(id, defaultType){
-  const ct=id?DB.contacts.find(x=>x.id===id):null;
-  const type=ct?ct.type:(defaultType||'client');
-  showModal(`<div class="mhdr"><h3>${ct?'Edit Contact':'New '+(type==='mentor'?'Mentor':'Contact')}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <input type="hidden" id="cm-type" value="${type}">
-    <div class="fgrow">
-      <div class="fg"><label>Full Name</label><input id="cm-name" type="text" value="${ct?ct.name:''}" placeholder="Full name"></div>
-      <div class="fg"><label>Title / Role</label><input id="cm-title" type="text" value="${ct?ct.title||'':''}" placeholder="e.g. CEO, Chair"></div>
-    </div>
-    <div class="fg"><label>Organisation</label><input id="cm-org" type="text" value="${ct?ct.org||'':''}" placeholder="Company or organisation"></div>
-    <div class="fg"><label>Billing Entity</label><input id="cm-billing" type="text" value="${ct?ct.billingEntity||'':''}" placeholder="Legal entity for invoices/bills"></div>
-    <div class="fgrow">
-      <div class="fg"><label>Email</label><input id="cm-email" type="email" value="${ct?ct.email||'':''}" placeholder="email@example.com"></div>
-      <div class="fg"><label>Phone</label><input id="cm-phone" type="tel" value="${ct?ct.phone||'':''}" placeholder="+44 ..."></div>
-    </div>
-    ${type==='mentor'?`
-    <div class="fgrow">
-      <div class="fg"><label>Entity</label><select id="cm-entity">
-        <option value="GMG"${ct&&ct.entity==='GMG'?' selected':''}>GMG</option>
-        <option value="CMi"${ct&&ct.entity==='CMi'?' selected':''}>CMi</option>
-        <option value="Merryck"${ct&&ct.entity==='Merryck'?' selected':''}>Merryck</option>
-      </select></div>
-      <div class="fg"><label>Status</label><select id="cm-status">
-        <option value="active"${!ct||ct.status==='active'?' selected':''}>Active</option>
-        <option value="inactive"${ct&&ct.status==='inactive'?' selected':''}>Inactive</option>
-      </select></div>
-    </div>`:''}
-    <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3" style="width:100%;box-sizing:border-box">${ct?ct.notes||'':''}</textarea></div>
-    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveContact('${id||''}')">Save</button>
-    </div>
-  </div>`,true);
-}
-
-function saveContact(id){
-  const n=k=>document.getElementById(k);
-  const name=n('cm-name').value.trim();
-  if(!name) return alert('Name is required.');
-  const type=n('cm-type').value;
-  const data={name,type,title:n('cm-title').value.trim(),org:n('cm-org').value.trim(),
-    billingEntity:n('cm-billing').value.trim(),email:n('cm-email').value.trim(),
-    phone:n('cm-phone').value.trim(),notes:n('cm-notes').value.trim()};
-  if(type==='mentor'){
-    data.entity=n('cm-entity')?.value||'GMG';
-    data.status=n('cm-status')?.value||'active';
-  }
-  if(id){
-    const idx=DB.contacts.findIndex(x=>x.id===id);
-    if(idx>-1) DB.contacts[idx]={...DB.contacts[idx],...data};
-  } else {
-    data.id=uid();data.createdAt=new Date().toISOString().slice(0,10);
-    DB.contacts.push(data);
-  }
-  save();closeModal();renderView();
-}
-
-/* ── PROJECT MANAGEMENT ──────────────────────────────────────── */
-function rProjects(c){
-  const statusFilter=S.tab.projStatus||'';
-  const typeFilter=S.tab.projType||'';
-  const engs=DB.engagements.filter(e=>{
-    if(statusFilter&&e.status!==statusFilter) return false;
-    if(typeFilter&&e.type!==typeFilter) return false;
-    return true;
-  });
-  c.innerHTML=`
-  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.type==='team').length} team projects · ${DB.engagements.filter(e=>e.status==='active').length} active</p></div>
-  <button class="btn btn-primary" onclick="openEngModal(null)" style="cursor:pointer">+ New Project</button></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-    <select class="filter-sel" onchange="S.tab.projType=this.value;renderView()">
-      <option value="">All Types</option>
-      <option value="team"${typeFilter==='team'?' selected':''}>Team</option>
-      <option value="executive"${typeFilter==='executive'?' selected':''}>Executive</option>
-      <option value="chair"${typeFilter==='chair'?' selected':''}>Chair</option>
-    </select>
-    <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
-      <option value="">All Statuses</option>
-      ${['active','planning','completed'].map(s=>`<option value="${s}"${statusFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-    </select>
-    ${(statusFilter||typeFilter)?`<button class="filter-clear" onclick="S.tab.projStatus='';S.tab.projType='';renderView()">&#10005; Clear</button>`:''}
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
-    ${engs.map(e=>{
-      const client=DB.contacts.find(x=>x.id===e.clientId);
-      const stages=e.stages||[];
-      const mentorIds=e.mentorIds||[];
-      if(e.mentorId&&!mentorIds.includes(e.mentorId)) mentorIds.unshift(e.mentorId);
-      const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
-      const singleMentor=!mentors.length&&e.mentorId?DB.contacts.find(c=>c.id===e.mentorId):null;
-      const engSess=DB.sessions.filter(s=>s.engId===e.id);
-      const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
-      const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
-      const engTasks=DB.tasks.filter(t=>t.ref===e.id);
-      const openTasks=engTasks.filter(t=>t.status!=='done').length;
-      // Stage progress
-      const completedStages=stages.filter(s=>s.status==='completed').length;
-      const stagePct=stages.length>0?Math.min(100,Math.round((completedStages/stages.length)*100)):0;
-      // Financials
-      const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||e.annualFee||0;
-      const totalMentorCost=stages.reduce((s,st)=>s+((st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0)),0);
-      const profit=totalClientFee-totalMentorCost;
-      const margin=totalClientFee>0?Math.round((profit/totalClientFee)*100):null;
-      const costPct=totalClientFee>0?Math.min(100,Math.round((totalMentorCost/totalClientFee)*100)):0;
-      const profitPct=totalClientFee>0?Math.max(0,100-costPct):0;
-      const isTeam=e.type==='team';
-      return`<div class="card" style="padding:18px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-          <div style="flex:1">
-            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:3px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'}</div>
-          </div>
-          <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
-        </div>
-        <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
-          <span class="badge ${typeBadge}">${e.type}</span>
-          ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
-        </div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">
-          ${isTeam&&mentors.length>0?`<div style="display:flex;flex-wrap:wrap;gap:4px">${mentors.slice(0,3).map(m=>`<span style="background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600">${m.name.split(' ')[0]}</span>`).join('')}${mentors.length>3?`<span style="font-size:10px;color:var(--muted)">+${mentors.length-3} more</span>`:''}</div>`:
-          singleMentor?singleMentor.name:'No mentor assigned'}
-        </div>
-        ${isTeam&&stages.length>0?`<div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
-            <span>Stages</span><span>${completedStages}/${stages.length} complete</span>
-          </div>
-          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="width:${stagePct}%;height:100%;background:${stagePct===100?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
-          </div>
-        </div>`:`<div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
-            <span>Sessions</span><span>${engSess.filter(s=>s.status==='completed').length} completed</span>
-          </div>
-          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="width:${Math.min(100,Math.round((engSess.filter(s=>s.status==='completed').length/Math.max(1,e.sessionsIncluded||engSess.length||1))*100))}%;height:100%;background:var(--venetian);border-radius:3px"></div>
-          </div>
-        </div>`}
-        ${isTeam&&totalClientFee>0?`<div style="margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
-            <span>Profitability</span><span style="font-weight:600;color:${margin>=0?'var(--success)':'#c0392b'}">${margin!==null?margin+'% margin':'—'}</span>
-          </div>
-          <div class="profit-bar-track">
-            <div class="pbar-cost" style="width:${costPct}%"></div>
-            <div class="pbar-profit" style="width:${profitPct}%"></div>
-          </div>
-        </div>`:''}
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} task${openTasks>1?'s':''}</span>`:'—'}</div>
-          <div style="display:flex;gap:5px">
-            <button class="btn btn-sm btn-outline" onclick="openProjDetail('${e.id}')">View</button>
-            <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('')}
-    ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects. Create a Team Engagement to get started.</div>`:''}
-  </div>`;
-}
-function openProjTaskModal(engId){
-  const e=DB.engagements.find(x=>x.id===engId);
-  showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fg"><label>Task Title</label><input id="pt-title" type="text" placeholder="e.g. Send Q3 invoice"></div>
-    <div class="fg"><label>Assignee</label><select id="pt-assignee">
-      ${PARTNERS.map(p=>`<option value="${p}">${p}</option>`).join('')}
-    </select></div>
-    <div class="fgrow">
-      <div class="fg"><label>Priority</label><select id="pt-pri">
-        <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
-      </select></div>
-      <div class="fg"><label>Due Date</label><input type="date" id="pt-due" value="${today()}"></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="pt-notes" rows="2"><\/textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveProjTask('${engId}')">Save Task</button>
-    </div>
-  </div>`);
-}
-
-function saveProjTask(engId){
-  const title=document.getElementById('pt-title').value.trim();
-  if(!title)return alert('Please enter a title.');
-  const t={id:uid(),title,ref:engId,type:'engagement',assignee:document.getElementById('pt-assignee').value,status:'todo',priority:document.getElementById('pt-pri').value,due:document.getElementById('pt-due').value,notes:document.getElementById('pt-notes').value.trim()};
-  DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
-}
-
-function generateSOW(engId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  const client=DB.contacts.find(c=>c.id===e.clientId);
-  const mentor=DB.contacts.find(c=>c.id===e.mentorId);
-  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  const refNo='SOW-'+e.id.slice(-6).toUpperCase()+'-'+new Date().getFullYear();
-  const fmt2=n=>'£'+Math.round(n||0).toLocaleString('en-GB');
-  const dateLabel=d=>{if(!d) return 'TBC'; const dt=new Date(d); return isNaN(dt)?d:dt.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});};
-
-  let scopeHTML='', feeHTML='', deliverableHTML='';
-
-  if(e.type==='executive'){
-    const qMentorFee=Math.round((e.quarterlyFee||0)*0.4);
-    const startDt=e.startDate?new Date(e.startDate):null;
-    const qRows=['Q1','Q2','Q3','Q4'].map((q,i)=>{
-      let dStr='TBC';
-      if(startDt&&!isNaN(startDt)){const d=new Date(startDt);d.setMonth(d.getMonth()+i*3);dStr=d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});}
-      return`<tr><td style="padding:8px 14px">${q}</td><td style="padding:8px 14px">${dStr}</td><td style="padding:8px 14px;text-align:right;font-weight:700;color:#A0191A">${fmt2(e.quarterlyFee||0)}</td><td style="padding:8px 14px;text-align:center"><span style="font-size:11px;color:#9ca3af">Pending</span></td></tr>`;
-    }).join('');
-    scopeHTML=`<p>This Statement of Work covers the delivery of a structured Executive Mentoring Programme by Global Mentors Group (GMG) for ${client?client.name:'the Client'}. The Programme is designed to support the professional development, strategic thinking, and leadership effectiveness of the designated Executive Mentee.</p>
-      <p style="margin-top:10px">The programme will be led by <strong>${mentor?mentor.name:'the assigned Mentor'}</strong> and delivered over the period specified below. GMG will provide programme coordination, scheduling, progress reporting, and quality assurance throughout the engagement.</p>`;
-    deliverableHTML=`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>One-to-one executive mentoring sessions</strong> delivered on a quarterly basis, typically 90–120 minutes per session</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Programme kickoff and goal-setting session</strong> to establish objectives, priorities, and success metrics</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Mid-programme review</strong> including progress check, objective refresh, and stakeholder alignment</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>End-of-programme report</strong> summarising outcomes, development progress, and recommendations</div></div>
-      ${e.retreatFee?`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Executive Retreat</strong> — ${dateLabel(e.retreatDate)}, retreat facilitation fee: ${fmt2(e.retreatFee)}</div></div>`:''}`;
-    feeHTML=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-      <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Quarter</th><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Invoice Date</th><th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:600">Amount (excl. VAT)</th><th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:600">Status</th></tr></thead>
-      <tbody>${qRows}</tbody>
-      <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="2" style="padding:9px 14px;font-weight:700">Total Programme Value</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#A0191A">${fmt2(e.annualFee||((e.quarterlyFee||0)*4))}</td><td></td></tr></tfoot>
-    </table>
-    <p style="font-size:11px;color:#666;margin-top:4px">All fees are quoted exclusive of VAT. VAT will be applied at the prevailing rate where applicable. Invoices are due within 30 days of issue. Late payment may incur interest at 2% above the Bank of England base rate.</p>`;
-  } else if(e.type==='team'){
-    const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
-    const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
-    const stages=e.stages||[];
-    const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||0;
-    const stageRows=stages.length>0?stages.map((st,i)=>`<tr style="border-bottom:1px solid #eee"><td style="padding:8px 14px;font-weight:600">${i+1}. ${st.name}</td><td style="padding:8px 14px;font-size:11px;color:#666;max-width:200px">${st.description||'—'}</td><td style="padding:8px 14px;text-align:center"><span style="font-size:11px;font-weight:600;color:${st.status==='completed'?'#16a34a':st.status==='active'?'#d97706':'#9ca3af'}">${(st.status||'Pending').charAt(0).toUpperCase()+(st.status||'pending').slice(1)}</span></td><td style="padding:8px 14px;text-align:right;font-weight:700;color:#A0191A">${fmt2(st.clientFee||0)}</td></tr>`).join(''):`<tr><td colspan="4" style="padding:14px;text-align:center;color:#999;font-size:12px">Stages to be agreed and documented prior to programme commencement</td></tr>`;
-    scopeHTML=`<p>This Statement of Work governs the delivery of a Team Engagement Programme by Global Mentors Group (GMG) for ${client?client.name:'the Client'}. The Programme provides structured mentoring, facilitation, and leadership development across ${stages.length||'multiple'} defined project stages.</p>
-      <p style="margin-top:10px">The programme will be delivered by a GMG mentor team${mentors.length>0?' comprising '+mentors.map(m=>m.name).join(', '):''}. GMG will provide programme management, stage coordination, and reporting throughout the engagement.</p>`;
-    deliverableHTML=`<div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Stage-based programme delivery</strong> across ${stages.length||'agreed'} defined project stages with clear milestones and deliverables</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Dedicated mentor team</strong> with appropriate expertise aligned to each programme stage</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Stage completion reports</strong> delivered on completion of each stage, documenting outcomes and progress</div></div>
-      <div style="margin-bottom:6px;display:flex;gap:10px;align-items:flex-start"><span style="color:#A0191A;font-size:14px;flex-shrink:0">&#9632;</span><div><strong>Programme close report</strong> summarising overall outcomes, learnings, and recommendations</div></div>`;
-    feeHTML=`<table style="width:100%;border-collapse:collapse;margin-bottom:16px">
-      <thead><tr style="background:#1a1a1a;color:#fff"><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Stage</th><th style="padding:9px 14px;text-align:left;font-size:11px;font-weight:600">Description</th><th style="padding:9px 14px;text-align:center;font-size:11px;font-weight:600">Status</th><th style="padding:9px 14px;text-align:right;font-size:11px;font-weight:600">Stage Fee</th></tr></thead>
-      <tbody>${stageRows}</tbody>
-      <tfoot><tr style="background:#f0ede8;border-top:2px solid #ccc"><td colspan="3" style="padding:9px 14px;font-weight:700">Total Programme Fee</td><td style="padding:9px 14px;text-align:right;font-weight:700;font-size:15px;color:#A0191A">${fmt2(totalClientFee)}</td></tr></tfoot>
-    </table>
-    <p style="font-size:11px;color:#666;margin-top:4px">Stage fees are invoiced upon completion of each stage and acceptance by the Client. All fees are exclusive of VAT. Payment terms: 30 days from invoice date.</p>`;
-  }
-
-  const html=`<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Statement of Work &#8212; ${e.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Inter',sans-serif;color:#1a1a1a;background:#fff;font-size:12.5px;line-height:1.7}
-.page{max-width:760px;margin:0 auto;padding:48px 52px 64px}
-h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #e5e0d8}
-h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:6px}
-p{margin-bottom:10px;color:#333}
-@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}.no-print{display:none!important}.page{padding:24px 32px 40px}}
-</style></head>
-<body>
-<div class="no-print" style="background:#1a1a1a;padding:12px 24px;display:flex;justify-content:space-between;align-items:center">
-  <span style="color:#fff;font-size:12px">Statement of Work &mdash; Press &ldquo;Save as PDF&rdquo; or Ctrl+P to export</span>
-  <button onclick="window.print()" style="background:#A0191A;color:#fff;border:none;border-radius:5px;padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">&#128196; Save as PDF / Print</button>
-</div>
-<div class="page">
-
-  <!-- HEADER -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2.5px solid #A0191A">
-    <div>
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;font-weight:700;color:#A0191A;letter-spacing:-0.5px">Global<span style="color:#1a1a1a">Mentors</span>Group</div>
-      <div style="font-size:10px;color:#999;margin-top:2px;font-weight:500;letter-spacing:.3px">MENTORING &amp; LEADERSHIP ADVISORY</div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700">Statement of Work</div>
-      <div style="font-size:10px;font-weight:700;color:#A0191A;letter-spacing:.5px;margin-top:3px">CONFIDENTIAL</div>
-      <div style="font-size:10px;color:#888;margin-top:2px">Ref: ${refNo} &nbsp;&middot;&nbsp; ${today}</div>
-    </div>
-  </div>
-
-  <!-- PARTIES -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px">
-    <div style="padding:16px;background:#f8f6f3;border-left:3px solid #A0191A;border-radius:0 6px 6px 0">
-      <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Service Provider</div>
-      <div style="font-size:14px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif">Global Mentors Group</div>
-      <div style="font-size:11px;color:#666;margin-top:3px">London, United Kingdom</div>
-      <div style="font-size:11px;color:#666">info@globalmentorsgroup.com</div>
-    </div>
-    <div style="padding:16px;background:#f8f6f3;border-left:3px solid #1a1a1a;border-radius:0 6px 6px 0">
-      <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Client</div>
-      <div style="font-size:14px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif">${client?client.name:'[Client Name]'}</div>
-      <div style="font-size:11px;color:#666;margin-top:3px">${client?client.org||'':''}</div>
-      <div style="font-size:11px;color:#666">${client?client.email||'':''}</div>
-    </div>
-  </div>
-
-  <!-- ENGAGEMENT DETAILS -->
-  <div style="margin-bottom:28px;padding:16px 18px;background:#fff;border:1px solid #e5e0d8;border-radius:6px">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Engagement</div><div style="font-size:12px;font-weight:600">${e.name}</div></div>
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Programme Type</div><div style="font-size:12px;font-weight:600">${e.type.charAt(0).toUpperCase()+e.type.slice(1)} Mentoring</div></div>
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Lead Mentor</div><div style="font-size:12px;font-weight:600">${mentor?mentor.name:'TBC'}</div></div>
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Start Date</div><div style="font-size:12px;font-weight:600">${dateLabel(e.startDate)}</div></div>
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">End Date</div><div style="font-size:12px;font-weight:600">${dateLabel(e.endDate)}</div></div>
-      <div><div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">GMG Coordinator</div><div style="font-size:12px;font-weight:600">${e.coordinator||'—'}</div></div>
-    </div>
-    ${e.notes?`<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e0d8;font-size:11px;color:#666"><strong style="color:#1a1a1a">Notes: </strong>${e.notes}</div>`:''}
-  </div>
-
-  <!-- 1. SCOPE -->
-  <div style="margin-bottom:24px">
-    <h2>1. Scope of Services</h2>
-    ${scopeHTML}
-  </div>
-
-  <!-- 2. DELIVERABLES -->
-  <div style="margin-bottom:24px">
-    <h2>2. Deliverables</h2>
-    <p>GMG will provide the following as part of this engagement:</p>
-    <div style="padding:14px 16px;background:#f8f6f3;border-radius:6px;margin-top:8px">
-      ${deliverableHTML}
-    </div>
-  </div>
-
-  <!-- 3. FEE SCHEDULE -->
-  <div style="margin-bottom:24px">
-    <h2>3. Fee Schedule</h2>
-    ${feeHTML}
-  </div>
-
-  <!-- 4. TERMS -->
-  <div style="margin-bottom:28px">
-    <h2>4. Terms &amp; Conditions</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-      <div>
-        <h3>Confidentiality</h3>
-        <p style="font-size:11px">Both parties agree to maintain the confidentiality of all information exchanged during the programme. All sessions, reports, and materials are strictly confidential.</p>
-        <h3 style="margin-top:12px">Cancellation</h3>
-        <p style="font-size:11px">Sessions cancelled with less than 48 hours' notice may be charged at the full session rate. Programme cancellation requires 30 days' written notice.</p>
-      </div>
-      <div>
-        <h3>Intellectual Property</h3>
-        <p style="font-size:11px">All programme materials and reports produced by GMG remain the intellectual property of Global Mentors Group unless otherwise agreed in writing.</p>
-        <h3 style="margin-top:12px">Governing Law</h3>
-        <p style="font-size:11px">This Statement of Work shall be governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the English courts.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- 5. SIGNATURES -->
-  <div style="margin-bottom:20px">
-    <h2>5. Authorisation</h2>
-    <p style="margin-bottom:18px">By signing below, both parties agree to the terms of this Statement of Work.</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px">
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">For Global Mentors Group</div>
-        <div style="border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;height:36px"></div>
-        <div style="font-size:11px;font-weight:600">${e.coordinator||'Authorised Signatory'}</div>
-        <div style="font-size:10px;color:#888">Global Mentors Group</div>
-        <div style="font-size:10px;color:#999;margin-top:8px">Date: ____________________________</div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px">For ${client?client.name:'the Client'}</div>
-        <div style="border-bottom:1.5px solid #1a1a1a;margin-bottom:6px;height:36px"></div>
-        <div style="font-size:11px;font-weight:600">Authorised Signatory</div>
-        <div style="font-size:10px;color:#888">${client?client.name:''}</div>
-        <div style="font-size:10px;color:#999;margin-top:8px">Date: ____________________________</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <div style="margin-top:36px;padding-top:16px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:10px;color:#999">
-    <span>Global Mentors Group &middot; ${refNo} &middot; ${today}</span>
-    <span style="color:#A0191A;font-weight:700">Confidential &mdash; Not for Distribution</span>
-  </div>
-</div>
-</body></html>`;
-
-  const win=window.open('','_blank');
-  if(!win){alert('Please allow pop-ups to generate the SOW PDF.');return;}
-  win.document.write(html);
-  win.document.close();
-  setTimeout(()=>win.print(),900);
-}
-
-function toggleEngTypeFields(type){
-  document.getElementById('em-exec-fields').style.display=type==='executive'?'':'none';
-  document.getElementById('em-team-fields').style.display=type==='team'?'':'none';
-}
-
-function openProjDetail(id){
-  const e=DB.engagements.find(x=>x.id===id); if(!e) return;
-  const cl=DB.contacts.find(c=>c.id===e.clientId);
-  const stages=e.stages||[];
-  const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
-  const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
-  const totalClientFee=stages.reduce((s,st)=>s+(st.clientFee||0),0)||e.totalFee||e.annualFee||0;
-  const totalMentorCost=stages.reduce((s,st)=>s+((st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0)),0);
-  const profit=totalClientFee-totalMentorCost;
-  const margin=totalClientFee>0?Math.round((profit/totalClientFee)*100):0;
-  const costPct=totalClientFee>0?Math.min(100,Math.round((totalMentorCost/totalClientFee)*100)):0;
-  const profitPct=totalClientFee>0?Math.max(0,100-costPct):0;
-  const stBadge={active:'b-green',planning:'b-amber',completed:'b-grey'}[e.status]||'b-grey';
-  const completedStages=stages.filter(s=>s.status==='completed').length;
-  const avail=DB.contacts.filter(c=>c.type==='mentor'&&!mentorIds.includes(c.id));
-  const stageRows=stages.length>0?stages.map(st=>{
-    const stMentorCost=(st.mentorFees||[]).reduce((a,mf)=>a+(mf.fee||0),0);
-    const stProfit=(st.clientFee||0)-stMentorCost;
-    const pip=st.status==='completed'?'#27ae60':st.status==='active'?'#d68910':'#bdc3c7';
-    const sb=st.status==='completed'?'b-green':st.status==='active'?'b-amber':'b-grey';
-    const mfStr=(st.mentorFees||[]).map(mf=>{const m=DB.contacts.find(c=>c.id===mf.mentorId);return`${m?m.name.split(' ')[0]:'?'}: ${fmt(mf.fee)}`;}).join(', ')||'—';
-    return`<tr>
-      <td><div style="display:flex;align-items:center;gap:7px"><div style="width:9px;height:9px;border-radius:50%;background:${pip};flex-shrink:0"></div><span style="font-size:12px;font-weight:600">${st.name}</span></div></td>
-      <td><span class="badge ${sb}">${st.status}</span></td>
-      <td style="font-size:12px;font-weight:600;color:var(--cadmium)">${fmt(st.clientFee||0)}</td>
-      <td style="font-size:11px;color:var(--muted)">${mfStr}</td>
-      <td style="font-size:12px;font-weight:600;color:${stProfit>=0?'var(--success)':'#c0392b'}">${fmt(stProfit)}</td>
-      <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openStageModal('${id}','${st.id}')">Edit</button><button class="btn btn-sm btn-danger" onclick="deleteStage('${id}','${st.id}')">&#10005;</button></div></td>
-    </tr>`;
-  }).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted);font-size:12px">No stages yet &#8212; click + Add Stage below</td></tr>`;
-  showModal(`<div class="mhdr"><h3>${e.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div style="display:flex;gap:7px;margin-bottom:14px;align-items:center;flex-wrap:wrap">
-      <span class="badge type-team">Team</span><span class="badge ${stBadge}">${e.status}</span>
-      ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
-      ${cl?`<span style="font-size:11px;color:var(--muted)">Client: <strong style="color:var(--nearblack)">${cl.name}</strong></span>`:''}
-      ${e.startDate?`<span style="font-size:11px;color:var(--muted)">${e.startDate}${e.endDate?' &#8594; '+e.endDate:''}</span>`:''}
-    </div>
-    <div class="fstitle" style="margin-bottom:7px">Team Mentors</div>
-    <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">
-      ${mentors.map(m=>`<span class="mentor-tag">${m.name}<button onclick="generateMentorFee('${id}','${m.id}')" title="Fee Summary" style="background:none;border:none;cursor:pointer;font-size:9px;font-weight:700;color:#A0191A;padding:0 2px;margin-left:1px" title="Fee Summary">PDF</button><button onclick="removeProjMentor('${id}','${m.id}')" title="Remove">&#215;</button></span>`).join('')}
-      ${mentors.length===0?`<span style="font-size:11px;color:var(--muted)">No mentors assigned</span>`:''}
-    </div>
-    ${avail.length>0?`<div style="display:flex;gap:6px;margin-bottom:16px">
-      <select id="proj-add-mentor" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);color:var(--nearblack)">
-        <option value="">Add mentor to project&#8230;</option>
-        ${avail.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}
-      </select>
-      <button class="btn btn-sm btn-outline" onclick="addProjMentor('${id}')">+ Add</button>
-    </div>`:`<div style="margin-bottom:16px"></div>`}
-    <div class="fstitle" style="margin-bottom:7px">Project Stages (${completedStages}/${stages.length} complete)</div>
-    <table class="tbl" style="margin-bottom:10px">
-      <thead><tr><th>Stage</th><th>Status</th><th>Client Fee</th><th>Mentor Costs</th><th>Stage Profit</th><th>Actions</th></tr></thead>
-      <tbody>${stageRows}</tbody>
-      ${stages.length>0?`<tfoot><tr style="background:var(--halfnarrow)"><td colspan="2" style="font-size:12px;font-weight:700">Total</td><td style="font-size:12px;font-weight:700;color:var(--cadmium)">${fmt(totalClientFee)}</td><td style="font-size:12px;font-weight:700">${fmt(totalMentorCost)}</td><td style="font-size:12px;font-weight:700;color:${profit>=0?'var(--success)':'#c0392b'}">${fmt(profit)}</td><td></td></tr></tfoot>`:''}
-    </table>
-    ${stages.length>0?`<div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
-        <span style="font-weight:600">Project Profitability</span>
-        <span style="font-weight:700;font-size:13px;color:${margin>=0?'var(--success)':'#c0392b'}">${margin}% margin &nbsp;&#183;&nbsp; ${fmt(profit)} profit</span>
-      </div>
-      <div class="profit-bar-track">
-        <div class="pbar-cost" style="width:${costPct}%"></div>
-        <div class="pbar-profit" style="width:${profitPct}%"></div>
-      </div>
-      <div style="display:flex;gap:14px;font-size:10px;margin-top:4px;color:var(--muted)">
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#c0392b;margin-right:3px"></span>Cost ${fmt(totalMentorCost)}</span>
-        <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#27ae60;margin-right:3px"></span>Profit ${fmt(profit)}</span>
-      </div>
-    </div>`:''}
-    <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:4px">
-      <button class="btn btn-primary" onclick="openStageModal('${id}',null)">+ Add Stage</button>
-      <button class="btn btn-outline" onclick="openProjTaskModal('${id}')">+ Task</button>
-      <button class="btn btn-outline" onclick="closeModal();openEngModal('${id}')">Edit Details</button>
-      <button class="btn btn-outline" style="border-color:#5E1100;color:#5E1100" onclick="generateSOW('${id}')">&#128221; SOW</button>
-      <button class="btn btn-outline" onclick="closeModal()">Close</button>
-    </div>
-  </div>`,true);
-}
-
-function addProjMentor(engId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  const sel=document.getElementById('proj-add-mentor');
-  const mid=sel.value; if(!mid) return;
-  if(!e.mentorIds) e.mentorIds=[];
-  if(e.mentorId&&!e.mentorIds.includes(e.mentorId)) e.mentorIds.unshift(e.mentorId);
-  if(!e.mentorIds.includes(mid)) e.mentorIds.push(mid);
-  if(!e.mentorId) e.mentorId=mid;
-  save();closeModal();openProjDetail(engId);
-}
-
-function removeProjMentor(engId,mentorId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  e.mentorIds=(e.mentorIds||[]).filter(id=>id!==mentorId);
-  if(e.mentorId===mentorId) e.mentorId=e.mentorIds[0]||'';
-  save();closeModal();openProjDetail(engId);
-}
-
-function openStageModal(engId,stageId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  const st=stageId?(e.stages||[]).find(s=>s.id===stageId):null;
-  const mentorIds=(e.mentorIds&&e.mentorIds.length)?[...e.mentorIds]:e.mentorId?[e.mentorId]:[];
-  const mentors=mentorIds.map(mid=>DB.contacts.find(c=>c.id===mid)).filter(Boolean);
-  const mFeeFields=mentors.map(m=>{
-    const ex=(st&&st.mentorFees||[]).find(mf=>mf.mentorId===m.id);
-    return`<div class="fgrow" style="align-items:center;gap:10px">
-      <div style="flex:1;font-size:12px;font-weight:600;min-width:100px">${m.name}</div>
-      <div class="fg" style="flex:1"><label>Fee (&#163;)</label><input class="mfee-inp" data-mid="${m.id}" type="number" value="${ex?ex.fee:''}" placeholder="0"></div>
-    </div>`;
-  }).join('');
-  showModal(`<div class="mhdr"><h3>${st?'Edit Stage':'New Stage'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fgrow">
-      <div class="fg"><label>Stage Name</label><input id="stg-name" type="text" value="${st?st.name:''}" placeholder="e.g. Discovery, Design, Delivery"></div>
-      <div class="fg"><label>Status</label><select id="stg-status">
-        <option value="pending"${!st||st.status==='pending'?' selected':''}>Pending</option>
-        <option value="active"${st&&st.status==='active'?' selected':''}>Active</option>
-        <option value="completed"${st&&st.status==='completed'?' selected':''}>Completed</option>
-      </select></div>
-    </div>
-    <div class="fg"><label>Client Fee for this Stage (&#163;)</label><input id="stg-client-fee" type="number" value="${st?st.clientFee:''}" placeholder="0"></div>
-    ${mentors.length>0?`<div class="fstitle" style="margin:10px 0 6px">Mentor Fees for this Stage</div>${mFeeFields}`:'<div style="font-size:11px;color:var(--muted);padding:6px 0">Assign mentors to the project first to set their per-stage fees.</div>'}
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
-      <button class="btn btn-outline" onclick="closeModal();openProjDetail('${engId}')">Cancel</button>
-      <button class="btn btn-primary" onclick="saveStage('${engId}','${stageId||''}')">Save Stage</button>
-    </div>
-  </div>`);
-}
-
-function saveStage(engId,stageId){
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  const name=document.getElementById('stg-name').value.trim();
-  if(!name) return alert('Please enter a stage name.');
-  const clientFee=parseFloat(document.getElementById('stg-client-fee').value)||0;
-  const status=document.getElementById('stg-status').value;
-  const mentorFees=[];
-  document.querySelectorAll('.mfee-inp').forEach(inp=>{
-    mentorFees.push({mentorId:inp.dataset.mid,fee:parseFloat(inp.value)||0});
-  });
-  if(!e.stages) e.stages=[];
-  if(stageId){
-    const idx=e.stages.findIndex(s=>s.id===stageId);
-    if(idx!==-1) e.stages[idx]={...e.stages[idx],name,status,clientFee,mentorFees};
-  } else {
-    e.stages.push({id:uid(),name,status,clientFee,mentorFees});
-  }
-  save();closeModal();openProjDetail(engId);
-}
-
-function deleteStage(engId,stageId){
-  if(!confirm('Delete this stage?')) return;
-  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
-  e.stages=(e.stages||[]).filter(s=>s.id!==stageId);
-  save();closeModal();openProjDetail(engId);
-}
-
-/* ── QUOTING ─────────────────────────────────────────────────── */
-function rQuoting(c){
-  if(!DB.quotes) DB.quotes=[];
-  const stFilter=S.tab.quoteSt||'';
-  const partFilter=S.tab.quotePart||'';
-  let quotes=DB.quotes.filter(q=>{
-    if(stFilter&&q.status!==stFilter) return false;
-    if(partFilter&&q.partner!==partFilter) return false;
-    return true;
-  });
-  const hasFilter=stFilter||partFilter;
-  const totalVal=DB.quotes.reduce((s,q)=>s+q.value,0);
-  const approvedVal=DB.quotes.filter(q=>q.status==='approved').reduce((s,q)=>s+q.value,0);
-  const stBadgeMap={draft:'b-grey',sent:'b-blue',approved:'b-green',declined:'b-red'};
-  c.innerHTML=`
-  <div class="phdr"><div><h2>Quoting</h2><p>${DB.quotes.length} quotes · ${fmt(approvedVal)} approved value</p></div>
-  <button class="btn btn-primary" onclick="openQuoteModal()">+ New Quote</button></div>
-  <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
-    ${[
-      {label:'Total Quotes',val:DB.quotes.length,sub:'all time'},
-      {label:'Total Value',val:fmt(totalVal),sub:'pipeline'},
-      {label:'Approved',val:DB.quotes.filter(q=>q.status==='approved').length,sub:fmt(approvedVal)+' value',cls:'accent'},
-      {label:'Awaiting Response',val:DB.quotes.filter(q=>q.status==='sent').length,sub:'sent quotes',cls:'gold'},
-    ].map(k=>`<div class="kpi${k.cls?' '+k.cls:''}"><div class="kpi-label">${k.label}</div><div class="kpi-val">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('')}
-  </div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-    <select class="filter-sel" onchange="S.tab.quoteSt=this.value;renderView()">
-      <option value="">All Statuses</option>
-      ${['draft','sent','approved','declined'].map(s=>`<option value="${s}"${stFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
-    </select>
-    <select class="filter-sel" onchange="S.tab.quotePart=this.value;renderView()">
-      <option value="">All Partners</option>
-      ${PARTNERS.map(p=>`<option value="${p}"${partFilter===p?' selected':''}>${p}</option>`).join('')}
-    </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.tab.quoteSt='';S.tab.quotePart='';renderView()">&#10005; Clear</button>`:''}
-  </div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Quote Name</th><th>Client</th><th>Solution</th><th>Value</th><th>Partner</th><th>Date</th><th>Valid Until</th><th>Status</th><th>Actions</th></tr></thead>
-    <tbody>${quotes.length?quotes.map(q=>{
-      const client=DB.contacts.find(x=>x.id===q.clientId);
-      const sb=stBadgeMap[q.status]||'b-grey';
-      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[q.solution]||'b-grey';
+    <table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Entity</th><th>Partner (for EAs)</th><th>Last Active</th><th>Actions</th></tr></thead>
+    <tbody>
+    ${profiles.length===0?`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No users found. Users appear here after their first login.</td></tr>`:
+    profiles.map(p=>{const d=p.data||{};
       return`<tr>
-        <td><div style="font-weight:600;font-size:12px">${q.name}</div>${q.notes?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${q.notes.slice(0,60)}${q.notes.length>60?'…':''}</div>`:''}</td>
-        <td style="font-size:12px">${client?client.name:'—'}</td>
-        <td><span class="badge ${tb}">${q.solution}</span></td>
-        <td style="font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;color:var(--cadmium)">${fmt(q.value)}</td>
-        <td style="font-size:12px">${q.partner||'—'}</td>
-        <td style="font-size:11px;color:var(--muted)">${q.date||'—'}</td>
-        <td style="font-size:11px;color:${q.validUntil<today()?'var(--venetian)':'var(--muted)'}">${q.validUntil||'—'}</td>
-        <td><span class="badge ${sb}">${q.status}</span></td>
-        <td><div class="acts">
-          <button class="btn btn-sm btn-outline" onclick="openQuoteModal('${q.id}')">Edit</button>
-          ${q.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendQuote('${q.id}')">Send</button>`:''}
-          ${q.status==='sent'?`<button class="btn btn-sm btn-success" onclick="approveQuote('${q.id}')">Approve</button>`:''}
-          ${q.status==='sent'?`<button class="btn btn-sm btn-danger" onclick="declineQuote('${q.id}')">Decline</button>`:''}
-        </div></td></tr>`;
-    }).join(''):`<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted)">No quotes found.</td></tr>`}</tbody></table>
+        <td><div style="font-weight:600;font-size:12px">${d.name||'â'}</div></td>
+        <td><span class="badge b-grey">${roleLabels[d.role]||d.role||'â'}</span></td>
+        <td style="font-size:12px">${d.entity||'â'}</td>
+        <td style="font-size:12px;color:var(--muted)">${d.partnerName||'â'}</td>
+        <td style="font-size:11px;color:var(--muted)">${p.updated_at?new Date(p.updated_at).toLocaleDateString('en-GB'):'â'}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="openAdminUserModal('${p.id}',${JSON.stringify(JSON.stringify(d)).replace(/'/g,'&#39;')})">Edit</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
   </div>`;
 }
 
-function sendQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='sent';addAct('◎',`Quote sent: ${q.name}`);save();renderView();}}
-function approveQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='approved';addAct('◎',`Quote approved: ${q.name} — ${fmt(q.value)}`);save();renderView();}}
-function declineQuote(id){const q=DB.quotes.find(x=>x.id===id);if(q){q.status='declined';save();renderView();}}
-
-function openQuoteModal(id){
-  const q=id?DB.quotes.find(x=>x.id===id):null;
-  const clients=DB.contacts.filter(c=>c.type==='client');
-  showModal(`<div class="mhdr"><h3>${q?'Edit Quote':'New Quote'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+function openAdminUserModal(userId, dataStr){
+  const d=dataStr?JSON.parse(dataStr):{};
+  showModal(`<div class="mhdr"><h3>${userId?'Edit User':'User Slot'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
-    <div class="fg"><label>Quote Name</label><input id="qm-name" type="text" value="${q?q.name:''}" placeholder="e.g. Unilever Leadership Programme"></div>
+    <div class="fg"><label>Name</label><input id="au-name" type="text" value="${d.name||''}" placeholder="Full name"></div>
     <div class="fgrow">
-      <div class="fg"><label>Client</label><select id="qm-client">
-        <option value="">— Select Client —</option>
-        ${clients.map(cl=>`<option value="${cl.id}"${q&&q.clientId===cl.id?' selected':''}>${cl.name}</option>`).join('')}
+      <div class="fg"><label>Role</label><select id="au-role" onchange="document.getElementById('au-partner-row').style.display=this.value==='ea'?'block':'none'">
+        ${['rm','ea','partner','finance','admin','ops'].map(r=>`<option value="${r}"${d.role===r?' selected':''}>${{rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'}[r]}</option>`).join('')}
       </select></div>
-      <div class="fg"><label>Solution</label><select id="qm-sol">
-        <option value="chair"${q&&q.solution==='chair'?' selected':''}>Chair Mentoring</option>
-        <option value="executive"${!q||q.solution==='executive'?' selected':''}>Executive Mentoring</option>
-        <option value="team"${q&&q.solution==='team'?' selected':''}>Team Engagement</option>
+      <div class="fg"><label>Entity</label><select id="au-entity">
+        ${['GMG','CMi','Merryck'].map(e=>`<option value="${e}"${d.entity===e?' selected':''}>${e}</option>`).join('')}
       </select></div>
     </div>
-    <div class="fgrow">
-      <div class="fg"><label>Value (£)</label><input id="qm-val" type="number" value="${q?q.value:''}" placeholder="0"></div>
-      <div class="fg"><label>Valid Until</label><input id="qm-valid" type="date" value="${q?q.validUntil:''}"></div>
+    <div class="fg" id="au-partner-row" style="display:${d.role==='ea'?'block':'none'}">
+      <label>Partner Name (EA only)</label><input id="au-partner" type="text" value="${d.partnerName||''}" placeholder="Name of partner they support">
     </div>
-    <div class="fgrow">
-      <div class="fg"><label>Partner</label><select id="qm-partner">
-        ${PARTNERS.map(p=>`<option value="${p}"${q&&q.partner===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Country</label><select id="qm-country">
-        ${COUNTRIES.map(cn=>`<option value="${cn}"${q&&q.country===cn?' selected':''}>${cn}</option>`).join('')}
-      </select></div>
-    </div>
-    <div class="fg"><label>Notes</label><textarea id="qm-notes" rows="3">${q?q.notes:''}<\/textarea></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveQuote('${id||''}')">Save Quote</button>
+      <button class="btn btn-primary" onclick="saveAdminUser('${userId||''}')">Save</button>
     </div>
   </div>`);
 }
 
-function saveQuote(id){
-  const name=document.getElementById('qm-name').value.trim();
-  if(!name)return alert('Please enter a quote name.');
-  const val=parseFloat(document.getElementById('qm-val').value)||0;
-  if(id){
-    const q=DB.quotes.find(x=>x.id===id);
-    if(q){q.name=name;q.clientId=document.getElementById('qm-client').value;q.solution=document.getElementById('qm-sol').value;q.value=val;q.validUntil=document.getElementById('qm-valid').value;q.partner=document.getElementById('qm-partner').value;q.country=document.getElementById('qm-country').value;q.notes=document.getElementById('qm-notes').value.trim();}
-  } else {
-    DB.quotes.push({id:uid(),name,clientId:document.getElementById('qm-client').value,solution:document.getElementById('qm-sol').value,value:val,status:'draft',date:today(),validUntil:document.getElementById('qm-valid').value,partner:document.getElementById('qm-partner').value,country:document.getElementById('qm-country').value,notes:document.getElementById('qm-notes').value.trim()});
-    addAct('◎',`Quote created: ${name} — ${fmt(val)}`);
-  }
-  save();closeModal();renderView();
+async function saveAdminUser(userId){
+  if(!userId) return closeModal();
+  const n=k=>document.getElementById(k);
+  const data={name:n('au-name').value.trim(),role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?.value.trim()||''};
+  try{
+    await sb.from('profiles').update({data,updated_at:new Date().toISOString()}).eq('id',userId);
+    closeModal(); S.view='admin'; renderView();
+  }catch(e){alert('Error saving: '+e.message);}
 }
 
-/* ── PIPELINE ────────────────────────────────────────────────── */
+
 function rPipeline(c){
   if(!DB.opportunities) DB.opportunities=[];
   const partnerF=S.tab.plPartner||'';
