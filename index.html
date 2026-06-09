@@ -32,7 +32,7 @@ input,select,textarea{font-family:inherit;outline:none}
 /* Sidebar */
 .sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;background:var(--burnt)}
 .sb-icon{width:36px;height:36px;flex-shrink:0}
-.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-weight:700;color:#fff;line-height:1.2}
+.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2}
 .sb-brand span{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.8px;text-transform:uppercase}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
 .sb-section{padding:8px 16px 2px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px}
@@ -174,7 +174,7 @@ input,select,textarea{font-family:inherit;outline:none}
 .login-card{background:var(--white);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .login-logo svg{width:40px;height:40px}
-.login-logo span{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:700;letter-spacing:-0.3px}
+.login-logo span{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;letter-spacing:-0.3px}
 .login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;margin-bottom:4px}
 .login-card p{font-size:12px;color:var(--muted);margin-bottom:20px}
 
@@ -2505,6 +2505,73 @@ async function saveAdminUser(userId){
   }catch(e){alert('Error saving: '+e.message);}
 }
 
+
+function rEngagements(c){
+  if(!DB.engagements) DB.engagements=[];
+  const statusF=S.tab.engStatus||'';
+  const typeF=S.tab.engType||'';
+  const partnerF=S.tab.engPartner||'';
+  let engs=DB.engagements.filter(e=>{
+    if(statusF&&e.status!==statusF) return false;
+    if(typeF&&e.type!==typeF) return false;
+    if(partnerF&&e.partner!==partnerF) return false;
+    return true;
+  });
+  const allPartners=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
+  const active=DB.engagements.filter(e=>e.status==='active');
+  const ytdRev=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
+  const hasFilter=statusF||typeF||partnerF;
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.length} total Â· ${active.length} active</p></div>
+  <button class="btn btn-primary" onclick="openEngModal()">+ New Engagement</button></div>
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${active.length}</div>
+      <div class="kpi-sub">${active.filter(e=>e.type==='chair').length} Chair Â· ${active.filter(e=>e.type==='executive').length} Exec Â· ${active.filter(e=>e.type==='team').length} Team</div></div>
+    <div class="kpi gold"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdRev)}</div></div>
+    <div class="kpi"><div class="kpi-label">Planning</div><div class="kpi-val">${DB.engagements.filter(e=>e.status==='planning').length}</div></div>
+    <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${DB.engagements.filter(e=>e.status==='completed').length}</div></div>
+  </div>
+  <div class="filter-row" style="margin-bottom:12px">
+    <select onchange="S.tab.engStatus=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${['active','planning','completed','paused'].map(s=>`<option value="${s}"${statusF===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.engType=this.value;renderView()">
+      <option value="">All Types</option>
+      <option value="chair"${typeF==='chair'?' selected':''}>Chair</option>
+      <option value="executive"${typeF==='executive'?' selected':''}>Executive</option>
+      <option value="team"${typeF==='team'?' selected':''}>Team</option>
+    </select>
+    <select onchange="S.tab.engPartner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${allPartners.map(p=>`<option value="${p}"${partnerF===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.engStatus='';S.tab.engType='';S.tab.engPartner='';renderView()">&#10005; Clear</button>`:''}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>
+    ${engs.length===0?`<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">No engagements found.</td></tr>`:
+    engs.map(e=>{
+      const cl=DB.contacts.find(x=>x.id===e.clientId);
+      const mn=DB.contacts.find(x=>x.id===e.mentorId);
+      const fee=fmt(e.annualFee||e.totalFee||e.quarterlyFee||0);
+      const feeLabel=e.annualFee?'pa':e.totalFee?'total':e.quarterlyFee?'qtr':'';
+      return`<tr>
+        <td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.startDate||''}${e.endDate?' â '+e.endDate:''}</div></td>
+        <td><span class="badge ${tb[e.type]||'b-grey'}">${e.type}</span></td>
+        <td style="font-size:12px">${cl?.name||'â'}</td>
+        <td style="font-size:12px">${mn?.name?.split('â')[0]?.trim()||'â'}</td>
+        <td style="font-size:12px">${e.partner||'â'}</td>
+        <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
+        <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
+        <td><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>`;
+}
 
 function rPipeline(c){
   if(!DB.opportunities) DB.opportunities=[];
