@@ -295,6 +295,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div id="login-err" class="login-err"></div>
     <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Sign In</button>
+    <p style="text-align:center;margin-top:10px"><a href="#" onclick="resetPwd();return false;" style="font-size:13px;color:var(--venetian);text-decoration:none;opacity:0.8">Forgot password?</a></p>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">New staff? <a href="#" onclick="showSignup();return false">Create an account</a></p>
   </div>
   <div id="signup-form" style="display:none">
@@ -3866,6 +3867,15 @@ async function savePartnerSplits(engId){
   closeModal();renderView();
 }
 
+async function resetPwd(){
+  const emailEl=document.getElementById('login-email');
+  if(!emailEl){alert('Could not find email field.');return;}
+  const email=emailEl.value.trim();
+  if(!email){alert('Enter your email address first.');return;}
+  const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+  if(error){alert('Error: '+error.message);}
+  else{alert('Reset link sent to '+email+' - check your inbox.');}
+}
 </script>
 
 <!-- CLAUDE CHAT BAR -->
