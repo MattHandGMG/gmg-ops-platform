@@ -1887,22 +1887,22 @@ contacts:[
   }
 ],
 engagements:[
-  {id:'e1',type:'chair',name:'Deloitte — Chair Mentoring: Sarah Okonkwo',clientId:'c1',mentorId:'m4',status:'active',startDate:'2026-01-15',endDate:'2026-12-31',coordinator:'Matt Hand',
+  {id:'e1',type:'chair',name:'Deloitte — Chair Mentoring: Sarah Okonkwo',clientId:'c1',mentorId:'m4',status:'active',community:'CMi',startDate:'2026-01-15',endDate:'2026-12-31',coordinator:'Matt Hand',
    partner:'Matt Hand',country:'United Kingdom',
    annualFee:48000,sessionsIncluded:12,sessionRate:4000,sessionsUsed:4,notes:'Annual chair mentoring for Deloitte CFO.',createdAt:'2025-12-01'},
-  {id:'e2',type:'executive',name:'HSBC — Executive Mentoring: James Thornton',clientId:'c2',mentorId:'m1',status:'active',startDate:'2026-01-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
+  {id:'e2',type:'executive',name:'HSBC — Executive Mentoring: James Thornton',clientId:'c2',mentorId:'m1',status:'active',community:'Merryck',startDate:'2026-01-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
    partner:'Sarah Chen',country:'United Kingdom',
    quarterlyFee:18000,annualFee:72000,notes:'Quarterly invoicing. Marcus leads.',createdAt:'2025-11-15'},
-  {id:'e3',type:'executive',name:'Cabinet Office — Senior Civil Service',clientId:'c3',mentorId:'m2',status:'active',startDate:'2026-03-01',endDate:'2026-08-31',coordinator:'Matt Hand',
+  {id:'e3',type:'executive',name:'Cabinet Office — Senior Civil Service',clientId:'c3',mentorId:'m2',status:'active',community:'GMG',startDate:'2026-03-01',endDate:'2026-08-31',coordinator:'Matt Hand',
    partner:'Matt Hand',country:'United Kingdom',
    quarterlyFee:15000,annualFee:30000,notes:'6-month programme. Dr Sharma leads.',createdAt:'2026-02-01'},
-  {id:'e4',type:'team',name:'Barclays — Leadership Transition Workshop',clientId:'c4',mentorId:'m3',status:'active',startDate:'2026-06-15',endDate:'2026-09-15',coordinator:'James Okafor',
+  {id:'e4',type:'team',name:'Barclays — Leadership Transition Workshop',clientId:'c4',mentorId:'m3',status:'active',community:'CMi',startDate:'2026-06-15',endDate:'2026-09-15',coordinator:'James Okafor',
    partner:'James Okafor',country:'United Kingdom',
    totalFee:85000,mentorFee:28000,notes:'Team engagement for 12 senior leaders.',createdAt:'2026-04-20'},
-  {id:'e5',type:'chair',name:'Cabinet Office — Chair Mentoring: Dame C. Walsh',clientId:'c3',mentorId:'m4',status:'active',startDate:'2026-04-01',endDate:'2027-03-31',coordinator:'Matt Hand',
+  {id:'e5',type:'chair',name:'Cabinet Office — Chair Mentoring: Dame C. Walsh',clientId:'c3',mentorId:'m4',status:'active',community:'GMG',startDate:'2026-04-01',endDate:'2027-03-31',coordinator:'Matt Hand',
    partner:'Matt Hand',country:'United Kingdom',
    annualFee:52000,sessionsIncluded:10,sessionRate:5200,sessionsUsed:2,notes:'Second GMG chair engagement at Cabinet Office.',createdAt:'2026-03-10'},
-  {id:'e6',type:'executive',name:'Deloitte — Executive Mentoring: R. Mehta',clientId:'c1',mentorId:'m1',status:'planning',startDate:'2026-07-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
+  {id:'e6',type:'executive',name:'Deloitte — Executive Mentoring: R. Mehta',clientId:'c1',mentorId:'m1',status:'planning',community:'Merryck',startDate:'2026-07-01',endDate:'2026-12-31',coordinator:'Sarah Chen',
    partner:'Sarah Chen',country:'United Kingdom',
    quarterlyFee:9000,annualFee:18000,notes:'Awaiting sign-off from Deloitte HR.',createdAt:'2026-05-01'},
 ],
@@ -2304,7 +2304,7 @@ function rEngagements(c){
     <span style="font-size:11px;color:var(--muted);margin-left:4px">${engs.length} result${engs.length!==1?'s':''}</span>
   </div>
   <div class="card">
-    <table class="tbl"><thead><tr><th>Engagement</th><th>Solution</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Country</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
+    <table class="tbl"><thead><tr><th>Engagement</th><th>Solution</th><th>Community</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Value</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>${engs.length?engs.map(e=>{
       const cl=DB.contacts.find(x=>x.id===e.clientId);
       const mn=DB.contacts.find(x=>x.id===e.mentorId);
@@ -2316,7 +2316,7 @@ function rEngagements(c){
       <td style="font-size:12px">${cl?.name||'—'}</td>
       <td style="font-size:12px">${mn?.name||'—'}</td>
       <td style="font-size:12px">${e.partner||'—'}</td>
-      <td style="font-size:12px">${e.country||'—'}</td>
+      <td><span class="badge ${e.community==='CMi'?'b-black':e.community==='Merryck'?'type-executive':'b-blue'}" style="font-size:10px">${e.community||'—'}</span></td>
       <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val||0)}</td>
       <td><span class="badge ${sb}">${e.status}</span></td>
       <td><div class="acts"><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button><button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></div></td></tr>`;
@@ -2354,6 +2354,8 @@ function openEngDetail(id){
     <div class="ir"><span class="lbl">Coordinator</span><span class="val">${e.coordinator}</span></div>
     <div class="ir"><span class="lbl">Partner</span><span class="val">${e.partner||'—'}</span></div>
     <div class="ir"><span class="lbl">Country</span><span class="val">${e.country||'—'}</span></div>
+    <div class="ir"><span class="lbl">Community</span><span class="val"><span class="badge ${e.community==='CMi'?'b-black':e.community==='Merryck'?'type-executive':'b-blue'}">${e.community||'GMG'}</span></span></div>
+    <div class="ir"><span class="lbl">Billing Entity</span><span class="val">${e.billingEntity||'<span style="color:var(--muted);font-style:italic">Not set</span>'}</span></div>
     <div class="ir"><span class="lbl">Dates</span><span class="val">${e.startDate} &#8594; ${e.endDate}</span></div>
     <div class="fstitle" style="margin-top:12px">Financial Terms</div>
     ${typeInfo}
@@ -2369,6 +2371,38 @@ function openEngDetail(id){
         <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:700">${enPay.length}</div>
         <div style="font-size:10px;color:var(--muted)">Payments</div></div>
     </div>
+    <!-- Notes / Comments -->
+    <div class="fstitle" style="margin-top:16px">Notes &amp; Comments</div>
+    <div id="eng-comments-${e.id}" style="max-height:180px;overflow-y:auto;margin-bottom:8px">
+      ${(e.comments||[]).length===0?'<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px 0">No comments yet.</div>':
+        (e.comments||[]).map(cm=>`<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:11px;color:var(--muted)">${cm.author||''}  ·  ${cm.date||''}</div>
+          <div style="font-size:12px;margin-top:2px">${cm.text||''}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <input id="new-comment-${e.id}" type="text" class="inp" placeholder="Add a comment…" style="flex:1" onkeydown="if(event.key==='Enter')addEngComment('${e.id}')">
+      <button class="btn btn-sm btn-primary" onclick="addEngComment('${e.id}')">Post</button>
+    </div>
+
+    <!-- Files -->
+    <div class="fstitle" style="margin-top:4px">Files</div>
+    <div style="margin-bottom:8px">
+      ${(e.files||[]).length===0?'<div style="font-size:12px;color:var(--muted);font-style:italic;padding:6px 0">No files attached.</div>':
+        (e.files||[]).map((f,fi)=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:13px">&#128196;</span>
+          <span style="font-size:12px;flex:1">${f.name||'File'}</span>
+          <span style="font-size:11px;color:var(--muted)">${f.size||''}</span>
+          <a href="${f.data||'#'}" download="${f.name||'file'}" style="font-size:11px;color:var(--cadmium)">Download</a>
+          <button onclick="removeEngFile('${e.id}',${fi})" style="border:none;background:none;cursor:pointer;color:var(--muted);font-size:13px">&#10005;</button>
+        </div>`).join('')}
+    </div>
+    <div style="margin-bottom:14px">
+      <label class="btn btn-sm btn-outline" style="cursor:pointer">&#128206; Attach File
+        <input type="file" style="display:none" onchange="addEngFile('${e.id}',this)">
+      </label>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
       <button class="btn btn-sm btn-outline" onclick="closeModal();openEngModal('${e.id}')">&#9999; Edit</button>
       ${e.type==='chair'?`<button class="btn btn-sm btn-outline" onclick="closeModal();openSessionModal('${e.id}')">+ Log Session</button>`:''}
@@ -2380,6 +2414,30 @@ function openEngDetail(id){
   </div>`,true);
 }
 
+function addEngComment(engId){
+  const inp=document.getElementById('new-comment-'+engId);
+  if(!inp||!inp.value.trim()) return;
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  if(!e.comments) e.comments=[];
+  const now=new Date();
+  e.comments.push({text:inp.value.trim(),author:S.user.name,date:now.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})});
+  save(); openEngDetail(engId);
+}
+function addEngFile(engId,input){
+  const file=input.files[0]; if(!file) return;
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  if(!e.files) e.files=[];
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    e.files.push({name:file.name,size:(file.size/1024).toFixed(0)+'KB',data:ev.target.result,uploaded:new Date().toISOString().slice(0,10)});
+    save(); openEngDetail(engId);
+  };
+  reader.readAsDataURL(file);
+}
+function removeEngFile(engId,idx){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e||!e.files) return;
+  e.files.splice(idx,1); save(); openEngDetail(engId);
+}
 function deleteEng(id){
   if(!confirm('Delete this engagement? This cannot be undone.')) return;
   DB.engagements=DB.engagements.filter(e=>e.id!==id);
@@ -2715,6 +2773,64 @@ function rContacts(c){
   </div>`;
 }
 function deleteCon(id){if(!confirm('Delete contact?'))return;DB.contacts=DB.contacts.filter(c=>c.id!==id);save();renderView();}
+
+function openContactModal(id, defaultType){
+  const ct=id?DB.contacts.find(x=>x.id===id):null;
+  const type=ct?ct.type:(defaultType||'client');
+  showModal(`<div class="mhdr"><h3>${ct?'Edit Contact':'New '+(type==='mentor'?'Mentor':'Contact')}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <input type="hidden" id="cm-type" value="${type}">
+    <div class="fgrow">
+      <div class="fg"><label>Full Name</label><input id="cm-name" type="text" value="${ct?ct.name:''}" placeholder="Full name"></div>
+      <div class="fg"><label>Title / Role</label><input id="cm-title" type="text" value="${ct?ct.title||'':''}" placeholder="e.g. CEO, Chair"></div>
+    </div>
+    <div class="fg"><label>Organisation</label><input id="cm-org" type="text" value="${ct?ct.org||'':''}" placeholder="Company or organisation"></div>
+    <div class="fg"><label>Billing Entity</label><input id="cm-billing" type="text" value="${ct?ct.billingEntity||'':''}" placeholder="Legal entity for invoices/bills"></div>
+    <div class="fgrow">
+      <div class="fg"><label>Email</label><input id="cm-email" type="email" value="${ct?ct.email||'':''}" placeholder="email@example.com"></div>
+      <div class="fg"><label>Phone</label><input id="cm-phone" type="tel" value="${ct?ct.phone||'':''}" placeholder="+44 ..."></div>
+    </div>
+    ${type==='mentor'?`
+    <div class="fgrow">
+      <div class="fg"><label>Community</label><select id="cm-community">
+        <option value="GMG"${ct&&ct.community==='GMG'?' selected':''}>GMG</option>
+        <option value="CMi"${ct&&ct.community==='CMi'?' selected':''}>CMi</option>
+        <option value="Merryck"${ct&&ct.community==='Merryck'?' selected':''}>Merryck</option>
+      </select></div>
+      <div class="fg"><label>Status</label><select id="cm-status">
+        <option value="active"${!ct||ct.status==='active'?' selected':''}>Active</option>
+        <option value="inactive"${ct&&ct.status==='inactive'?' selected':''}>Inactive</option>
+      </select></div>
+    </div>`:''}
+    <div class="fg"><label>Notes</label><textarea id="cm-notes" rows="3" style="width:100%;box-sizing:border-box">${ct?ct.notes||'':''}</textarea></div>
+    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveContact('${id||''}')">Save</button>
+    </div>
+  </div>`,true);
+}
+
+function saveContact(id){
+  const n=k=>document.getElementById(k);
+  const name=n('cm-name').value.trim();
+  if(!name) return alert('Name is required.');
+  const type=n('cm-type').value;
+  const data={name,type,title:n('cm-title').value.trim(),org:n('cm-org').value.trim(),
+    billingEntity:n('cm-billing').value.trim(),email:n('cm-email').value.trim(),
+    phone:n('cm-phone').value.trim(),notes:n('cm-notes').value.trim()};
+  if(type==='mentor'){
+    data.community=n('cm-community')?.value||'GMG';
+    data.status=n('cm-status')?.value||'active';
+  }
+  if(id){
+    const idx=DB.contacts.findIndex(x=>x.id===id);
+    if(idx>-1) DB.contacts[idx]={...DB.contacts[idx],...data};
+  } else {
+    data.id=uid();data.createdAt=new Date().toISOString().slice(0,10);
+    DB.contacts.push(data);
+  }
+  save();closeModal();renderView();
+}
 
 /* ── PROJECT MANAGEMENT ──────────────────────────────────────── */
 function rProjects(c){
@@ -3908,6 +4024,9 @@ function rMentors(c){
 }
 
 function rMentors(c){
+  // Auto-upgrade: replace stale mentors with seed if count is lower
+  const _sm=SEED.contacts.filter(x=>x.type==='mentor');
+  if(DB.contacts.filter(x=>x.type==='mentor').length<_sm.length){DB.contacts=[...DB.contacts.filter(x=>x.type!=='mentor'),..._sm];save();}
   const allMentors=DB.contacts.filter(x=>x.type==='mentor');
   const chairs=allMentors.filter(m=>mentorCategory(m)==='chair');
   const executives=allMentors.filter(m=>mentorCategory(m)==='executive');
@@ -4093,6 +4212,7 @@ function rMentorProfile(c){
 
       <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Contact</div>
+        ${m.billingEntity?`<div style="font-size:12px;margin-bottom:8px;display:flex;gap:8px"><span style="color:var(--muted)">Billing Entity</span><span style="font-weight:600">${m.billingEntity}</span></div>`:''}
         ${m.email?`<div style="font-size:12px;margin-bottom:8px;display:flex;gap:8px"><span style="color:var(--muted)">Email</span><span>${m.email}</span></div>`
           :`<div style="font-size:12px;color:var(--muted);font-style:italic">Contact details to be added</div>`}
         ${m.phone?`<div style="font-size:12px;display:flex;gap:8px"><span style="color:var(--muted)">Phone</span><span>${m.phone}</span></div>`:''}
@@ -4150,6 +4270,14 @@ function openEngModal(id){
       <div class="fg"><label>Country</label><select id="em-country">
         ${COUNTRIES.map(cn=>`<option value="${cn}"${e&&e.country===cn?' selected':''}>${cn}</option>`).join('')}
       </select></div>
+      <div class="fg"><label>Community</label><select id="em-community">
+        <option value="GMG"${e&&e.community==='GMG'?' selected':''}>GMG</option>
+        <option value="CMi"${e&&e.community==='CMi'?' selected':''}>CMi</option>
+        <option value="Merryck"${e&&e.community==='Merryck'?' selected':''}>Merryck</option>
+      </select></div>
+    </div>
+    <div class="fgrow">
+      <div class="fg"><label>Billing Entity</label><input id="em-billing" type="text" value="${e?e.billingEntity||'':''}" placeholder="Legal entity for invoices"></div>
       <div class="fg"><label>Annual Fee (£)</label><input id="em-fee" type="number" value="${e?e.annualFee||e.totalFee||'':''}" placeholder="0"></div>
     </div>
     <div id="em-exec-fields" style="${(!e||e.type==='executive')?'':'display:none'}">
@@ -4179,6 +4307,8 @@ function saveEng(id){
     name,type,clientId:n('em-client').value,mentorId:n('em-mentor').value,
     status:n('em-status').value,coordinator:n('em-coord').value.trim(),
     partner:n('em-partner').value.trim(),country:n('em-country').value.trim(),
+    community:n('em-community')?.value||'GMG',
+    billingEntity:n('em-billing')?.value.trim()||'',
     startDate:n('em-start').value,endDate:n('em-end').value,
     notes:n('em-notes').value.trim(),
   };
@@ -4270,13 +4400,4 @@ initApp();
   <span style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap;flex-shrink:0">Ask Claude</span>
   <input id="claude-input" type="text" placeholder="Search the platform or ask Claude anything…" onkeydown="if(event.key==='Enter')claudeAsk()">
   <button style="background:var(--venetian);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap" onclick="claudeAsk()">Ask</button>
-  <button style="background:none;border:1px solid var(--border);border-radius:20px;cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0;padding:6px 10px" onclick="setClaudeKey()" title="Set Anthropic API key">⚙ API Key</button>
-  <button style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);flex-shrink:0;padding:4px 8px" onclick="claudeClose()">✕</button>
-</div>
-<div id="claude-panel">
-  <button class="cp-close" onclick="claudeClose()">✕</button>
-  <div id="claude-msgs"></div>
-</div>
-
-</body>
-</html>
+  <button style="background:none;border:1px solid var(--border);border-radiu
