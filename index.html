@@ -175,6 +175,7 @@ input,select,textarea{font-family:inherit;outline:none}
 
 /* Login */
 #login{position:fixed;inset:0;background:var(--nearblack);display:flex;align-items:center;justify-content:center;z-index:9999}
+.fg:has(#li-pass){display:none}
 .login-card{background:var(--white);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .login-logo svg{width:52px;height:52px}
@@ -294,8 +295,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="fg"><label>Email</label><input id="li-email" type="email" placeholder="you@globalmentorsgroup.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div id="login-err" class="login-err"></div>
-    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Sign In</button>
-    <p style="text-align:center;margin-top:10px"><a href="#" onclick="resetPwd();return false;" style="font-size:13px;color:var(--venetian);text-decoration:none;opacity:0.8">Forgot password?</a></p>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Send Sign-In Link</button>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">New staff? <a href="#" onclick="showSignup();return false">Create an account</a></p>
   </div>
   <div id="reset-form" style="display:none">
@@ -2073,17 +2073,15 @@ function _signupOk(msg){const e=document.getElementById('signup-ok');e.textConte
 
 async function doLogin(){
   const email=document.getElementById('li-email').value.trim();
-  const pass=document.getElementById('li-pass').value;
-  document.getElementById('login-err').style.display='none';
-  if(!email||!pass)return _loginErr('Please enter your email and password.');
-  const btn=document.getElementById('login-btn');
-  btn.textContent='Signing in…';btn.disabled=true;
-  const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
-  btn.textContent='Sign In';btn.disabled=false;
+  if(!email)return _loginErr('Please enter your email address.');
+  const btn=document.querySelector('#login-form button[onclick]');
+  if(btn){btn.textContent='Sending...';btn.disabled=true;}
+  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname}});
+  if(btn){btn.textContent='Send Sign-In Link';btn.disabled=false;}
   if(error)return _loginErr(error.message);
-  await bootApp(data.user);
+  const errEl=document.getElementById('login-err');
+  if(errEl){errEl.style.display='block';errEl.style.color='#2d7a3a';errEl.textContent='Check your email — we sent you a sign-in link!';}
 }
-
 async function doSignup(){
   const name=document.getElementById('su-name').value.trim();
   const email=document.getElementById('su-email').value.trim();
