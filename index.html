@@ -3868,7 +3868,7 @@ async function savePartnerSplits(engId){
 }
 
 async function resetPwd(){
-  const emailEl=document.getElementById('login-email');
+  const emailEl=document.getElementById('li-email');
   if(!emailEl){alert('Could not find email field.');return;}
   const email=emailEl.value.trim();
   if(!email){alert('Enter your email address first.');return;}
