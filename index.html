@@ -32,7 +32,7 @@ input,select,textarea{font-family:inherit;outline:none}
 /* Sidebar */
 .sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:10px;background:var(--burnt)}
 .sb-icon{width:36px;height:36px;flex-shrink:0}
-.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2}
+.sb-brand strong{display:block;font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:700;color:#fff;line-height:1.2}
 .sb-brand span{font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.8px;text-transform:uppercase}
 .sb-nav{flex:1;padding:10px 0;overflow-y:auto}
 .sb-section{padding:8px 16px 2px;font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-top:6px}
@@ -2571,6 +2571,105 @@ function rEngagements(c){
     }).join('')}
     </tbody></table>
   </div>`;
+}
+
+function rQuoting(c){
+  if(!DB.quotes) DB.quotes=[];
+  const statusF=S.tab.qtStatus||'';
+  const partnerF=S.tab.qtPartner||'';
+  let qs=DB.quotes.filter(q=>{
+    if(statusF&&q.status!==statusF) return false;
+    if(partnerF&&q.partner!==partnerF) return false;
+    return true;
+  });
+  const allPartners=[...new Set(DB.quotes.map(q=>q.partner).filter(Boolean))];
+  const totalVal=DB.quotes.reduce((s,q)=>s+q.value,0);
+  const approvedVal=DB.quotes.filter(q=>q.status==='approved').reduce((s,q)=>s+q.value,0);
+  const hasFilter=statusF||partnerF;
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Quoting</h2><p>${DB.quotes.length} quotes Â· ${fmt(totalVal)} total value</p></div>
+  <button class="btn btn-primary" onclick="openQuoteModal()">+ New Quote</button></div>
+  <div class="kpi-grid">
+    ${['draft','sent','approved','declined'].map(s=>{
+      const sq=DB.quotes.filter(q=>q.status===s);
+      return`<div class="kpi${s==='approved'?' gold':''}"><div class="kpi-label">${s.charAt(0).toUpperCase()+s.slice(1)}</div><div class="kpi-val">${sq.length}</div>
+      <div class="kpi-sub">${fmt(sq.reduce((sum,q)=>sum+q.value,0))}</div></div>`;
+    }).join('')}
+  </div>
+  <div class="filter-row" style="margin-bottom:12px">
+    <select onchange="S.tab.qtStatus=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${['draft','sent','approved','declined'].map(s=>`<option value="${s}"${statusF===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.qtPartner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${allPartners.map(p=>`<option value="${p}"${partnerF===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.qtStatus='';S.tab.qtPartner='';renderView()">&#10005; Clear</button>`:''}
+  </div>
+  <div class="card">
+    <table class="tbl"><thead><tr><th>Quote Name</th><th>Solution</th><th>Client</th><th>Value</th><th>Partner</th><th>Status</th><th>Valid Until</th><th>Actions</th></tr></thead>
+    <tbody>
+    ${qs.length===0?`<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">No quotes found.</td></tr>`:
+    qs.map(q=>{
+      const cl=DB.contacts.find(x=>x.id===q.clientId);
+      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[q.solution]||'b-grey';
+      return`<tr>
+        <td><div style="font-weight:600;font-size:12px">${q.name}</div><div style="font-size:10px;color:var(--muted)">${q.date||''}</div></td>
+        <td><span class="badge ${tb}">${q.solution||'â'}</span></td>
+        <td style="font-size:12px">${cl?.name||q.clientId||'â'}</td>
+        <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(q.value)}</td>
+        <td style="font-size:12px">${q.partner||'â'}</td>
+        <td><span class="badge ${q.status==='approved'?'b-green':q.status==='sent'?'b-blue':q.status==='declined'?'b-red':'b-grey'}">${q.status}</span></td>
+        <td style="font-size:11px;color:var(--muted)">${q.validUntil||'â'}</td>
+        <td><button class="btn btn-sm btn-outline" onclick="openQuoteModal('${q.id}')">Edit</button></td>
+      </tr>`;
+    }).join('')}
+    </tbody></table>
+  </div>`;
+}
+
+function rProjects(c){
+  const engTasks=DB.tasks.filter(t=>t.type==='engagement'||t.ref);
+  const byEng={};
+  engTasks.forEach(t=>{
+    const key=t.ref||'misc';
+    if(!byEng[key]) byEng[key]=[];
+    byEng[key].push(t);
+  });
+  const openTasks=DB.tasks.filter(t=>t.status!=='done');
+  const overdueTasks=openTasks.filter(t=>t.due<today());
+  c.innerHTML=`
+  <div class="phdr"><div><h2>Project Management</h2><p>${openTasks.length} open tasks across ${DB.engagements.filter(e=>e.status==='active').length} active engagements</p></div>
+  <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button></div>
+  <div class="kpi-grid">
+    <div class="kpi accent"><div class="kpi-label">Open Tasks</div><div class="kpi-val">${openTasks.length}</div></div>
+    <div class="kpi ${overdueTasks.length>0?'gold':''}"><div class="kpi-label">Overdue</div><div class="kpi-val">${overdueTasks.length}</div>
+      <div class="kpi-sub">${overdueTasks.length>0?'Action required':'All on track â'}</div></div>
+    <div class="kpi"><div class="kpi-label">In Progress</div><div class="kpi-val">${DB.tasks.filter(t=>t.status==='inprogress').length}</div></div>
+    <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${DB.tasks.filter(t=>t.status==='done').length}</div></div>
+  </div>
+  ${Object.entries(byEng).map(([engId,tasks])=>{
+    const eng=DB.engagements.find(e=>e.id===engId);
+    const open=tasks.filter(t=>t.status!=='done');
+    return`<div class="card" style="margin-bottom:12px">
+      <div class="card-hdr"><h3>${eng?eng.name:engId==='misc'?'General Tasks':'Engagement '+engId}</h3>
+        <span style="font-size:11px;color:var(--muted)">${open.length} open Â· ${tasks.length} total</span></div>
+      <div class="card-body" style="padding:0">
+        ${tasks.slice(0,5).map(t=>{
+          const ov=t.due<today()&&t.status!=='done';
+          return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+            <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.title}</div>
+            <div style="font-size:10px;color:var(--muted)">${t.assignee} Â· ${t.type}</div></div>
+            <span style="font-size:11px;color:${ov?'var(--venetian)':'var(--muted)'};font-weight:${ov?700:400}">${t.due}</span>
+            <span class="badge ${t.status==='done'?'b-green':t.status==='inprogress'?'b-blue':'b-grey'}">${t.status}</span>
+            <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('')}
+  ${Object.keys(byEng).length===0?`<div class="card"><div style="padding:32px;text-align:center;color:var(--muted)">No project tasks yet. Tasks linked to engagements will appear here.</div></div>`:''}`;
 }
 
 function rPipeline(c){
