@@ -2630,46 +2630,99 @@ function rQuoting(c){
 }
 
 function rProjects(c){
-  const engTasks=DB.tasks.filter(t=>t.type==='engagement'||t.ref);
-  const byEng={};
-  engTasks.forEach(t=>{
-    const key=t.ref||'misc';
-    if(!byEng[key]) byEng[key]=[];
-    byEng[key].push(t);
+  const statusFilter=S.tab.projStatus||'all';
+  const partnerFilter=S.tab.projPartner||'';
+  let engs=DB.engagements.filter(e=>{
+    if(statusFilter!=='all'&&e.status!==statusFilter) return false;
+    if(partnerFilter&&e.partner!==partnerFilter) return false;
+    return true;
   });
-  const openTasks=DB.tasks.filter(t=>t.status!=='done');
-  const overdueTasks=openTasks.filter(t=>t.due<today());
+  const hasFilter=statusFilter!=='all'||partnerFilter;
+  const partnerOpts=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
   c.innerHTML=`
-  <div class="phdr"><div><h2>Project Management</h2><p>${openTasks.length} open tasks across ${DB.engagements.filter(e=>e.status==='active').length} active engagements</p></div>
-  <button class="btn btn-primary" onclick="openTaskModal()">+ New Task</button></div>
-  <div class="kpi-grid">
-    <div class="kpi accent"><div class="kpi-label">Open Tasks</div><div class="kpi-val">${openTasks.length}</div></div>
-    <div class="kpi ${overdueTasks.length>0?'gold':''}"><div class="kpi-label">Overdue</div><div class="kpi-val">${overdueTasks.length}</div>
-      <div class="kpi-sub">${overdueTasks.length>0?'Action required':'All on track â'}</div></div>
-    <div class="kpi"><div class="kpi-label">In Progress</div><div class="kpi-val">${DB.tasks.filter(t=>t.status==='inprogress').length}</div></div>
-    <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${DB.tasks.filter(t=>t.status==='done').length}</div></div>
+  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active projects Â· ${DB.engagements.length} total</p></div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
+    <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${['active','planning','completed'].map(s=>`<option value="${s}"${statusFilter===s?' selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="S.tab.projPartner=this.value;renderView()">
+      <option value="">All Partners</option>
+      ${partnerOpts.map(p=>`<option value="${p}"${partnerFilter===p?' selected':''}>${p}</option>`).join('')}
+    </select>
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.projStatus='';S.tab.projPartner='';renderView()">&#10005; Clear</button>`:''}
   </div>
-  ${Object.entries(byEng).map(([engId,tasks])=>{
-    const eng=DB.engagements.find(e=>e.id===engId);
-    const open=tasks.filter(t=>t.status!=='done');
-    return`<div class="card" style="margin-bottom:12px">
-      <div class="card-hdr"><h3>${eng?eng.name:engId==='misc'?'General Tasks':'Engagement '+engId}</h3>
-        <span style="font-size:11px;color:var(--muted)">${open.length} open Â· ${tasks.length} total</span></div>
-      <div class="card-body" style="padding:0">
-        ${tasks.slice(0,5).map(t=>{
-          const ov=t.due<today()&&t.status!=='done';
-          return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-            <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.title}</div>
-            <div style="font-size:10px;color:var(--muted)">${t.assignee} Â· ${t.type}</div></div>
-            <span style="font-size:11px;color:${ov?'var(--venetian)':'var(--muted)'};font-weight:${ov?700:400}">${t.due}</span>
-            <span class="badge ${t.status==='done'?'b-green':t.status==='inprogress'?'b-blue':'b-grey'}">${t.status}</span>
-            <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }).join('')}
-  ${Object.keys(byEng).length===0?`<div class="card"><div style="padding:32px;text-align:center;color:var(--muted)">No project tasks yet. Tasks linked to engagements will appear here.</div></div>`:''}`;
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+    ${engs.map(e=>{
+      const client=DB.contacts.find(x=>x.id===e.clientId);
+      const mentor=DB.contacts.find(x=>x.id===e.mentorId);
+      const engSess=DB.sessions.filter(s=>s.engId===e.id);
+      const done=engSess.filter(s=>s.status==='completed').length;
+      const total=e.sessionsPlanned||engSess.length||1;
+      const pct=Math.min(100,Math.round((done/total)*100));
+      const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
+      const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+      const engTasks=DB.tasks.filter(t=>t.ref===e.id);
+      const openTasks=engTasks.filter(t=>t.status!=='done').length;
+      return`<div class="card" style="padding:18px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+          <div style="flex:1">
+            <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} Â· ${mentor?mentor.name:'No mentor'}</div>
+          </div>
+          <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+          <span class="badge ${typeBadge}">${e.type}</span>
+          ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
+          ${e.country?`<span class="badge b-grey">${e.country}</span>`:''}
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+            <span>Sessions</span><span>${done} / ${total} completed</span>
+          </div>
+          <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${pct===100?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} open task${openTasks>1?'s':''}</span>`:'No open tasks'}</div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
+            <button class="btn btn-sm btn-outline" onclick="openProjTaskModal('${e.id}')">+ Task</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+    ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects match the selected filters.</div>`:''}
+  </div>`;
+}
+function openProjTaskModal(engId){
+  const e=DB.engagements.find(x=>x.id===engId);
+  showModal(`<div class="mhdr"><h3>New Task â ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div class="fg"><label>Task Title</label><input id="pt-title" class="fi" placeholder="e.g. Send Q3 invoice"></div>
+    <div class="fg"><label>Assignee</label><select id="pt-assignee" class="fi">
+      ${PARTNERS.map(p=>`<option value="${p}">${p}</option>`).join('')}
+    </select></div>
+    <div class="ir2">
+      <div class="fg"><label>Priority</label><select id="pt-pri" class="fi">
+        <option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option>
+      </select></div>
+      <div class="fg"><label>Due Date</label><input type="date" id="pt-due" class="fi" value="${today()}"></div>
+    </div>
+    <div class="fg"><label>Notes</label><textarea id="pt-notes" class="fi" rows="2"></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProjTask('${engId}')">Save Task</button>
+    </div>
+  </div>`);
+}
+function saveProjTask(engId){
+  const title=document.getElementById('pt-title').value.trim();
+  if(!title)return alert('Please enter a title.');
+  const t={id:uid(),title,ref:engId,type:'engagement',assignee:document.getElementById('pt-assignee').value,status:'todo',priority:document.getElementById('pt-pri').value,due:document.getElementById('pt-due').value,notes:document.getElementById('pt-notes').value.trim()};
+  DB.tasks.unshift(t);addAct('â»',`Task created: ${title}`);save();closeModal();renderView();
 }
 
 function rPipeline(c){
