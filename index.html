@@ -298,6 +298,14 @@ input,select,textarea{font-family:inherit;outline:none}
     <p style="text-align:center;margin-top:10px"><a href="#" onclick="resetPwd();return false;" style="font-size:13px;color:var(--venetian);text-decoration:none;opacity:0.8">Forgot password?</a></p>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">New staff? <a href="#" onclick="showSignup();return false">Create an account</a></p>
   </div>
+  <div id="reset-form" style="display:none">
+    <div style="text-align:center;margin-bottom:20px"><svg viewBox="0 0 97 96" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M48 8 L58 38 L90 38 L64 58 L74 88 L48 68 L22 88 L32 58 L6 38 L38 38Z" fill="#CE2702"/></svg><div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600;letter-spacing:1px;color:#1c1c1c;margin-top:6px">Global Mentors Group</div></div>
+    <p style="font-weight:600;font-size:15px;margin-bottom:18px;text-align:center">Set New Password</p>
+    <div class="fg"><label>NEW PASSWORD</label><input type="password" id="rp-pass" placeholder="New password (8+ chars)"></div>
+    <div class="fg" style="margin-top:12px"><label>CONFIRM PASSWORD</label><input type="password" id="rp-conf" placeholder="Confirm password"></div>
+    <button onclick="setNewPwd()" style="width:100%;background:var(--venetian);color:#fff;padding:10px;border-radius:var(--radius);margin-top:16px;font-size:15px">Set Password</button>
+    <p id="rp-msg" style="text-align:center;margin-top:10px;font-size:13px"></p>
+  </div>
   <div id="signup-form" style="display:none">
     <div class="fg"><label>Your Name</label><input id="su-name" type="text" placeholder="Full name"></div>
     <div class="fg"><label>Email</label><input id="su-email" type="email" placeholder="you@globalmentorsgroup.com"></div>
@@ -3777,6 +3785,7 @@ async function initApp(){
   const{data:{session}}=await sb.auth.getSession();
   if(session){await bootApp(session.user);}
   sb.auth.onAuthStateChange(async(event,session)=>{
+    if(event==='PASSWORD_RECOVERY'){showPwdResetForm();return;}
     if(event==='SIGNED_IN'&&session)await bootApp(session.user);
     if(event==='SIGNED_OUT'){document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
   });
@@ -3875,6 +3884,23 @@ async function resetPwd(){
   const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
   if(error){alert('Error: '+error.message);}
   else{alert('Reset link sent to '+email+' - check your inbox.');}
+}
+function showPwdResetForm(){
+  const lf=document.getElementById('login-form');
+  if(lf)lf.style.display='none';
+  const rf=document.getElementById('reset-form');
+  if(rf)rf.style.display='block';
+}
+async function setNewPwd(){
+  const pass=document.getElementById('rp-pass').value;
+  const conf=document.getElementById('rp-conf').value;
+  const msg=document.getElementById('rp-msg');
+  if(!pass||pass.length<8){msg.style.color='red';msg.textContent='Password must be at least 8 characters.';return;}
+  if(pass!==conf){msg.style.color='red';msg.textContent='Passwords do not match.';return;}
+  msg.style.color='#333';msg.textContent='Updating...';
+  const {error}=await sb.auth.updateUser({password:pass});
+  if(error){msg.style.color='red';msg.textContent='Error: '+error.message;}
+  else{msg.style.color='green';msg.textContent='Password updated! Logging you in...';setTimeout(()=>window.location.reload(),1500);}
 }
 </script>
 
