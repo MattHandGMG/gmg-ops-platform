@@ -2264,9 +2264,9 @@ function rDashboardRM(c){
       <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${ytdPct}%"></div></div>
       <div class="kpi-sub">${ytdPct}% of ${fmt(fyTarget)} FY target</div></div>
     <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
-      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair Â· ${activeEngs.filter(e=>e.type==='executive').length} Exec Â· ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
+      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
     <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
-      <div class="kpi-sub">${pendingPay.length} payments Â· next run end of month</div></div>
+      <div class="kpi-sub">${pendingPay.length} payments · next run end of month</div></div>
     <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
       <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
   </div>`:''}
@@ -2291,7 +2291,7 @@ function rDashboardRM(c){
         return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
           <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'â¦':e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${mn?.name||'â'} Â· ${e.coordinator}</div></div>
+          <div style="font-size:10px;color:var(--muted)">${mn?.name||'â'} · ${e.coordinator}</div></div>
           <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
       }).join('')}
       </div></div>`:''}
@@ -2303,13 +2303,13 @@ function rDashboardRM(c){
         ${unsyncedInv.length===0&&pendingPay.length===0?'<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced &#10003;</p>':''}
         ${unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>Invoice Â· ${inv.type} Â· ${inv.status}</span></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
           <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
           <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
         ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]||''} Â· ${p.type}</span></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]||''} · ${p.type}</span></div>
           <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
           <span class="badge b-amber">pending</span></div>`;
         }).join('')}
@@ -2338,7 +2338,7 @@ function rDashboardPartner(c, forName){
   <div class="kpi-grid">
     <div class="kpi accent"><div class="kpi-label">YTD Revenue (My Portfolio)</div><div class="kpi-val">${fmt(ytdInv)}</div></div>
     <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
-      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair Â· ${activeEngs.filter(e=>e.type==='executive').length} Exec Â· ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
+      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
     <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
       <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
     <div class="kpi"><div class="kpi-label">Total Engagements</div><div class="kpi-val">${myEngs.length}</div>
@@ -2355,7 +2355,7 @@ function rDashboardPartner(c, forName){
         return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
           <span class="badge ${tb}">${e.type}</span>
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${cl?.name||'â'} Â· ${mn?.name||'â'}</div></div>
+          <div style="font-size:10px;color:var(--muted)">${cl?.name||'â'} · ${mn?.name||'â'}</div></div>
           <div style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val)}</div>
           <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
       }).join('')}
@@ -2390,7 +2390,7 @@ function rDashboardEA(c){
       combined.map(t=>{const ov=t.due<today();
         return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.title}</div>
-          <div style="font-size:10px;color:var(--muted)">${t.assignee} Â· ${t.type}</div></div>
+          <div style="font-size:10px;color:var(--muted)">${t.assignee} · ${t.type}</div></div>
           <span style="font-size:11px;color:${ov?'var(--venetian)':'var(--muted)'};font-weight:${ov?700:400}">${t.due}</span>
           <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span>
         </div>`;
@@ -2424,7 +2424,7 @@ function rDashboardFinance(c){
         ${unsyncedInv.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All invoices synced &#10003;</p>':
         unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>${inv.type} Â· ${inv.status}</span></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>${inv.type} · ${inv.status}</span></div>
           <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
           <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
@@ -2583,11 +2583,11 @@ function rEngagements(c){
   const hasFilter=statusF||typeF||partnerF;
   const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
   c.innerHTML=`
-  <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.length} total Â· ${active.length} active</p></div>
+  <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.length} total · ${active.length} active</p></div>
   <button class="btn btn-primary" onclick="openEngModal()">+ New Engagement</button></div>
   <div class="kpi-grid">
     <div class="kpi accent"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${active.length}</div>
-      <div class="kpi-sub">${active.filter(e=>e.type==='chair').length} Chair Â· ${active.filter(e=>e.type==='executive').length} Exec Â· ${active.filter(e=>e.type==='team').length} Team</div></div>
+      <div class="kpi-sub">${active.filter(e=>e.type==='chair').length} Chair · ${active.filter(e=>e.type==='executive').length} Exec · ${active.filter(e=>e.type==='team').length} Team</div></div>
     <div class="kpi gold"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdRev)}</div></div>
     <div class="kpi"><div class="kpi-label">Planning</div><div class="kpi-val">${DB.engagements.filter(e=>e.status==='planning').length}</div></div>
     <div class="kpi"><div class="kpi-label">Completed</div><div class="kpi-val">${DB.engagements.filter(e=>e.status==='completed').length}</div></div>
@@ -2647,7 +2647,7 @@ function rQuoting(c){
   const approvedVal=DB.quotes.filter(q=>q.status==='approved').reduce((s,q)=>s+q.value,0);
   const hasFilter=statusF||partnerF;
   c.innerHTML=`
-  <div class="phdr"><div><h2>Quoting</h2><p>${DB.quotes.length} quotes Â· ${fmt(totalVal)} total value</p></div>
+  <div class="phdr"><div><h2>Quoting</h2><p>${DB.quotes.length} quotes · ${fmt(totalVal)} total value</p></div>
   <button class="btn btn-primary" onclick="openQuoteModal()">+ New Quote</button></div>
   <div class="kpi-grid">
     ${['draft','sent','approved','declined'].map(s=>{
@@ -2700,7 +2700,7 @@ function rProjects(c){
   const hasFilter=statusFilter!=='all'||partnerFilter;
   const partnerOpts=[...new Set(DB.engagements.map(e=>e.partner).filter(Boolean))];
   c.innerHTML=`
-  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active projects Â· ${DB.engagements.length} total</p></div></div>
+  <div class="phdr"><div><h2>Project Management</h2><p>${DB.engagements.filter(e=>e.status==='active').length} active projects · ${DB.engagements.length} total</p></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
     <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
       <option value="">All Statuses</option>
@@ -2728,7 +2728,7 @@ function rProjects(c){
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} Â· ${mentor?mentor.name:'No mentor'}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} · ${mentor?mentor.name:'No mentor'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
         </div>
