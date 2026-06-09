@@ -179,6 +179,7 @@ input,select,textarea{font-family:inherit;outline:none}
 .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .login-logo svg{width:40px;height:40px;background:#5E1100;border-radius:50%;padding:5px;box-sizing:content-box}
 .login-logo span{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:700;letter-spacing:-0.3px;white-space:nowrap}
+.ps-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}.ps-row:last-child{border-bottom:none}.ps-gmg-block{background:var(--halfnarrow);border-radius:6px;padding:8px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center}
 .login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;margin-bottom:4px}
 .login-card p{font-size:12px;color:var(--muted);margin-bottom:20px}
 
@@ -3155,6 +3156,7 @@ function rReports(c){
     {id:'finance',icon:'◐',title:'Finance Report',desc:'Invoiced, paid, outstanding balances and mentor payment totals with Xero sync status.'},
     {id:'quoting',icon:'◎',title:'Quoting Report',desc:'Quotes by status and value, approval rates and conversion from quote to engagement.'},
     {id:'tasks',icon:'◻',title:'Task Report',desc:'Tasks by type, assignee, priority and overdue analysis across all team members.'},
+    {id:'commission',icon:'◉',title:'Commission Report',desc:'Partner commission splits, GMG retained and full financial breakdown per engagement.'},
     {id:'activity',icon:'◷',title:'Activity Log',desc:'Chronological feed of all platform actions including invoices, sessions and deals.'},
   ];
   c.innerHTML=`
@@ -3228,7 +3230,23 @@ function buildReport(type){
       <table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Assignee</th><th>Priority</th><th>Status</th></tr></thead>
       <tbody>${DB.tasks.map(t=>`<tr><td style="font-weight:600">${t.title}</td><td><span class="badge b-grey">${t.type}</span></td><td>${t.assignee}</td><td><span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span></td><td><span class="badge ${t.status==='done'?'b-green':t.status==='inprogress'?'b-blue':'b-grey'}">${t.status}</span></td></tr>`).join('')}</tbody></table>
     </div>`;
-  } else {
+  } else if(type==='commission'){
+    const engs=DB.engagements;
+    const totalFees=engs.reduce((s,e)=>s+(e.annualFee||e.totalFee||0),0);
+    const totalPartner=engs.reduce((s,e)=>{const fee=e.annualFee||e.totalFee||0;const splits=e.partnerSplits||[];return s+splits.reduce((ps,sp)=>ps+(fee*sp.percentage/100),0);},0);
+    const totalGMG=totalFees-totalPartner;
+    html=`<div class="mhdr"><h3>Commission Report</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+    <div class="mbody" style="max-height:75vh;overflow-y:auto">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div class="kpi gold"><div class="kpi-label">Total Engagement Value</div><div class="kpi-val">${fmt(totalFees)}</div></div>
+        <div class="kpi accent"><div class="kpi-label">Partner Commission</div><div class="kpi-val">${fmt(totalPartner)}</div></div>
+        <div class="kpi"><div class="kpi-label">GMG Retained</div><div class="kpi-val">${fmt(totalGMG)}</div></div>
+      </div>
+      <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Total Fee</th><th>Partner</th><th>Split %</th><th>Partner £</th><th>GMG %</th><th>GMG £</th></tr></thead>
+      <tbody>${engs.map(e=>{const fee=e.annualFee||e.totalFee||0;const splits=e.partnerSplits||[];const partnerPct=splits.reduce((s,sp)=>s+sp.percentage,0);const gmgPct=100-partnerPct;const gmgAmt=fee*gmgPct/100;if(!splits.length)return`<tr><td style="font-weight:600">${e.name}</td><td><span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team'}">${e.type}</span></td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(fee)}</td><td colspan="2" style="color:var(--muted);font-size:11px">No splits set</td><td>—</td><td>100%</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(fee)}</td></tr>`;return splits.map((sp,i)=>`<tr><td style="font-weight:600">${i===0?e.name:''}</td><td>${i===0?`<span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team'}">${e.type}</span>`:''}</td><td>${i===0?fmt(fee):''}</td><td style="font-size:12px">${sp.name}</td><td style="font-weight:600;color:var(--venetian)">${sp.percentage}%</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--venetian)">${fmt(fee*sp.percentage/100)}</td>${i===0?`<td rowspan="${splits.length}" style="vertical-align:middle;font-weight:600">${gmgPct}%</td><td rowspan="${splits.length}" style="vertical-align:middle;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(gmgAmt)}</td>`:''}</tr>`).join('');}).join('')}</tbody></table>
+      <div style="margin-top:16px;padding:12px;background:var(--halfnarrow);border-radius:8px;display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600">TOTALS</span><span style="font-size:12px">Partner: <strong>${fmt(totalPartner)}</strong> &nbsp;|&nbsp; GMG: <strong>${fmt(totalGMG)}</strong></span></div>
+    </div>`;
+    } else {
     html=`<div class="mhdr"><h3>Activity Log</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
     <div class="mbody">
       ${DB.activities.map(a=>`<div class="act-item"><div class="act-dot">${a.icon}</div><div><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted)">${a.ts}</div></div></div>`).join('')}
@@ -3667,6 +3685,7 @@ function saveEng(id){
     billingEntity:n('em-billing')?.value.trim()||'',
     startDate:n('em-start').value,endDate:n('em-end').value,
     notes:n('em-notes').value.trim(),
+    partnerSplits:(DB.engagements.find(x=>x.id===engId)||{}).partnerSplits||[],
   };
   if(type==='chair'){
     data.annualFee=+n('em-annual-fee').value||0;
@@ -3744,6 +3763,91 @@ async function initApp(){
   });
 }
 initApp();
+function openEngDetail(engId){
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng) return;
+  const cl=DB.contacts.find(x=>x.id===eng.clientId);
+  const mn=DB.contacts.find(x=>x.id===eng.mentorId);
+  const fee=eng.annualFee||eng.totalFee||0;
+  const feeLabel=eng.annualFee?'per annum':eng.totalFee?'total':eng.quarterlyFee?'per quarter':'';
+  const splits=eng.partnerSplits||[];
+  const usedPct=splits.reduce((s,sp)=>s+sp.percentage,0);
+  const gmgPct=100-usedPct;
+  const gmgAmt=fee*gmgPct/100;
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  showModal(`<div class="mhdr"><h3>${eng.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
+      <div class="kpi gold"><div class="kpi-label">Engagement Fee</div><div class="kpi-val">${fmt(fee)}</div><div class="kpi-sub">${feeLabel}</div></div>
+      <div class="kpi"><div class="kpi-label">Status</div><div class="kpi-val" style="font-size:14px"><span class="badge ${eng.status==='active'?'b-green':eng.status==='planning'?'b-amber':'b-grey'}">${eng.status}</span></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;font-size:12px">
+      <div><span style="color:var(--muted)">Type</span><br><span class="badge ${tb[eng.type]||'b-grey'}">${eng.type}</span></div>
+      <div><span style="color:var(--muted)">Client</span><br><strong>${cl?.name||'—'}</strong></div>
+      <div><span style="color:var(--muted)">Mentor</span><br><strong>${mn?.name||'—'}</strong></div>
+      <div><span style="color:var(--muted)">Partner</span><br><strong>${eng.partner||'—'}</strong></div>
+      <div><span style="color:var(--muted)">Start</span><br>${eng.startDate||'—'}</div>
+      <div><span style="color:var(--muted)">End</span><br>${eng.endDate||'—'}</div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h4 style="font-size:13px;font-weight:600;margin:0">Commission Splits</h4>
+        <button class="btn btn-sm btn-outline" onclick="closeModal();openPartnerSplitModal('${engId}')">Manage Splits</button>
+      </div>
+      ${splits.length===0
+        ? '<p style="font-size:12px;color:var(--muted)">No partner splits set. Click Manage Splits to add.</p>'
+        : '<div>'+splits.map(sp=>'<div class="ps-row"><span style="flex:1;font-size:12px">'+sp.name+'</span><span style="font-weight:600;color:var(--venetian);min-width:42px;text-align:right">'+sp.percentage+'%</span><span style="font-family:Cormorant Garamond,Georgia,serif;font-weight:700;color:var(--venetian);min-width:72px;text-align:right">'+fmt(fee*sp.percentage/100)+'</span></div>').join('')+'<div class="ps-gmg-block"><span style="font-size:12px;font-weight:600">GMG Retained</span><span style="font-family:Cormorant Garamond,Georgia,serif;font-size:15px;font-weight:700;color:var(--cadmium)">'+gmgPct+'% = '+fmt(gmgAmt)+'</span></div></div>'
+      }
+    </div>
+    ${eng.notes?'<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:10px;font-size:12px;color:var(--muted)">'+eng.notes+'</div>':''}
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="closeModal();openEngModal('${engId}')">Edit Engagement</button>
+    </div>
+  </div>`);
+}
+function openPartnerSplitModal(engId){
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng) return;
+  window._psEngId=engId;
+  window._psTmp=JSON.parse(JSON.stringify(eng.partnerSplits||[]));
+  const fee=eng.annualFee||eng.totalFee||0;
+  const renderRows=()=>(window._psTmp||[]).map((sp,i)=>`<div class="ps-row"><input class="fi" placeholder="Partner name" value="${sp.name||''}" style="flex:1" oninput="window._psTmp[${i}].name=this.value"><input class="fi" type="number" min="0" max="100" placeholder="%" value="${sp.percentage||0}" style="width:70px;text-align:right" oninput="window._psTmp[${i}].percentage=+this.value;updatePsGMG()"><span style="font-size:12px;color:var(--muted);min-width:72px;text-align:right">${fmt(fee*(+sp.percentage||0)/100)}</span><button class="btn btn-sm" style="color:var(--muted);padding:2px 8px" onclick="window._psTmp.splice(${i},1);openPartnerSplitModal(window._psEngId)">&#10005;</button></div>`).join('');
+  showModal(`<div class="mhdr"><h3>Commission Splits</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  <div class="mbody">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Engagement: <strong>${eng.name}</strong> · Total fee: <strong>${fmt(fee)}</strong></p>
+    <div id="ps-list">${renderRows()}</div>
+    <button class="btn btn-sm btn-outline" style="margin-top:8px" onclick="window._psTmp.push({name:'',percentage:0});openPartnerSplitModal(window._psEngId)">+ Add Partner</button>
+    <div class="ps-gmg-block" style="margin-top:12px"><span style="font-size:12px;font-weight:600">GMG Retained</span><span id="ps-gmg-val" style="font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;font-weight:700;color:var(--cadmium)">—</span></div>
+    <div id="ps-err" style="display:none;color:#b91c1c;font-size:12px;margin-top:6px;padding:6px 10px;background:rgba(185,28,28,.08);border-radius:5px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePartnerSplits('${engId}')">Save Splits</button>
+    </div>
+  </div>`);
+  updatePsGMG();
+}
+function updatePsGMG(){
+  const eng=DB.engagements.find(e=>e.id===window._psEngId)||{};
+  const fee=eng.annualFee||eng.totalFee||0;
+  const used=(window._psTmp||[]).reduce((s,sp)=>s+(+sp.percentage||0),0);
+  const gmgPct=Math.max(0,100-used);
+  const el=document.getElementById('ps-gmg-val');
+  if(el) el.textContent=gmgPct+'% = '+fmt(fee*gmgPct/100);
+}
+async function savePartnerSplits(engId){
+  const splits=window._psTmp||[];
+  const used=splits.reduce((s,sp)=>s+(+sp.percentage||0),0);
+  const err=document.getElementById('ps-err');
+  if(used>100){if(err){err.textContent='Total exceeds 100%. Please adjust.';err.style.display='block';}return;}
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng) return;
+  eng.partnerSplits=splits.map(sp=>({name:sp.name,percentage:+sp.percentage}));
+  save();
+  await sb.from('engagements').update({data:eng,updated_at:new Date().toISOString()}).eq('id',engId);
+  closeModal();renderView();
+}
+
 </script>
 
 <!-- CLAUDE CHAT BAR -->
