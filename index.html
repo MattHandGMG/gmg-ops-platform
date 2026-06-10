@@ -3833,8 +3833,8 @@ function openEngDetail(engId){
           +(st.mentors&&st.mentors.length?'  ·  '+st.mentors.map(mid=>{const c=DB.contacts.find(x=>x.id===mid);return c?c.name:mid;}).join(', '):'')
           +'</div>'+(st.notes?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+st.notes+'</div>':'')+'</div>'
           +'<span class="badge '+(st.status==='Active'?'b-green':st.status==='Complete'?'b-grey':'b-amber')+'" style="font-size:10px">'+(st.status||'Not Started')+'</span>'
-          +'<button class="btn btn-sm btn-outline" onclick="closeModal();openStageModal(''+engId+'',''+st.id+'')" style="padding:2px 8px;font-size:11px">Edit</button>'
-          +'<button onclick="deleteStage(''+engId+'',''+st.id+'')" style="padding:2px 8px;font-size:11px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted)">✕</button>'
+          +'<button class="btn btn-sm btn-outline" onclick="closeModal();openStageModal(&apos;'+engId+'&apos;,&apos;'+st.id+'&apos;)" style="padding:2px 8px;font-size:11px">Edit</button>'
+          +'<button onclick="deleteStage(&apos;'+engId+'&apos;,&apos;'+st.id+'&apos;)" style="padding:2px 8px;font-size:11px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted)">✕</button>'
           +'</div>').join('')
       }
     </div>
@@ -3867,8 +3867,8 @@ function openStageModal(engId,stageId){
       +'<input type="checkbox" class="sg-mentor" value="'+c.id+'"'+(st&&st.mentors&&st.mentors.includes(c.id)?' checked':'')+'>'+c.name+'</label>').join('')
     +'</div></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
-    +'<button class="btn btn-outline" onclick="closeModal();openEngDetail(''+engId+'')">Cancel</button>'
-    +'<button class="btn btn-primary" onclick="saveStage(''+engId+'',''+(stageId||'')+'')">Save Stage</button>'
+    +'<button class="btn btn-outline" onclick="closeModal();openEngDetail(&apos;'+engId+'&apos;)">Cancel</button>'
+    +'<button class="btn btn-primary" onclick="saveStage(&apos;'+engId+'&apos;,&apos;'+(stageId||'')+'&apos;)">Save Stage</button>'
     +'</div></div>');
 }
 function saveStage(engId,stageId){
