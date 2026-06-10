@@ -2690,6 +2690,7 @@ function rQuoting(c){
 }
 
 function rProjects(c){
+  if(S.tab.projDetail){rProjectDetail(c,S.tab.projDetail);return;}
   const statusFilter=S.tab.projStatus||'all';
   const partnerFilter=S.tab.projPartner||'';
   let engs=DB.engagements.filter(e=>{
@@ -2727,7 +2728,7 @@ function rProjects(c){
       return`<div class="card" style="padding:18px">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div style="flex:1">
-            <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
+            <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px;cursor:pointer" onclick="S.tab.projDetail='${e.id}';S.tab.projDetailTab='overview';renderView()" title="Click to open project">${e.name}</div>
             <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} · ${mentor?mentor.name:'No mentor'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
@@ -2769,6 +2770,393 @@ function rProjects(c){
     ${engs.length===0?`<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--muted)">No projects match the selected filters.</div>`:''}
   </div>`;
 }
+/* ââ PROJECT DETAIL VIEW ââ */
+function rProjectDetail(c,engId){
+  const e=DB.engagements.find(x=>x.id===engId);
+  if(!e){S.tab.projDetail='';renderView();return;}
+  const tab=S.tab.projDetailTab||'overview';
+  const client=DB.contacts.find(x=>x.id===e.clientId);
+  const mentor=DB.contacts.find(x=>x.id===e.mentorId);
+  const stages=e.stages||[];
+  const tasks=DB.tasks.filter(t=>t.ref===engId);
+  const sessions=DB.sessions.filter(s=>s.engId===engId);
+  const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
+  const tabs=['overview','tasks','gantt','timeline','calendar','financials'];
+  c.innerHTML=`
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="btn btn-outline" onclick="S.tab.projDetail='';S.tab.projDetailTab='overview';renderView()" style="font-size:12px;padding:6px 14px">&#8592; Projects</button>
+      <div>
+        <h2 style="margin:0;font-family:Georgia,serif">${e.name}</h2>
+        <div style="font-size:12px;color:var(--muted);margin-top:3px">${client?client.name:'â'} &middot; ${e.partner||'No partner'} &middot; ${e.country||''}&nbsp;<span class="badge ${stBadge}" style="font-size:10px">${e.status}</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openEngModal('${e.id}')">Edit Project</button>
+      <button class="btn btn-primary" onclick="openStageModal(&apos;${e.id}&apos;)">+ Stage</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto">
+    ${tabs.map(t=>`<button onclick="S.tab.projDetailTab='${t}';renderView()" style="padding:10px 18px;border:none;background:none;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:${tab===t?'600':'400'};color:${tab===t?'var(--venetian)':'var(--muted)'};border-bottom:${tab===t?'2px solid var(--venetian)':'2px solid transparent'};margin-bottom:-2px">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+  </div>
+  <div id="pd-body"></div>`;
+  const body=document.getElementById('pd-body');
+  if(tab==='overview') rProjOverview(body,e,client,mentor,stages,tasks,sessions);
+  else if(tab==='tasks') rProjTasks(body,e,tasks);
+  else if(tab==='gantt') rProjGantt(body,e,stages,sessions);
+  else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
+  else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
+  else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
+}
+
+function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
+  const done=sessions.filter(s=>s.status==='completed').length;
+  const total=e.sessionsPlanned||sessions.length||1;
+  const pct=Math.min(100,Math.round((done/total)*100));
+  const openTasks=tasks.filter(t=>t.status!=='done').length;
+  const stagesDone=stages.filter(s=>s.status==='Complete').length;
+  const clientFeeTotal=stages.reduce((s,x)=>s+(x.clientFee||0),0);
+  const mentorFeeTotal=stages.reduce((s,x)=>s+(x.mentorFee||0),0);
+  body.innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-bottom:20px">
+    <div class="kpi"><div class="kpi-label">Sessions</div><div class="kpi-val">${done}/${total}</div><div class="kpi-sub">${pct}% complete</div></div>
+    <div class="kpi"><div class="kpi-label">Stages</div><div class="kpi-val">${stagesDone}/${stages.length}</div><div class="kpi-sub">${stages.length-stagesDone} remaining</div></div>
+    <div class="kpi"><div class="kpi-label">Open Tasks</div><div class="kpi-val">${openTasks}</div><div class="kpi-sub">${tasks.length} total</div></div>
+    <div class="kpi"><div class="kpi-label">Client Fees</div><div class="kpi-val">${fmt(clientFeeTotal||(e.totalFee||e.annualFee||0))}</div><div class="kpi-sub">stage total</div></div>
+    <div class="kpi kpi-gold"><div class="kpi-label">Mentor Fees</div><div class="kpi-val">${fmt(mentorFeeTotal)}</div><div class="kpi-sub">stage total</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-hdr"><h3>Project Details</h3></div>
+      <div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Client</div><div style="font-weight:500">${client?client.name:'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Mentor</div><div style="font-weight:500">${mentor?mentor.name:'None assigned'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Partner</div><div>${e.partner||'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Country</div><div>${e.country||'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Type</div><div><span class="badge">${e.type}</span></div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Start Date</div><div>${e.startDate||'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Annual Fee</div><div style="font-family:Georgia,serif">${fmt(e.annualFee||0)}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Quarterly Fee</div><div style="font-family:Georgia,serif">${fmt(e.quarterlyFee||0)}</div></div>
+      </div></div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Stage Progress</h3><button class="btn btn-sm btn-outline" onclick="openStageModal(&apos;${e.id}&apos;)">+ Stage</button></div>
+      <div class="card-body">
+        ${stages.length===0?'<p style="color:var(--muted);font-size:13px">No stages added yet.</p>':
+          stages.map(st=>`<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:13px;font-weight:500">${st.name}</span>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="badge ${st.status==='Active'?'b-green':st.status==='Complete'?'b-grey':'b-amber'}" style="font-size:10px">${st.status||'Not Started'}</span>
+                <button onclick="openStageModal(&apos;${e.id}&apos;,&apos;${st.id}&apos;)" style="font-size:10px;padding:1px 6px;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:none">Edit</button>
+              </div>
+            </div>
+            <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
+              <div style="width:${st.status==='Complete'?100:st.status==='Active'?50:0}%;height:100%;background:${st.status==='Complete'?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
+            </div>
+            ${st.startDate?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${st.startDate}${st.endDate?' â '+st.endDate:''}</div>`:''}
+            ${(st.clientFee||st.mentorFee)?`<div style="font-size:11px;margin-top:3px">${st.clientFee?'<span style="color:var(--venetian);font-weight:600">Client: '+fmt(st.clientFee)+'</span> ':''}${st.mentorFee?'<span style="color:var(--cadmium)">Mentor: '+fmt(st.mentorFee)+'</span>':''}</div>`:''}
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr"><h3>Sessions</h3></div>
+    <div class="card-body">
+      ${sessions.length===0?'<p style="color:var(--muted);font-size:13px">No sessions logged yet.</p>':
+        `<table class="tbl"><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+          ${sessions.map((s,i)=>`<tr>
+            <td style="font-weight:600">${i+1}</td>
+            <td>${s.date||'â'}</td>
+            <td style="font-size:11px">${s.type||'â'}</td>
+            <td><span class="badge ${s.status==='completed'?'b-green':'b-amber'}" style="font-size:10px">${s.status}</span></td>
+            <td style="font-size:11px;color:var(--muted)">${s.notes?(s.notes.length>80?s.notes.slice(0,80)+'â¦':s.notes):'â'}</td>
+          </tr>`).join('')}
+        </tbody></table>`}
+    </div>
+  </div>`;
+}
+
+function rProjTasks(body,e,tasks){
+  const assigneeF=S.tab.pdTaskAssignee||'';
+  const statusF=S.tab.pdTaskStatus||'';
+  let filtered=tasks;
+  if(assigneeF) filtered=filtered.filter(t=>t.assignee===assigneeF);
+  if(statusF) filtered=filtered.filter(t=>t.status===statusF);
+  const assignees=[...new Set(tasks.map(t=>t.assignee).filter(Boolean))];
+  const cols=['todo','in_progress','done'];
+  const colLabel={'todo':'TO DO','in_progress':'IN PROGRESS','done':'DONE'};
+  const colColor={'todo':'var(--border)','in_progress':'var(--venetian)','done':'var(--success)'};
+  body.innerHTML=`
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+    <select class="filter-sel" onchange="S.tab.pdTaskAssignee=this.value;renderView()">
+      <option value="">All Assignees</option>
+      ${assignees.map(a=>`<option value="${a}"${assigneeF===a?' selected':''}>${a}</option>`).join('')}
+    </select>
+    <select class="filter-sel" onchange="S.tab.pdTaskStatus=this.value;renderView()">
+      <option value="">All Statuses</option>
+      ${cols.map(s=>`<option value="${s}"${statusF===s?' selected':''}>${colLabel[s]}</option>`).join('')}
+    </select>
+    <button class="btn btn-primary" onclick="openProjTaskModal(&apos;${e.id}&apos;)">+ New Task</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+    ${cols.map(col=>`
+      <div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:10px;padding-bottom:8px;border-bottom:3px solid ${colColor[col]}">${colLabel[col]} <span style="font-weight:400;opacity:.7">(${filtered.filter(t=>t.status===col).length})</span></div>
+        ${filtered.filter(t=>t.status===col).map(t=>`
+          <div class="card" style="padding:12px;margin-bottom:8px">
+            <div style="font-size:13px;font-weight:500;margin-bottom:8px">${t.title}</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+              <span style="font-size:11px;color:var(--muted)">${t.assignee||'Unassigned'}${t.due?' &middot; '+t.due:''}</span>
+              <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}" style="font-size:10px">${t.priority||'â'}</span>
+            </div>
+            ${t.notes?`<div style="font-size:11px;color:var(--muted);padding-top:6px;border-top:1px solid var(--border)">${t.notes.slice(0,80)}</div>`:''}
+            <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
+              ${col!=='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;todo&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:none">â Back</button>`:''}
+              ${col==='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;in_progress&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--venetian);border-radius:3px;cursor:pointer;background:none;color:var(--venetian)">Start â</button>`:''}
+              ${col==='in_progress'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;done&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--success);border-radius:3px;cursor:pointer;background:none;color:var(--success)">&#10003; Done</button>`:''}
+            </div>
+          </div>`).join('')}
+        ${filtered.filter(t=>t.status===col).length===0?`<div style="font-size:12px;color:var(--muted);text-align:center;padding:20px;border:1px dashed var(--border);border-radius:6px">No tasks</div>`:''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function updateProjTask(taskId,newStatus){
+  const t=DB.tasks.find(x=>x.id===taskId);
+  if(t){t.status=newStatus;addAct('â»','Task updated: '+t.title);save();renderView();}
+}
+
+function rProjGantt(body,e,stages,sessions){
+  if(!stages||stages.length===0){
+    body.innerHTML=`<div style="text-align:center;padding:48px;color:var(--muted)"><p>No stages defined yet.</p><button class="btn btn-outline" onclick="openStageModal(&apos;${e.id}&apos;)">+ Add Stage</button></div>`;
+    return;
+  }
+  const allDates=stages.flatMap(s=>[s.startDate,s.endDate].filter(Boolean));
+  sessions.forEach(s=>{if(s.date)allDates.push(s.date);});
+  if(e.startDate)allDates.push(e.startDate);
+  if(allDates.length===0){const t=new Date();allDates.push(t.toISOString().slice(0,10));const e2=new Date(t);e2.setMonth(e2.getMonth()+3);allDates.push(e2.toISOString().slice(0,10));}
+  const sorted=[...allDates].sort();
+  const minDate=new Date(sorted[0]);
+  const maxDate=new Date(sorted[sorted.length-1]);
+  const rangeMs=(maxDate-minDate)||1000*60*60*24*30;
+  const pad=rangeMs*0.06;
+  const lo=new Date(minDate.getTime()-pad);
+  const hi=new Date(maxDate.getTime()+pad);
+  const totalMs=hi-lo;
+  const toP=d=>d?Math.max(0,Math.min(100,((new Date(d)-lo)/totalMs)*100)):null;
+  const today=new Date();
+  const todayP=((today-lo)/totalMs)*100;
+  const months=[];
+  const cur=new Date(lo);cur.setDate(1);
+  while(cur<=hi){months.push({label:cur.toLocaleString('default',{month:'short',year:'2-digit'}),pct:((cur-lo)/totalMs)*100});cur.setMonth(cur.getMonth()+1);}
+  const stColor={Active:'var(--venetian)',Complete:'var(--success)','Not Started':'#f5a623'};
+  body.innerHTML=`
+  <div class="card">
+    <div class="card-hdr"><h3>Gantt Chart</h3><span style="font-size:11px;color:var(--muted)">${lo.toLocaleDateString('en-GB')} â ${hi.toLocaleDateString('en-GB')}</span></div>
+    <div class="card-body" style="overflow-x:auto;padding-bottom:8px">
+      <div style="min-width:560px">
+        <div style="position:relative;height:22px;margin-left:170px;margin-bottom:6px;border-bottom:1px solid var(--border)">
+          ${months.map(m=>`<div style="position:absolute;left:${m.pct}%;transform:translateX(-50%);font-size:10px;color:var(--muted);white-space:nowrap">${m.label}</div>`).join('')}
+        </div>
+        ${stages.map(st=>{
+          const sp=toP(st.startDate);
+          const ep=toP(st.endDate);
+          const left=sp!==null?sp:5;
+          const right=ep!==null?ep:left+15;
+          const w=Math.max(1.5,right-left);
+          const col=stColor[st.status]||'var(--info)';
+          return `<div style="display:flex;align-items:center;margin-bottom:10px;height:34px">
+            <div style="width:170px;flex-shrink:0;font-size:12px;font-weight:500;padding-right:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${st.name}">${st.name}</div>
+            <div style="flex:1;position:relative;height:24px;background:var(--halfnarrow);border-radius:4px">
+              ${todayP>=0&&todayP<=100?`<div style="position:absolute;left:${todayP}%;top:-6px;bottom:-6px;width:2px;background:var(--cadmium);z-index:2;border-radius:1px"></div>`:''}
+              <div style="position:absolute;left:${left}%;width:${w}%;height:100%;background:${col};border-radius:4px;opacity:.88;display:flex;align-items:center;padding:0 7px;box-sizing:border-box;overflow:hidden" title="${st.name}: ${st.startDate||'?'} â ${st.endDate||'ongoing'}">
+                <span style="font-size:10px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${st.name}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+        ${sessions.filter(s=>s.date).length>0?`
+        <div style="display:flex;align-items:center;margin-bottom:6px;height:20px">
+          <div style="width:170px;flex-shrink:0;font-size:11px;color:var(--muted);padding-right:10px">Sessions</div>
+          <div style="flex:1;position:relative;height:14px;background:var(--halfnarrow);border-radius:4px">
+            ${sessions.filter(s=>s.date).map(s=>{const p=toP(s.date);return p===null?'':
+              `<div style="position:absolute;left:calc(${p}% - 4px);top:1px;width:8px;height:12px;border-radius:2px;background:${s.status==='completed'?'var(--success)':'var(--info)'};" title="Session ${s.date}"></div>`;
+            }).join('')}
+          </div>
+        </div>`:''}
+        <div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted);flex-wrap:wrap">
+          <span><span style="display:inline-block;width:10px;height:10px;background:#f5a623;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Not Started</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--venetian)';border-radius:2px;vertical-align:middle;margin-right:3px"></span>Active</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--success);border-radius:2px;vertical-align:middle;margin-right:3px"></span>Complete</span>
+          <span><span style="display:inline-block;width:2px;height:10px;background:var(--cadmium);vertical-align:middle;margin-right:3px"></span>Today</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function rProjTimeline(body,e,stages,sessions,tasks){
+  const events=[];
+  stages.forEach(st=>{
+    if(st.startDate)events.push({date:st.startDate,type:'stage-start',label:'Stage started: '+st.name,status:st.status});
+    if(st.endDate)events.push({date:st.endDate,type:'stage-end',label:'Stage ends: '+st.name,status:st.status});
+  });
+  sessions.forEach(s=>{if(s.date)events.push({date:s.date,type:'session',label:'Session'+(s.type?' ('+s.type+')':''),status:s.status});});
+  tasks.forEach(t=>{if(t.due)events.push({date:t.due,type:'task',label:t.title,status:t.status,assignee:t.assignee});});
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  const today=new Date().toISOString().slice(0,10);
+  const upcoming=events.filter(ev=>ev.date>=today);
+  const past=[...events.filter(ev=>ev.date<today)].reverse();
+  const tColor={'stage-start':'var(--venetian)','stage-end':'var(--success)','session':'var(--info)','task':'#f5a623'};
+  const tIcon={'stage-start':'ð','stage-end':'â','session':'ð','task':'â»'};
+  const renderEv=(ev,dim)=>`
+    <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);opacity:${dim?'0.55':'1'}">
+      <div style="width:88px;flex-shrink:0;font-size:11px;color:var(--muted);text-align:right;padding-top:1px">${ev.date}</div>
+      <div style="width:3px;flex-shrink:0;background:${tColor[ev.type]||'var(--border)'};border-radius:2px"}></div>
+      <div style="flex:1">
+        <div style="font-size:13px">${ev.label}</div>
+        ${ev.assignee?`<div style="font-size:11px;color:var(--muted)">${ev.assignee}</div>`:''}
+      </div>
+      ${ev.status?`<span class="badge ${ev.status==='completed'||ev.status==='Complete'||ev.status==='done'?'b-green':ev.status==='Active'||ev.status==='in_progress'?'b-blue':'b-grey'}" style="font-size:10px;align-self:center">${ev.status}</span>`:''}
+    </div>`;
+  body.innerHTML=`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div class="card">
+      <div class="card-hdr"><h3>Upcoming</h3></div>
+      <div class="card-body">${upcoming.length===0?'<p style="color:var(--muted);font-size:13px">No upcoming events.</p>':upcoming.map(ev=>renderEv(ev,false)).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Past</h3></div>
+      <div class="card-body" style="max-height:480px;overflow-y=auto">${past.length===0?'<p style="color:var(--muted);font-size:13px">No past events.</p>':past.map(ev=>renderEv(ev,true)).join('')}</div>
+    </div>
+  </div>`;
+}
+
+function rProjCalendar(body,e,stages,sessions,tasks){
+  if(!S.tab.projCalOffset)S.tab.projCalOffset=0;
+  const offset=S.tab.projCalOffset;
+  const base=new Date();base.setDate(1);base.setMonth(base.getMonth()+offset);
+  const year=base.getFullYear();const month=base.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const startDow=new Date(year,month,1).getDay();
+  const adjDow=(startDow+6)%7;
+  const monthStr=year+'-'+String(month+1).padStart(2,'0');
+  const evByDay={};
+  const addEv=(ds,color,label)=>{if(!ds||!ds.startsWith(monthStr))return;const d=parseInt(ds.split('-')[2]);if(!evByDay[d])evByDay[d]=[];evByDay[d].push({color,label});};
+  sessions.forEach(s=>addEv(s.date,'var(--info)','Session'));
+  tasks.forEach(t=>addEv(t.due,t.status==='done'?'var(--success)':'#f5a623',t.title));
+  stages.forEach(st=>{addEv(st.startDate,'var(--venetian)',st.name+' start');addEv(st.endDate,'var(--cadmium)',St.name+' end');});
+  const todayD=new Date();const isToday=d=>todayD.getFullYear()===year&&todayD.getMonth()===month&&todayD.getDate()===d;
+  let cells='';
+  for(let i=0;i<adjDow;i++)cells+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const evs=evByDay[d]||[];
+    cells+=`<div style="min-height:68px;padding:4px;border:1px solid var(--border);border-radius:4px;background:${isToday(d)?'rgba(206,83,67,.07)':'transparent'}">
+      <div style="font-size:11px;font-weight:${isToday(d)?'700':'400'};color:${isToday(d)?'var(--venetian)':'var(--nearblack)'}">${d}</div>
+      ${evs.slice(0,3).map(ev=>`<div style="font-size:9px;padding:1px 3px;border-radius:2px;background:${ev.color};color:#fff;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${ev.label}">${ev.label}</div>`).join('')}
+      ${evs.length>3?`<div style="font-size:9px;color:var(--muted)">+${evs.length-3} more</div>`:''}
+    </div>`;
+  }
+  const mLabel=base.toLocaleString('default',{month:'long',year:'numeric'});
+  body.innerHTML=`
+  <div class="card">
+    <div class="card-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-sm btn-outline" onclick="S.tab.projCalOffset=(S.tab.projCalOffset||0)-1;renderView()">&#8592;</button>
+        <h3 style="margin:0;min-width:160px;text-align:center">${mLabel}</h3>
+        <button class="btn btn-sm btn-outline" onclick="S.tab.projCalOffset=(S.tab.projCalOffset||0)+1;renderView()">&#8594;</button>
+        ${offset!==0?`<button class="btn btn-sm btn-outline" onclick="S.tab.projCalOffset=0;renderView()" style="font-size:11px">Today</button>`:''}
+      </div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--muted)">
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--info);border-radius:1px;margin-right:3px"></span>Session</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:#f5a623;border-radius:1px;margin-right:3px"></span>Task</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--venetian);border-radius:1px;margin-right:3px"></span>Stage</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+        ${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div style="font-size:10px;color:var(--muted);text-align:center;padding:4px 0;font-weight:600">${d}</div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells}</div>
+    </div>
+  </div>`;
+}
+
+function rProjFinancials(body,e,stages,sessions){
+  const clientTotal=stages.reduce((s,x)=>s+(x.clientFee||0),0);
+  const mentorTotal=stages.reduce((s,x)=>s+(x.mentorFee||0),0);
+  const margin=clientTotal-mentorTotal;
+  const marginPct=clientTotal?Math.round((margin/clientTotal)*100):0;
+  const annualFee=e.annualFee||0;
+  const qtrFee=e.quarterlyFee||0;
+  const totalFee=e.totalFee||(qtrFee*4)||annualFee||0;
+  const invoices=(DB.clientInvoices||[]).filter(inv=>inv>clientId===e.clientId);
+  const mentorPays=(DB/mentorPayments||[]).filter(mp=>mp.engId===e.id);
+  body.innerHTML=`
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px">
+    <div class="kpi"><div class="kpi-label">Total Client Fee</div><div class="kpi-val">${fmt(clientTotal||totalFee)}</div><div class="kpi-sub">stage total</div></div>
+    <div class="kpi kpi-gold"><div class="kpi-label">Total Mentor Fee</div><div class="kpi-val">${fmt(mentorTotal)}</div><div class="kpi-sub">stage total</div></div>
+    <div class="kpi"><div class="kpi-label">Gross Margin</div><div class="kpi-val">${fmt(margin)}</div><div class="kpi-sub">${marginPct}%</div></div>
+    <div class="kpi"><div class="kpi-label">Annual Fee</div><div class="kpi-val">${fmt(annualFee)}</div><div class="kpi-sub">${qtrFee?fmt(qtrFee)+' /qtr':'â'}</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+    <div class="card">
+      <div class="card-hdr"><h3>Stage Financials</h3></div>
+      <div class="card-body">
+        ${stages.length===0?'<p style="color:var(--muted);font-size:13px">No stages defined. Fees are tracked per stage.</p>':
+          `<table class="tbl"><thead><tr><th>Stage</th><th>Status</th><th>Client Fee</th><th>Mentor Fee</th><th>Margin</th></tr></thead><tbody>
+            ${stages.map(st=>{
+              const cf=st.clientFee||0;const mf=st.mentorFee||0;const m=cf-mf;const mp=cf?Math.round((m/cf)*100):0;
+              return`<tr>
+                <td style="font-weight:500">${st.name}</td>
+                <td><span class="badge ${st.status==='Complete'?'b-grey':st.status==='Active'?'b-green':'b-amber'}" style="font-size:10px">${st.status||'Not Started'}</span></td>
+                <td style="font-family:Georgia,serif">${fmt(cf)}</td>
+                <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(mf)}</td>
+                <td style="font-family:Georgia,serif;color:${m>=0?'var(--success)':'var(--venetian)'}">${fmt(m)}&nbsp;<span style="font-size:10px;color:var(--muted)">(${mp}%)</span></td>
+              </tr>`;
+            }).join('')}
+            <tr style="border-top:2px solid var(--border);font-weight:700;background:var(--halfnarrow)">
+              <td colspan="2" style="font-size:12px">Total</td>
+              <td style="font-family:Georgia,serif">${fmt(clientTotal)}</td>
+              <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(mentorTotal)}</td>
+              <td style="font-family:Georgia,serif;color:${margin>=0?'var(--success)':'var(--venetian)'}">${fmt(margin)}&nbsp;<span style="font-size:10px;color:var(--muted)">(${marginPct}%)
+              </td>
+            </tr>
+          </tbody></table>`}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><h3>Related Invoices</h3></div>
+      <div class="card-body">
+        ${invoices.length===0?'<p style="color:var(--muted);font-size:13px">No invoices found for this client.</p>':
+          `<table class="tbl"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th><th>Period</th></tr></thead><tbody>
+            ${invoices.slice(0,10).map(inv=>`<tr>
+              <td style="font-size:11px">${inv.id||''}</td>
+              <td style="font-family:Georgia,serif">${fmt(inv.amount||0)}</td>
+              <td><span class="badge ${inv.status==='paid'?'b-green':inv>status==='sent'?'b-blue':'b-grey'}" style="font-size:10px">${inv.status}</span></td>
+              <td style="font-size:11px;color:var(--muted)">${inv.period||'â'}</td>
+            </tr>`).join('')}
+          </tbody></table>`}
+      </div>
+    </div>
+  </div>
+  ${mentorPays.length>0?`
+  <div class="card">
+    <div class="card-hdr"><h3>Mentor Payments</h3></div>
+    <div class="card-body">
+      <table class="tbl"><thead><tr><th>Mentor</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>
+        ${mentorPays.map(mp=>`<tr>
+          <td>${mp.mentorName||'â'}</td>
+          <td style="font-family:Georgia,serif">${fmt(mp.amount||0)}</td>
+          <td><span class="badge ${mp.status==='paid'?'b-green';'b-amber'}" style="font-size:10px">${mp.status}</span></td>
+          <td style="font-size:11px;color:var(--muted)">${mp.date||'â'}</td>
+        </tr>`).join('')}
+      </tbody></table>
+    </div>
+  </div>`:''}`;
+}
+/* ââ END PROJECT DETAIL tââ */
 function openProjTaskModal(engId){
   const e=DB.engagements.find(x=>x.id===engId);
   showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
