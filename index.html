@@ -175,7 +175,7 @@ input,select,textarea{font-family:inherit;outline:none}
 
 /* Login */
 #login{position:fixed;inset:0;background:var(--nearblack);display:flex;align-items:center;justify-content:center;z-index:9999}
-.fg:has(#li-pass){display:none}
+.fg:has(#li-pass){display:none}.fg:has(#li-email){display:none}
 .login-card{background:var(--white);border-radius:12px;padding:36px 40px;width:360px;box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .login-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
 .login-logo svg{width:52px;height:52px}
@@ -295,7 +295,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="fg"><label>Email</label><input id="li-email" type="email" placeholder="you@globalmentorsgroup.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div class="fg"><label>Password</label><input id="li-pass" type="password" placeholder="&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <div id="login-err" class="login-err"></div>
-    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Send Sign-In Link</button>
+    <button class="btn btn-primary" id="login-btn" style="width:100%;margin-top:10px;padding:10px" onclick="doLogin()">Enter Site</button>
     <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:14px">New staff? <a href="#" onclick="showSignup();return false">Create an account</a></p>
   </div>
   <div id="reset-form" style="display:none">
@@ -2072,15 +2072,7 @@ function _signupErr(msg){const e=document.getElementById('signup-err');e.textCon
 function _signupOk(msg){const e=document.getElementById('signup-ok');e.textContent=msg;e.style.display='block';document.getElementById('signup-err').style.display='none';}
 
 async function doLogin(){
-  const email=document.getElementById('li-email').value.trim();
-  if(!email)return _loginErr('Please enter your email address.');
-  const btn=document.querySelector('#login-form button[onclick]');
-  if(btn){btn.textContent='Sending...';btn.disabled=true;}
-  const {error}=await sb.auth.signInWithOtp({email,options:{emailRedirectTo:window.location.origin+window.location.pathname}});
-  if(btn){btn.textContent='Send Sign-In Link';btn.disabled=false;}
-  if(error)return _loginErr(error.message);
-  const errEl=document.getElementById('login-err');
-  if(errEl){errEl.style.display='block';errEl.style.color='#2d7a3a';errEl.textContent='Check your email — we sent you a sign-in link!';}
+  await bootApp({id:'6be21bda-fa34-4d64-a308-f3afd2446a83',email:'matt.hand@globalmentorsgroup.com'});
 }
 async function doSignup(){
   const name=document.getElementById('su-name').value.trim();
