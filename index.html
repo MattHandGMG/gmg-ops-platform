@@ -2188,7 +2188,7 @@ function renderView(){
 
 /* ── DASHBOARD ───────────────────────────────────────────────── */
 
-/* ââ DASHBOARD (role-aware) âââââââââââââââââââââââââââââââ */
+/* ── DASHBOARD (role-aware) ─────────────────────────────── */
 function rDashboard(c){
   const role=S.user.role||'rm';
   if(role==='partner') return rDashboardPartner(c, S.user.name);
@@ -2290,26 +2290,26 @@ function rDashboardRM(c){
         const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
         return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
           <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'â¦':e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${mn?.name||'â'} · ${e.coordinator}</div></div>
+          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'…':e.name}</div>
+          <div style="font-size:10px;color:var(--muted)">${mn?.name||'—'} · ${e.coordinator}</div></div>
           <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
       }).join('')}
       </div></div>`:''}
   </div>
   <div class="g2">
     ${_dashCfg('finance')?`<div class="card">
-      <div class="card-hdr"><h3>Finance â Pending Actions</h3></div>
+      <div class="card-hdr"><h3>Finance — Pending Actions</h3></div>
       <div class="card-body" style="padding:0 18px">
         ${unsyncedInv.length===0&&pendingPay.length===0?'<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced &#10003;</p>':''}
         ${unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
           <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
           <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
         ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]||''} · ${p.type}</span></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]||''} · ${p.type}</span></div>
           <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
           <span class="badge b-amber">pending</span></div>`;
         }).join('')}
@@ -2318,7 +2318,7 @@ function rDashboardRM(c){
       <div class="card-hdr"><h3>Recent Activity</h3></div>
       <div class="card-body" style="padding:0 18px">
         ${(DB.activities||[]).slice(0,8).map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
-          <div style="width:22px;height:22px;border-radius:50%;background:var(--halfnarrow);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${a.icon||'â'}</div>
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--halfnarrow);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${a.icon||'●'}</div>
           <div><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted)">${a.ts}</div></div>
         </div>`).join('')}
       </div></div>`:''}
@@ -2355,7 +2355,7 @@ function rDashboardPartner(c, forName){
         return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
           <span class="badge ${tb}">${e.type}</span>
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${cl?.name||'â'} · ${mn?.name||'â'}</div></div>
+          <div style="font-size:10px;color:var(--muted)">${cl?.name||'—'} · ${mn?.name||'—'}</div></div>
           <div style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val)}</div>
           <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
       }).join('')}
@@ -2415,30 +2415,30 @@ function rDashboardFinance(c){
     <div class="kpi"><div class="kpi-label">Invoices Outstanding</div><div class="kpi-val">${fmt(totalOwed)}</div>
       <div class="kpi-sub">${DB.clientInvoices.filter(i=>i.status!=='paid').length} invoices</div></div>
     <div class="kpi"><div class="kpi-label">Unsynced to Xero</div><div class="kpi-val">${unsyncedInv.length}</div>
-      <div class="kpi-sub">${unsyncedInv.length===0?'All synced â':'Action required'}</div></div>
+      <div class="kpi-sub">${unsyncedInv.length===0?'All synced ✓':'Action required'}</div></div>
   </div>
   <div class="g2">
     <div class="card">
-      <div class="card-hdr"><h3>Invoice Queue â Pending Xero Sync</h3></div>
+      <div class="card-hdr"><h3>Invoice Queue — Pending Xero Sync</h3></div>
       <div class="card-body" style="padding:0 18px">
         ${unsyncedInv.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All invoices synced &#10003;</p>':
         unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} â ${inv.period}</strong><span>${inv.type} · ${inv.status}</span></div>
+          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>${inv.type} · ${inv.status}</span></div>
           <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
           <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
         }).join('')}
       </div>
     </div>
     <div class="card">
-      <div class="card-hdr"><h3>Mentor Payments â Pending</h3>
+      <div class="card-hdr"><h3>Mentor Payments — Pending</h3>
         ${pendingPay.length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill &#8594;</button>`:''}
       </div>
       <div class="card-body" style="padding:0 18px">
         ${pendingPay.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All payments processed &#10003;</p>':
         pendingPay.slice(0,8).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
           return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} â ${p.period}</strong><span>${e?.name?.split('â')[0]?.trim()||''}</span></div>
+          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]?.trim()||''}</span></div>
           <div class="fin-amount">${fmt(p.amount)}</div>
           <span class="badge b-amber">pending</span></div>`;
         }).join('')}
@@ -2459,10 +2459,10 @@ function rDashboardAdmin(c){
   </div>`;
 }
 
-/* ââ ADMIN PANEL âââââââââââââââââââââââââââââââ */
+/* ── ADMIN PANEL ─────────────────────────────── */
 async function rAdmin(c){
   c.innerHTML=`<div class="phdr"><div><h2>&#9881; Admin</h2><p>User management and platform access</p></div></div>
-  <div class="card"><div style="padding:20px;text-align:center;color:var(--muted)">Loading usersâ¦</div></div>`;
+  <div class="card"><div style="padding:20px;text-align:center;color:var(--muted)">Loading users…</div></div>`;
   // Fetch profiles from Supabase
   let profiles=[];
   try{const{data}=await sb.from('profiles').select('id,data,updated_at').order('updated_at',{ascending:false});profiles=data||[];}catch(e){}
@@ -2476,11 +2476,11 @@ async function rAdmin(c){
     ${profiles.length===0?`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No users found. Users appear here after their first login.</td></tr>`:
     profiles.map(p=>{const d=p.data||{};
       return`<tr>
-        <td><div style="font-weight:600;font-size:12px">${d.name||'â'}</div></td>
-        <td><span class="badge b-grey">${roleLabels[d.role]||d.role||'â'}</span></td>
-        <td style="font-size:12px">${d.entity||'â'}</td>
-        <td style="font-size:12px;color:var(--muted)">${d.partnerName||'â'}</td>
-        <td style="font-size:11px;color:var(--muted)">${p.updated_at?new Date(p.updated_at).toLocaleDateString('en-GB'):'â'}</td>
+        <td><div style="font-weight:600;font-size:12px">${d.name||'—'}</div></td>
+        <td><span class="badge b-grey">${roleLabels[d.role]||d.role||'—'}</span></td>
+        <td style="font-size:12px">${d.entity||'—'}</td>
+        <td style="font-size:12px;color:var(--muted)">${d.partnerName||'—'}</td>
+        <td style="font-size:11px;color:var(--muted)">${p.updated_at?new Date(p.updated_at).toLocaleDateString('en-GB'):'—'}</td>
         <td><button class="btn btn-sm btn-outline" onclick="openAdminUserModal('${p.id}',${JSON.stringify(JSON.stringify(d)).replace(/'/g,'&#39;')})">Edit</button></td>
       </tr>`;
     }).join('')}
@@ -2619,11 +2619,11 @@ function rEngagements(c){
       const fee=fmt(e.annualFee||e.totalFee||e.quarterlyFee||0);
       const feeLabel=e.annualFee?'pa':e.totalFee?'total':e.quarterlyFee?'qtr':'';
       return`<tr>
-        <td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.startDate||''}${e.endDate?' â '+e.endDate:''}</div></td>
+        <td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.startDate||''}${e.endDate?' → '+e.endDate:''}</div></td>
         <td><span class="badge ${tb[e.type]||'b-grey'}">${e.type}</span></td>
-        <td style="font-size:12px">${cl?.name||'â'}</td>
-        <td style="font-size:12px">${mn?.name?.split('â')[0]?.trim()||'â'}</td>
-        <td style="font-size:12px">${e.partner||'â'}</td>
+        <td style="font-size:12px">${cl?.name||'—'}</td>
+        <td style="font-size:12px">${mn?.name?.split('—')[0]?.trim()||'—'}</td>
+        <td style="font-size:12px">${e.partner||'—'}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
         <td><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
@@ -2676,12 +2676,12 @@ function rQuoting(c){
       const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[q.solution]||'b-grey';
       return`<tr>
         <td><div style="font-weight:600;font-size:12px">${q.name}</div><div style="font-size:10px;color:var(--muted)">${q.date||''}</div></td>
-        <td><span class="badge ${tb}">${q.solution||'â'}</span></td>
-        <td style="font-size:12px">${cl?.name||q.clientId||'â'}</td>
+        <td><span class="badge ${tb}">${q.solution||'—'}</span></td>
+        <td style="font-size:12px">${cl?.name||q.clientId||'—'}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(q.value)}</td>
-        <td style="font-size:12px">${q.partner||'â'}</td>
+        <td style="font-size:12px">${q.partner||'—'}</td>
         <td><span class="badge ${q.status==='approved'?'b-green':q.status==='sent'?'b-blue':q.status==='declined'?'b-red':'b-grey'}">${q.status}</span></td>
-        <td style="font-size:11px;color:var(--muted)">${q.validUntil||'â'}</td>
+        <td style="font-size:11px;color:var(--muted)">${q.validUntil||'—'}</td>
         <td><button class="btn btn-sm btn-outline" onclick="openQuoteModal('${q.id}')">Edit</button></td>
       </tr>`;
     }).join('')}
@@ -2728,7 +2728,7 @@ function rProjects(c){
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} · ${mentor?mentor.name:'No mentor'}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} · ${mentor?mentor.name:'No mentor'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
         </div>
@@ -2759,7 +2759,7 @@ function rProjects(c){
 }
 function openProjTaskModal(engId){
   const e=DB.engagements.find(x=>x.id===engId);
-  showModal(`<div class="mhdr"><h3>New Task â ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
+  showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
     <div class="fg"><label>Task Title</label><input id="pt-title" class="fi" placeholder="e.g. Send Q3 invoice"></div>
     <div class="fg"><label>Assignee</label><select id="pt-assignee" class="fi">
@@ -2782,7 +2782,7 @@ function saveProjTask(engId){
   const title=document.getElementById('pt-title').value.trim();
   if(!title)return alert('Please enter a title.');
   const t={id:uid(),title,ref:engId,type:'engagement',assignee:document.getElementById('pt-assignee').value,status:'todo',priority:document.getElementById('pt-pri').value,due:document.getElementById('pt-due').value,notes:document.getElementById('pt-notes').value.trim()};
-  DB.tasks.unshift(t);addAct('â»',`Task created: ${title}`);save();closeModal();renderView();
+  DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
 }
 
 function rPipeline(c){
