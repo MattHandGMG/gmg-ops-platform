@@ -3831,7 +3831,9 @@ function openEngDetail(engId){
           +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+st.name+'</div>'
           +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(st.startDate||'')+(st.startDate&&st.endDate?' → ':'')+(st.endDate||'')
           +(st.mentors&&st.mentors.length?'  ·  '+st.mentors.map(mid=>{const c=DB.contacts.find(x=>x.id===mid);return c?c.name:mid;}).join(', '):'')
-          +'</div>'+(st.notes?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+st.notes+'</div>':'')+'</div>'
+          +'</div>'+(st.notes?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+st.notes+'</div>':'')
+          +((st.clientFee||st.mentorFee)?'<div style="font-size:11px;margin-top:3px">'+(st.clientFee?'<span style="color:var(--venetian);font-weight:600">Client: '+fmt(st.clientFee)+'</span>  ':'')+(st.mentorFee?'<span style="color:var(--cadmium)">Mentor: '+fmt(st.mentorFee)+'</span>':'')+'</div>':'')
+          +'</div>'
           +'<span class="badge '+(st.status==='Active'?'b-green':st.status==='Complete'?'b-grey':'b-amber')+'" style="font-size:10px">'+(st.status||'Not Started')+'</span>'
           +'<button class="btn btn-sm btn-outline" onclick="closeModal();openStageModal(&apos;'+engId+'&apos;,&apos;'+st.id+'&apos;)" style="padding:2px 8px;font-size:11px">Edit</button>'
           +'<button onclick="deleteStage(&apos;'+engId+'&apos;,&apos;'+st.id+'&apos;)" style="padding:2px 8px;font-size:11px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted)">✕</button>'
@@ -3861,6 +3863,9 @@ function openStageModal(engId,stageId){
     +'<div class="fg"><label>Start Date</label><input type="date" id="sg-start" value="'+(st&&st.startDate?st.startDate:'')+'"></div>'
     +'<div class="fg"><label>End Date</label><input type="date" id="sg-end" value="'+(st&&st.endDate?st.endDate:'')+'"></div></div>'
     +'<div class="fg"><label>Notes</label><textarea id="sg-notes" rows="2">'+(st&&st.notes?st.notes:'')+'</textarea></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="fg"><label>Client Fee (£)</label><input type="number" id="sg-client-fee" value="'+(st&&st.clientFee?st.clientFee:'')+'" placeholder="0"></div>'
+    +'<div class="fg"><label>Mentor Fee (£)</label><input type="number" id="sg-mentor-fee" value="'+(st&&st.mentorFee?st.mentorFee:'')+'" placeholder="0"></div></div>'
     +'<div class="fg"><label>Assign Mentors</label>'
     +'<div style="max-height:130px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">'
     +ml.map(c=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;cursor:pointer">'
@@ -3882,6 +3887,8 @@ function saveStage(engId,stageId){
     startDate:document.getElementById('sg-start').value,
     endDate:document.getElementById('sg-end').value,
     notes:document.getElementById('sg-notes').value.trim(),
+    clientFee:+document.getElementById('sg-client-fee').value||0,
+    mentorFee:+document.getElementById('sg-mentor-fee').value||0,
     mentors:[...document.querySelectorAll('.sg-mentor:checked')].map(cb=>cb.value)
   };
   if(!eng.stages)eng.stages=[];
