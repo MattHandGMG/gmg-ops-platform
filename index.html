@@ -3285,79 +3285,56 @@ function rProjCalendar(body,e,stages,sessions,tasks){
 }
 
 function rProjFinancials(body,e,stages,sessions){
+  const fmt=n=>'£'+Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});
   const clientTotal=stages.reduce((s,x)=>s+(x.clientFee||0),0);
   const mentorTotal=stages.reduce((s,x)=>s+(x.mentorFee||0),0);
+  const totalFee=e.fee||0;
   const margin=clientTotal-mentorTotal;
   const marginPct=clientTotal?Math.round((margin/clientTotal)*100):0;
-  const annualFee=e.annualFee||0;
-  const qtrFee=e.quarterlyFee||0;
-  const totalFee=e.totalFee||(qtrFee*4)||annualFee||0;
-  const invoices=(DB.clientInvoices||[]).filter(inv=>inv>clientId===e.clientId);
-  const mentorPays=(DB/mentorPayments||[]).filter(mp=>mp.engId===e.id);
+  const mentorPays=sessions||[];
   body.innerHTML=`
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:20px">
-    <div class="kpi"><div class="kpi-label">Total Client Fee</div><div class="kpi-val">${fmt(clientTotal||totalFee)}</div><div class="kpi-sub">stage total</div></div>
-    <div class="kpi kpi-gold"><div class="kpi-label">Total Mentor Fee</div><div class="kpi-val">${fmt(mentorTotal)}</div><div class="kpi-sub">stage total</div></div>
-    <div class="kpi"><div class="kpi-label">Gross Margin</div><div class="kpi-val">${fmt(margin)}</div><div class="kpi-sub">${marginPct}%</div></div>
-    <div class="kpi"><div class="kpi-label">Annual Fee</div><div class="kpi-val">${fmt(annualFee)}</div><div class="kpi-sub">${qtrFee?fmt(qtrFee)+' /qtr':'â'}</div></div>
+    <div class="kpi"><div class="kpi-label">Total Client Fee</div><div class="kpi-val">${fmt(clientTotal||totalFee)}</div></div>
+    <div class="kpi"><div class="kpi-label">Total Mentor Cost</div><div class="kpi-val">${fmt(mentorTotal)}</div></div>
+    <div class="kpi"><div class="kpi-label">Gross Margin</div><div class="kpi-val">${fmt(margin)}</div></div>
+    <div class="kpi"><div class="kpi-label">Margin %</div><div class="kpi-val">${marginPct}%</div></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
-    <div class="card">
-      <div class="card-hdr"><h3>Stage Financials</h3></div>
-      <div class="card-body">
-        ${stages.length===0?'<p style="color:var(--muted);font-size:13px">No stages defined. Fees are tracked per stage.</p>':
-          `<table class="tbl"><thead><tr><th>Stage</th><th>Status</th><th>Client Fee</th><th>Mentor Fee</th><th>Margin</th></tr></thead><tbody>
-            ${stages.map(st=>{
-              const cf=st.clientFee||0;const mf=st.mentorFee||0;const m=cf-mf;const mp=cf?Math.round((m/cf)*100):0;
-              return`<tr>
-                <td style="font-weight:500">${st.name}</td>
-                <td><span class="badge ${st.status==='Complete'?'b-grey':st.status==='Active'?'b-green':'b-amber'}" style="font-size:10px">${st.status||'Not Started'}</span></td>
-                <td style="font-family:Georgia,serif">${fmt(cf)}</td>
-                <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(mf)}</td>
-                <td style="font-family:Georgia,serif;color:${m>=0?'var(--success)':'var(--venetian)'}">${fmt(m)}&nbsp;<span style="font-size:10px;color:var(--muted)">(${mp}%)</span></td>
-              </tr>`;
-            }).join('')}
-            <tr style="border-top:2px solid var(--border);font-weight:700;background:var(--halfnarrow)">
-              <td colspan="2" style="font-size:12px">Total</td>
-              <td style="font-family:Georgia,serif">${fmt(clientTotal)}</td>
-              <td style="font-family:Georgia,serif;color:var(--cadmium)">${fmt(mentorTotal)}</td>
-              <td style="font-family:Georgia,serif;color:${margin>=0?'var(--success)':'var(--venetian)'}">${fmt(margin)}&nbsp;<span style="font-size:10px;color:var(--muted)">(${marginPct}%)
-              </td>
-            </tr>
-          </tbody></table>`}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><h3>Related Invoices</h3></div>
-      <div class="card-body">
-        ${invoices.length===0?'<p style="color:var(--muted);font-size:13px">No invoices found for this client.</p>':
-          `<table class="tbl"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th><th>Period</th></tr></thead><tbody>
-            ${invoices.slice(0,10).map(inv=>`<tr>
-              <td style="font-size:11px">${inv.id||''}</td>
-              <td style="font-family:Georgia,serif">${fmt(inv.amount||0)}</td>
-              <td><span class="badge ${inv.status==='paid'?'b-green':inv>status==='sent'?'b-blue':'b-grey'}" style="font-size:10px">${inv.status}</span></td>
-              <td style="font-size:11px;color:var(--muted)">${inv.period||'â'}</td>
-            </tr>`).join('')}
-          </tbody></table>`}
-      </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h3>Stage Financials</h3></div>
+    <div class="card-body">
+      ${stages.length===0?'<p style="color:var(--muted);font-size:13px">No stages defined. Fees are tracked per stage.</p>':`
+      <table class="tbl"><thead><tr><th>Stage</th><th>Status</th><th>Client Fee</th><th>Mentor Fee</th><th>Margin</th></tr></thead>
+      <tbody>
+      ${stages.map(s=>{
+        const m=(s.clientFee||0)-(s.mentorFee||0);
+        const pct=(s.clientFee||0)?Math.round((m/(s.clientFee||0))*100):0;
+        return `<tr>
+          <td>${s.name||'Stage'}</td>
+          <td><span class="badge ${s.status==='complete'?'badge-green':s.status==='active'?'badge-blue':'badge-grey'}">${s.status||'pending'}</span></td>
+          <td style="font-family:Georgia,serif">${fmt(s.clientFee||0)}</td>
+          <td style="font-family:Georgia,serif">${fmt(s.mentorFee||0)}</td>
+          <td style="font-family:Georgia,serif">${fmt(m)} (${pct}%)</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table>`}
     </div>
   </div>
-  ${mentorPays.length>0?`
   <div class="card">
     <div class="card-hdr"><h3>Mentor Payments</h3></div>
     <div class="card-body">
-      <table class="tbl"><thead><tr><th>Mentor</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>
-        ${mentorPays.map(mp=>`<tr>
-          <td>${mp.mentorName||'â'}</td>
-          <td style="font-family:Georgia,serif">${fmt(mp.amount||0)}</td>
-          <td><span class="badge ${mp.status==='paid'?'b-green';'b-amber'}" style="font-size:10px">${mp.status}</span></td>
-          <td style="font-size:11px;color:var(--muted)">${mp.date||'â'}</td>
-        </tr>`).join('')}
-      </tbody></table>
+      ${mentorPays.length===0?'<p style="color:var(--muted);font-size:13px">No payment records yet.</p>':`
+      <table class="tbl"><thead><tr><th>Mentor</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+      ${mentorPays.map(mp=>{ return `<tr>
+        <td>${mp.mentorName||mp.mentor||''}</td>
+        <td style="font-family:Georgia,serif">${fmt(mp.amount||0)}</td>
+        <td><span class="badge ${mp.paid?'badge-green':'badge-grey'}">${mp.paid?'Paid':'Pending'}</span></td>
+        <td>${mp.date||''}</td>
+      </tr>`; }).join('')}
+      </tbody></table>`}
     </div>
-  </div>`:''}`;
+  </div>`;
 }
-/* ââ END PROJECT DETAIL tââ */
 function openProjTaskModal(engId){
   const e=DB.engagements.find(x=>x.id===engId);
   showModal(`<div class="mhdr"><h3>New Task — ${e?e.name:''}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
