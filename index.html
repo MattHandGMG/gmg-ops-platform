@@ -5,204 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GMG Platform — Global Mentors Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
-/* ââ TEAM CHAT ââ */
-function rChat(c){
-  if(!DB.chatChannels)DB.chatChannels=[
-    {id:'ch_general',name:'general',description:'Company-wide discussions'},
-    {id:'ch_projects',name:'projects',description:'Project updates and coordination'},
-    {id:'ch_finance',name:'finance',description:'Finance team discussions'},
-    {id:'ch_mentors',name:'mentors',description:'Mentor coordination'}
-  ];
-  if(!DB.chatMessages)DB.chatMessages=[];
-  const activeChat=S.tab.chatActive||'ch_general';
-  const isChannel=activeChat.startsWith('ch_');
-  const users=DB.users||[];
-  const cu=S.user;
-  let messages=isChannel
-    ?DB.chatMessages.filter(m=>m.channelId===activeChat)
-    :DB.chatMessages.filter(m=>m.isDM&&((m.fromId===cu.id&&m.toId===activeChat.replace('dm_',''))||(m.fromId===activeChat.replace('dm_','')&&m.toId===cu.id)));
-  if(!S.tab.chatLastRead)S.tab.chatLastRead={};
-  S.tab.chatLastRead[activeChat]=Date.now();
-  const getUnread=cid=>{
-    const lr=(S.tab.chatLastRead||{})[cid]||0;
-    if(cid.startsWith('ch_'))return DB.chatMessages.filter(m=>m.channelId===cid&&m.ts>lr&&m.fromId!==cu.id).length;
-    const oid=cid.replace('dm_','');
-    return DB.chatMessages.filter(m=>m.isDM&&m.fromId===oid&&m.toId===cu.id&&m.ts>lr).length;
-  };
-  let hTitle='',hSub='';
-  if(isChannel){const ch=DB.chatChannels.find(x=>x.id===activeChat);hTitle=ch?'# '+ch.name:'Channel';hSub=ch?ch.description:'';}
-  else{const oid=activeChat.replace('dm_','');const ou=users.find(u=>u.id===oid);hTitle=ou?ou.name:'Direct Message';hSub='Direct Message';}
-  const otherUsers=users.filter(u=>u.id!==cu.id);
-  c.innerHTML=`
-  <div style="display:flex;height:calc(100vh - 124px);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-    <div style="width:220px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--halfnarrow);overflow-y:auto">
-      <div style="padding:14px 12px 6px;font-size:13px;font-weight:700;color:var(--nearblack);font-family:Georgia,serif">Team Chat</div>
-      <div style="padding:4px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">CHANNELS</div>
-      ${DB.chatChannels.map(ch=>{
-        const unread=getUnread(ch.id);
-        const active=activeChat===ch.id;
-        return `<div onclick="S.tab.chatActive='${ch.id}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
-          <span style="font-size:13px"># ${ch.name}</span>
-          ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
-        </div>`;
-      }).join('')}
-      <div onclick="openNewChannelModal()" style="padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;margin:1px 6px">
-        <span style="font-size:16px;line-height:1">+</span><span>Add channel</span>
-      </div>
-      <div style="padding:10px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">DIRECT MESSAGES</div>
-      ${otherUsers.length===0?'<div style="padding:6px 14px;font-size:12px;color:var(--muted)">No other users yet</div>':
-        otherUsers.map(u=>{
-          const dmId='dm_'+u.id;
-          const unread=getUnread(dmId);
-          const active=activeChat===dmId;
-          const initials=u.name.split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-          return `<div onclick="S.tab.chatActive='${dmId}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:22px;height:22px;border-radius:50%;background:${active?'rgba(255,255,255,.3)':'var(--venetian)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${initials}</div>
-              <span style="font-size:12px">${u.name}</span>
-            </div>
-            ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
-          </div>`;
-        }).join('')}
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--surface)">
-      <div style="padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-size:15px;font-weight:700;color:var(--nearblack)">${hTitle}</div>
-        ${hSub?`<div style="font-size:11px;color:var(--muted)">${hSub}</div>`:''}
-      </div>
-      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:1px">
-        ${messages.length===0?'<div style="text-align:center;color:var(--muted);padding:48px;font-size:13px">No messages yet â start the conversation!</div>':
-          messages.map(m=>renderChatMsg(m,users,cu)).join('')}
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0">
-        <div style="position:relative">
-          <div id="mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:200px;z-index:100;max-height:200px;overflow-y:auto"></div>
-          <div style="display:flex;gap:8px;align-items:flex-end">
-            <textarea id="chat-input" placeholder="Message ${hTitle.replace(/'/g,'&#39;')}â¦ type @ to mention someone" rows="1"
-              style="flex:1;box-sizing:border-box;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;font-family:inherit;min-height:40px;max-height:120px;line-height:1.4;background:var(--surface);color:var(--nearblack)"
-              onkeydown="handleChatKey(event,'${activeChat}')"
-              oninput="handleChatInput(this)"></textarea>
-            <button class="btn btn-primary" onclick="sendChatMsg('${activeChat}')" style="padding:9px 18px;flex-shrink:0;height:40px">Send</button>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">Enter to send &middot; Shift+Enter for new line</div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  setTimeout(()=>{
-    const el=document.getElementById('chat-messages');
-    if(el)el.scrollTop=el.scrollHeight;
-    const inp=document.getElementById('chat-input');
-    if(inp)inp.focus();
-  },60);
-}
-
-function renderChatMsg(m,users,cu){
-  const sender=users.find(u=>u.id===m.fromId)||{name:m.fromName||'Unknown',id:m.fromId};
-  const isMe=m.fromId===cu.id;
-  const initials=(sender.name||'?').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-  const d=new Date(m.ts||Date.now());
-  const today=new Date();
-  const sameDay=d.toDateString()===today.toDateString();
-  const timeStr=sameDay?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  const txt=(m.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/@([\w][\w ]*)/g,'<span style="background:rgba(206,83,67,.12);color:var(--venetian);border-radius:3px;padding:0 3px;font-weight:600">@$1</span>');
-  return `<div style="display:flex;gap:10px;padding:5px 0;align-items:flex-start">
-    <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--cadmium)':'var(--venetian)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px">${initials}</div>
-    <div style="flex:1">
-      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
-        <span style="font-size:12px;font-weight:700;color:var(--nearblack)">${isMe?'You':sender.name}</span>
-        <span style="font-size:10px;color:var(--muted)">${timeStr}</span>
-      </div>
-      <div style="font-size:13px;color:var(--nearblack);line-height:1.45;word-break:break-word">${txt}</div>
-    </div>
-  </div>`;
-}
-
-function sendChatMsg(chatId){
-  const inp=document.getElementById('chat-input');
-  if(!inp)return;
-  const text=inp.value.trim();
-  if(!text)return;
-  if(!DB.chatMessages)DB.chatMessages=[];
-  const msg={id:uid(),ts:Date.now(),fromId:S.user.id,fromName:S.user.name||S.user.email,text};
-  if(chatId.startsWith('ch_'))msg.channelId=chatId;
-  else{msg.isDM=true;msg.toId=chatId.replace('dm_','');}
-  const mm=text.match(/@([\w][\w ]*)/g);
-  if(mm)msg.mentions=mm;
-  DB.chatMessages.push(msg);
-  if(!S.tab.chatLastRead)S.tab.chatLastRead={};
-  S.tab.chatLastRead[chatId]=Date.now();
-  addAct('ð¬','Message sent');
-  save();
-  inp.value='';
-  inp.style.height='auto';
-  renderView();
-}
-
-function handleChatKey(e,chatId){
-  if(e.key==='Enter'&&!e.shiftKey){
-    e.preventDefault();
-    const dd=document.getElementById('mention-dd');
-    if(dd&&dd.style.display!=='none'&&dd.children.length>0){dd.children[0].click();return;}
-    sendChatMsg(chatId);
-  }
-}
-
-function handleChatInput(el){
-  el.style.height='auto';
-  el.style.height=Math.min(el.scrollHeight,120)+'px';
-  const val=el.value;
-  const cursor=el.selectionStart;
-  const before=val.slice(0,cursor);
-  const atMatch=before.match(/@(\w*)$/);
-  const dd=document.getElementById('mention-dd');
-  if(!dd)return;
-  if(atMatch){
-    const q=atMatch[1].toLowerCase();
-    const all=DB.users||[];
-    const matches=all.filter(u=>u.id!==S.user.id&&(u.name.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)));
-    if(matches.length>0){
-      dd.style.display='block';
-      dd.innerHTML=matches.slice(0,6).map(u=>{
-        const ini=(u.name||'?').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-        const nm=u.name.replace(/'/g,'&#39;');
-        return `<div onclick="insertMention('${nm}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--halfnarrow)'" onmouseout="this.style.background='transparent'">
-          <div style="width:24px;height:24px;border-radius:50%;background:var(--venetian);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">${ini}</div>
-          <div><div style="font-weight:600">${u.name}</div><div style="font-size:10px;color:var(--muted)">${u.role||u.email||''}</div></div>
-        </div>`;
-      }).join('');
-      return;
-    }
-  }
-  dd.style.display='none';
-}
-
-function insertMention(name){
-  const inp=document.getElementById('chat-input');
-  if(!inp)return;
-  const val=inp.value,cursor=inp.selectionStart;
-  const before=val.slice(0,cursor),after=val.slice(cursor);
-  const nb=before.replace(/@\w*$/,'@'+name+' ');
-  inp.value=nb+after;
-  inp.focus();
-  inp.selectionStart=inp.selectionEnd=nb.length;
-  const dd=document.getElementById('mention-dd');
-  if(dd)dd.style.display='none';
-}
-
-function openNewChannelModal(){
-  const name=prompt('Channel name (lowercase letters and hyphens only):');
-  if(!name)return;
-  const clean=name.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
-  if(!clean){alert('Invalid name');return;}
-  if(!DB.chatChannels)DB.chatChannels=[];
-  if(DB.chatChannels.find(c=>c.name===clean)){alert('Channel already exists');return;}
-  DB.chatChannels.push({id:'ch_'+uid(),name:clean,description:''});
-  save();
-  S.tab.chatActive='ch_'+DB.chatChannels[DB.chatChannels.length-1].id;
-  renderView();
-}
-/* ââ END TEAM CHAT ââ */
 
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4549,6 +4351,205 @@ async function setNewPwd(){
   if(error){msg.style.color='red';msg.textContent='Error: '+error.message;}
   else{msg.style.color='green';msg.textContent='Password updated! Logging you in...';setTimeout(()=>window.location.reload(),1500);}
 }
+/* ââ TEAM CHAT ââ */
+function rChat(c){
+  if(!DB.chatChannels)DB.chatChannels=[
+    {id:'ch_general',name:'general',description:'Company-wide discussions'},
+    {id:'ch_projects',name:'projects',description:'Project updates and coordination'},
+    {id:'ch_finance',name:'finance',description:'Finance team discussions'},
+    {id:'ch_mentors',name:'mentors',description:'Mentor coordination'}
+  ];
+  if(!DB.chatMessages)DB.chatMessages=[];
+  const activeChat=S.tab.chatActive||'ch_general';
+  const isChannel=activeChat.startsWith('ch_');
+  const users=DB.users||[];
+  const cu=S.user;
+  let messages=isChannel
+    ?DB.chatMessages.filter(m=>m.channelId===activeChat)
+    :DB.chatMessages.filter(m=>m.isDM&&((m.fromId===cu.id&&m.toId===activeChat.replace('dm_',''))||(m.fromId===activeChat.replace('dm_','')&&m.toId===cu.id)));
+  if(!S.tab.chatLastRead)S.tab.chatLastRead={};
+  S.tab.chatLastRead[activeChat]=Date.now();
+  const getUnread=cid=>{
+    const lr=(S.tab.chatLastRead||{})[cid]||0;
+    if(cid.startsWith('ch_'))return DB.chatMessages.filter(m=>m.channelId===cid&&m.ts>lr&&m.fromId!==cu.id).length;
+    const oid=cid.replace('dm_','');
+    return DB.chatMessages.filter(m=>m.isDM&&m.fromId===oid&&m.toId===cu.id&&m.ts>lr).length;
+  };
+  let hTitle='',hSub='';
+  if(isChannel){const ch=DB.chatChannels.find(x=>x.id===activeChat);hTitle=ch?'# '+ch.name:'Channel';hSub=ch?ch.description:'';}
+  else{const oid=activeChat.replace('dm_','');const ou=users.find(u=>u.id===oid);hTitle=ou?ou.name:'Direct Message';hSub='Direct Message';}
+  const otherUsers=users.filter(u=>u.id!==cu.id);
+  c.innerHTML=`
+  <div style="display:flex;height:calc(100vh - 124px);border:1px solid var(--border);border-radius:8px;overflow:hidden">
+    <div style="width:220px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--halfnarrow);overflow-y:auto">
+      <div style="padding:14px 12px 6px;font-size:13px;font-weight:700;color:var(--nearblack);font-family:Georgia,serif">Team Chat</div>
+      <div style="padding:4px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">CHANNELS</div>
+      ${DB.chatChannels.map(ch=>{
+        const unread=getUnread(ch.id);
+        const active=activeChat===ch.id;
+        return `<div onclick="S.tab.chatActive='${ch.id}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
+          <span style="font-size:13px"># ${ch.name}</span>
+          ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
+        </div>`;
+      }).join('')}
+      <div onclick="openNewChannelModal()" style="padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;margin:1px 6px">
+        <span style="font-size:16px;line-height:1">+</span><span>Add channel</span>
+      </div>
+      <div style="padding:10px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">DIRECT MESSAGES</div>
+      ${otherUsers.length===0?'<div style="padding:6px 14px;font-size:12px;color:var(--muted)">No other users yet</div>':
+        otherUsers.map(u=>{
+          const dmId='dm_'+u.id;
+          const unread=getUnread(dmId);
+          const active=activeChat===dmId;
+          const initials=u.name.split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
+          return `<div onclick="S.tab.chatActive='${dmId}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:22px;height:22px;border-radius:50%;background:${active?'rgba(255,255,255,.3)':'var(--venetian)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${initials}</div>
+              <span style="font-size:12px">${u.name}</span>
+            </div>
+            ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
+          </div>`;
+        }).join('')}
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--surface)">
+      <div style="padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
+        <div style="font-size:15px;font-weight:700;color:var(--nearblack)">${hTitle}</div>
+        ${hSub?`<div style="font-size:11px;color:var(--muted)">${hSub}</div>`:''}
+      </div>
+      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:1px">
+        ${messages.length===0?'<div style="text-align:center;color:var(--muted);padding:48px;font-size:13px">No messages yet â start the conversation!</div>':
+          messages.map(m=>renderChatMsg(m,users,cu)).join('')}
+      </div>
+      <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0">
+        <div style="position:relative">
+          <div id="mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:200px;z-index:100;max-height:200px;overflow-y:auto"></div>
+          <div style="display:flex;gap:8px;align-items:flex-end">
+            <textarea id="chat-input" placeholder="Message ${hTitle.replace(/'/g,'&#39;')}â¦ type @ to mention someone" rows="1"
+              style="flex:1;box-sizing:border-box;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;font-family:inherit;min-height:40px;max-height:120px;line-height:1.4;background:var(--surface);color:var(--nearblack)"
+              onkeydown="handleChatKey(event,'${activeChat}')"
+              oninput="handleChatInput(this)"></textarea>
+            <button class="btn btn-primary" onclick="sendChatMsg('${activeChat}')" style="padding:9px 18px;flex-shrink:0;height:40px">Send</button>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:4px">Enter to send &middot; Shift+Enter for new line</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>{
+    const el=document.getElementById('chat-messages');
+    if(el)el.scrollTop=el.scrollHeight;
+    const inp=document.getElementById('chat-input');
+    if(inp)inp.focus();
+  },60);
+}
+
+function renderChatMsg(m,users,cu){
+  const sender=users.find(u=>u.id===m.fromId)||{name:m.fromName||'Unknown',id:m.fromId};
+  const isMe=m.fromId===cu.id;
+  const initials=(sender.name||'?').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
+  const d=new Date(m.ts||Date.now());
+  const today=new Date();
+  const sameDay=d.toDateString()===today.toDateString();
+  const timeStr=sameDay?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const txt=(m.text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/@([\w][\w ]*)/g,'<span style="background:rgba(206,83,67,.12);color:var(--venetian);border-radius:3px;padding:0 3px;font-weight:600">@$1</span>');
+  return `<div style="display:flex;gap:10px;padding:5px 0;align-items:flex-start">
+    <div style="width:32px;height:32px;border-radius:50%;background:${isMe?'var(--cadmium)':'var(--venetian)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px">${initials}</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:3px">
+        <span style="font-size:12px;font-weight:700;color:var(--nearblack)">${isMe?'You':sender.name}</span>
+        <span style="font-size:10px;color:var(--muted)">${timeStr}</span>
+      </div>
+      <div style="font-size:13px;color:var(--nearblack);line-height:1.45;word-break:break-word">${txt}</div>
+    </div>
+  </div>`;
+}
+
+function sendChatMsg(chatId){
+  const inp=document.getElementById('chat-input');
+  if(!inp)return;
+  const text=inp.value.trim();
+  if(!text)return;
+  if(!DB.chatMessages)DB.chatMessages=[];
+  const msg={id:uid(),ts:Date.now(),fromId:S.user.id,fromName:S.user.name||S.user.email,text};
+  if(chatId.startsWith('ch_'))msg.channelId=chatId;
+  else{msg.isDM=true;msg.toId=chatId.replace('dm_','');}
+  const mm=text.match(/@([\w][\w ]*)/g);
+  if(mm)msg.mentions=mm;
+  DB.chatMessages.push(msg);
+  if(!S.tab.chatLastRead)S.tab.chatLastRead={};
+  S.tab.chatLastRead[chatId]=Date.now();
+  addAct('ð¬','Message sent');
+  save();
+  inp.value='';
+  inp.style.height='auto';
+  renderView();
+}
+
+function handleChatKey(e,chatId){
+  if(e.key==='Enter'&&!e.shiftKey){
+    e.preventDefault();
+    const dd=document.getElementById('mention-dd');
+    if(dd&&dd.style.display!=='none'&&dd.children.length>0){dd.children[0].click();return;}
+    sendChatMsg(chatId);
+  }
+}
+
+function handleChatInput(el){
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+  const val=el.value;
+  const cursor=el.selectionStart;
+  const before=val.slice(0,cursor);
+  const atMatch=before.match(/@(\w*)$/);
+  const dd=document.getElementById('mention-dd');
+  if(!dd)return;
+  if(atMatch){
+    const q=atMatch[1].toLowerCase();
+    const all=DB.users||[];
+    const matches=all.filter(u=>u.id!==S.user.id&&(u.name.toLowerCase().includes(q)||(u.email||'').toLowerCase().includes(q)));
+    if(matches.length>0){
+      dd.style.display='block';
+      dd.innerHTML=matches.slice(0,6).map(u=>{
+        const ini=(u.name||'?').split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
+        const nm=u.name.replace(/'/g,'&#39;');
+        return `<div onclick="insertMention('${nm}')" style="display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--halfnarrow)'" onmouseout="this.style.background='transparent'">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--venetian);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700">${ini}</div>
+          <div><div style="font-weight:600">${u.name}</div><div style="font-size:10px;color:var(--muted)">${u.role||u.email||''}</div></div>
+        </div>`;
+      }).join('');
+      return;
+    }
+  }
+  dd.style.display='none';
+}
+
+function insertMention(name){
+  const inp=document.getElementById('chat-input');
+  if(!inp)return;
+  const val=inp.value,cursor=inp.selectionStart;
+  const before=val.slice(0,cursor),after=val.slice(cursor);
+  const nb=before.replace(/@\w*$/,'@'+name+' ');
+  inp.value=nb+after;
+  inp.focus();
+  inp.selectionStart=inp.selectionEnd=nb.length;
+  const dd=document.getElementById('mention-dd');
+  if(dd)dd.style.display='none';
+}
+
+function openNewChannelModal(){
+  const name=prompt('Channel name (lowercase letters and hyphens only):');
+  if(!name)return;
+  const clean=name.toLowerCase().replace(/[^a-z0-9-]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+  if(!clean){alert('Invalid name');return;}
+  if(!DB.chatChannels)DB.chatChannels=[];
+  if(DB.chatChannels.find(c=>c.name===clean)){alert('Channel already exists');return;}
+  DB.chatChannels.push({id:'ch_'+uid(),name:clean,description:''});
+  save();
+  S.tab.chatActive='ch_'+DB.chatChannels[DB.chatChannels.length-1].id;
+  renderView();
+}
+/* ââ END TEAM CHAT ââ */
+
 </script>
 
 <!-- CLAUDE CHAT BAR -->
