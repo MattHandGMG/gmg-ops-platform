@@ -3703,6 +3703,7 @@ function saveEng(id){
     startDate:n('em-start').value,endDate:n('em-end').value,
     notes:n('em-notes').value.trim(),
     partnerSplits:(DB.engagements.find(x=>x.id===engId)||{}).partnerSplits||[],
+    stages:(DB.engagements.find(x=>x.id===engId)||{}).stages||[],
   };
   if(type==='chair'){
     data.annualFee=+n('em-annual-fee').value||0;
@@ -3793,6 +3794,7 @@ function openEngDetail(engId){
   const gmgPct=100-usedPct;
   const gmgAmt=fee*gmgPct/100;
   const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  const stages=eng.stages||[];
   showModal(`<div class="mhdr"><h3>${eng.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px">
@@ -3818,11 +3820,81 @@ function openEngDetail(engId){
       }
     </div>
     ${eng.notes?'<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:10px;font-size:12px;color:var(--muted)">'+eng.notes+'</div>':''}
+    <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <h4 style="font-size:13px;font-weight:600;margin:0">Project Stages</h4>
+        <button class="btn btn-sm btn-outline" onclick="closeModal();openStageModal('${engId}')">+ Add Stage</button>
+      </div>
+      ${stages.length===0
+        ?'<p style="font-size:12px;color:var(--muted);margin:0">No stages yet.</p>'
+        :stages.map(st=>'<div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+st.name+'</div>'
+          +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(st.startDate||'')+(st.startDate&&st.endDate?' → ':'')+(st.endDate||'')
+          +(st.mentors&&st.mentors.length?'  ·  '+st.mentors.map(mid=>{const c=DB.contacts.find(x=>x.id===mid);return c?c.name:mid;}).join(', '):'')
+          +'</div>'+(st.notes?'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+st.notes+'</div>':'')+'</div>'
+          +'<span class="badge '+(st.status==='Active'?'b-green':st.status==='Complete'?'b-grey':'b-amber')+'" style="font-size:10px">'+(st.status||'Not Started')+'</span>'
+          +'<button class="btn btn-sm btn-outline" onclick="closeModal();openStageModal(''+engId+'',''+st.id+'')" style="padding:2px 8px;font-size:11px">Edit</button>'
+          +'<button onclick="deleteStage(''+engId+'',''+st.id+'')" style="padding:2px 8px;font-size:11px;background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--muted)">✕</button>'
+          +'</div>').join('')
+      }
+    </div>
     <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
       <button class="btn btn-outline" onclick="closeModal()">Close</button>
       <button class="btn btn-primary" onclick="closeModal();openEngModal('${engId}')">Edit Engagement</button>
     </div>
   </div>`);
+}
+function openStageModal(engId,stageId){
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng)return;
+  const st=stageId?(eng.stages||[]).find(s=>s.id===stageId):null;
+  const ml=DB.contacts.filter(c=>c.type==='mentor');
+  showModal('<div class="mhdr"><h3>'+(st?'Edit Stage':'New Stage')+'</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
+    +'<div class="mbody">'
+    +'<div class="fg"><label>Stage Name</label><input id="sg-name" value="'+(st?st.name:'')+'" placeholder="e.g. Discovery, Delivery, Review"></div>'
+    +'<div class="fg"><label>Status</label><select id="sg-status">'
+    +'<option value="Not Started"'+((!st||st.status==="Not Started")?" selected":"")+'>Not Started</option>'
+    +'<option value="Active"'+(st&&st.status==="Active"?" selected":"")+'>Active</option>'
+    +'<option value="Complete"'+(st&&st.status==="Complete"?" selected":"")+'>Complete</option>'
+    +'</select></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +'<div class="fg"><label>Start Date</label><input type="date" id="sg-start" value="'+(st&&st.startDate?st.startDate:'')+'"></div>'
+    +'<div class="fg"><label>End Date</label><input type="date" id="sg-end" value="'+(st&&st.endDate?st.endDate:'')+'"></div></div>'
+    +'<div class="fg"><label>Notes</label><textarea id="sg-notes" rows="2">'+(st&&st.notes?st.notes:'')+'</textarea></div>'
+    +'<div class="fg"><label>Assign Mentors</label>'
+    +'<div style="max-height:130px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:6px">'
+    +ml.map(c=>'<label style="display:flex;align-items:center;gap:6px;font-size:12px;padding:3px 0;cursor:pointer">'
+      +'<input type="checkbox" class="sg-mentor" value="'+c.id+'"'+(st&&st.mentors&&st.mentors.includes(c.id)?' checked':'')+'>'+c.name+'</label>').join('')
+    +'</div></div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
+    +'<button class="btn btn-outline" onclick="closeModal();openEngDetail(''+engId+'')">Cancel</button>'
+    +'<button class="btn btn-primary" onclick="saveStage(''+engId+'',''+(stageId||'')+'')">Save Stage</button>'
+    +'</div></div>');
+}
+function saveStage(engId,stageId){
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng)return;
+  const name=document.getElementById('sg-name').value.trim();
+  if(!name)return alert('Please enter a stage name.');
+  const data={
+    id:stageId||('sg'+Date.now()),name,
+    status:document.getElementById('sg-status').value,
+    startDate:document.getElementById('sg-start').value,
+    endDate:document.getElementById('sg-end').value,
+    notes:document.getElementById('sg-notes').value.trim(),
+    mentors:[...document.querySelectorAll('.sg-mentor:checked')].map(cb=>cb.value)
+  };
+  if(!eng.stages)eng.stages=[];
+  if(stageId){const i=eng.stages.findIndex(s=>s.id===stageId);if(i>-1)eng.stages[i]=data;else eng.stages.push(data);}
+  else eng.stages.push(data);
+  save();closeModal();openEngDetail(engId);
+}
+function deleteStage(engId,stageId){
+  const eng=DB.engagements.find(e=>e.id===engId);
+  if(!eng)return;
+  if(!confirm('Delete this stage?'))return;
+  eng.stages=(eng.stages||[]).filter(s=>s.id!==stageId);
+  save();closeModal();openEngDetail(engId);
 }
 function openPartnerSplitModal(engId){
   const eng=DB.engagements.find(e=>e.id===engId);
