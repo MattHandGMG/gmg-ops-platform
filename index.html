@@ -6,6 +6,121 @@
 <title>GMG Platform — Global Mentors Group</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js">
 
+function rTraining(c){
+  const role=S.tab.trainRole||'all';
+  const openMod=S.tab.trainOpen||null;
+  const MODS=[
+    {id:'overview',title:'Platform Overview',icon:'◈',roles:['all'],
+     summary:'Essential introduction to the GMG Ops Platform — navigation, data structure, and core concepts.',
+     sop:'<h4>What is the GMG Ops Platform?</h4><p>The GMG Ops Platform is the central operations hub for Global Mentors Group. It manages the full lifecycle of mentoring engagements — from initial pipeline through to billing and reporting.</p><h4>Key sections</h4><ul><li><strong>Dashboard</strong> — Live overview of active engagements, upcoming sessions, and key metrics.</li><li><strong>Pipeline</strong> — Track prospective deals from Lead through to Won or Lost.</li><li><strong>Engagements</strong> — Active and historical mentoring programmes with full detail.</li><li><strong>Mentor Library</strong> — Profiles of all GMG mentors with search and matching tools.</li><li><strong>Project Management</strong> — Stage-by-stage delivery tracking per engagement.</li><li><strong>Quoting</strong> — Produce and track quotes for prospective clients.</li><li><strong>Finance</strong> — Mentor auto-billing and client invoicing with Xero sync.</li><li><strong>Tasks</strong> — Team task management tied to engagements.</li><li><strong>Reports</strong> — Custom and standard reporting across all platform data.</li></ul><h4>Data hierarchy</h4><p>A <strong>Contact</strong> (client or mentor) sits at the top level. A <strong>Deal</strong> in the pipeline converts into an <strong>Engagement</strong>. Each engagement has <strong>Sessions</strong>, <strong>Tasks</strong>, and generates <strong>Payments</strong> and <strong>Invoices</strong>.</p><h4>User roles</h4><p><strong>EA/Coordinator</strong> manages scheduling and administration. <strong>Partner</strong> owns client relationships and pipeline. <strong>Finance</strong> handles billing and invoicing. <strong>Admin</strong> has full access including user management.</p>',
+     quiz:[
+       {q:'What is the correct sequence for a new client programme?',opts:['Invoice → Engagement → Pipeline Deal','Pipeline Deal → Quote → Engagement','Engagement → Pipeline → Quote'],a:1,exp:'A prospective programme starts as a Pipeline Deal, is quoted, then converts to a full Engagement when won.'},
+       {q:'Which role is responsible for mentor billing?',opts:['EA/Coordinator','Partner','Finance'],a:2,exp:'Finance manages auto-billing runs and client invoicing, including the Xero sync.'},
+       {q:'Where do you track delivery stages of an engagement?',opts:['Dashboard','Project Management','Engagements list view'],a:1,exp:'Project Management shows per-engagement stage tracking with progress bars, task lists, and a Gantt view.'}
+     ]},
+    {id:'engagements',title:'Engagements & Projects',icon:'◆',roles:['ea','partner','admin'],
+     summary:'Creating and managing mentoring engagements, assigning mentors, setting partner splits, and tracking delivery.',
+     sop:'<h4>Engagement types</h4><p>GMG runs three engagement types:</p><ul><li><strong>Chair Mentoring</strong> — Board-level mentor, billed at an annual fee with a set number of sessions included.</li><li><strong>Executive Mentoring</strong> — One-to-one executive coaching, billed quarterly with an optional retreat fee.</li><li><strong>Team Engagement</strong> — Group programme with a total programme fee and separate mentor fee.</li></ul><h4>Creating an engagement</h4><ol><li>Go to <strong>Engagements</strong> and click <strong>+ New Engagement</strong>.</li><li>Name the engagement using the format: <em>Client — Type: Contact Name</em> (e.g. "HSBC — Executive Mentoring: J. Smith").</li><li>Select type, status, client, and mentor.</li><li>Set the entity (GMG, CMi, or Merryck) and billing entity.</li><li>Add partner splits — click <strong>+ Add Partner</strong> for each partner involved. The platform calculates GMG\'s retained percentage automatically.</li><li>Enter the fee structure for the chosen type.</li><li>Save. The engagement appears immediately in Projects.</li></ol><h4>Partner splits</h4><p>Every engagement should have at least one partner assigned. Where two or more partners share a deal, add each under Partner Splits with their percentage. The combined total should not exceed 100% — GMG retains the remainder. This data feeds directly into finance reporting and revenue attribution.</p><h4>Project management</h4><p>In Project Management you can add delivery <strong>Stages</strong>, monitor session completion, assign Tasks, and review the engagement timeline. Open any project card to access the full detail view.</p>',
+     quiz:[
+       {q:'What is the correct engagement naming format?',opts:['"J. Smith Executive Coaching"','"HSBC — Executive Mentoring: J. Smith"','"Executive: HSBC / J. Smith"'],a:1,exp:'The standard format is Client — Type: Contact Name. This ensures consistency across all platform views and reports.'},
+       {q:'If two partners take 30% and 25% of a deal, what does GMG retain from the partner split?',opts:['55%','45%','0%'],a:1,exp:'GMG retains the remainder: 100% − 30% − 25% = 45%.'},
+       {q:'Where do you add delivery milestones to an engagement?',opts:['Engagements list','Project Management → engagement card → + Stage','Finance → Auto-Billing'],a:1,exp:'In Project Management, open the engagement card and use the Stages section to add and manage delivery milestones.'}
+     ]},
+    {id:'pipeline',title:'Pipeline & Quoting',icon:'◇',roles:['partner','admin'],
+     summary:'Managing the sales pipeline from initial lead through to a won engagement, and producing client-facing quotes.',
+     sop:'<h4>Pipeline stages</h4><p>Deals move through: <strong>Lead → Qualified → Mentee Identified → Proposal Sent → Negotiation → Won / Lost</strong>. Keep stages current so pipeline reporting and forecasting reflect reality.</p><h4>Creating a deal</h4><ol><li>Click <strong>+ New Deal</strong> from the Pipeline view.</li><li>Enter deal name, client, solution type, value, and estimated close date.</li><li>Assign the responsible partner and country.</li><li>Set probability % — this drives weighted pipeline value in reports.</li></ol><h4>Quotes</h4><ol><li>Go to <strong>Quoting → + New Quote</strong>.</li><li>Link the client, select solution type, and enter the fee.</li><li>Set a valid-until date. Status <em>Draft</em> is internal; change to <em>Sent</em> when issued to the client.</li><li>When the client accepts, mark as <strong>Approved</strong> and move the pipeline deal to <strong>Won</strong>.</li><li>Then create a new Engagement referencing the won deal.</li></ol><h4>Important: Won deals do not auto-create engagements</h4><p>After marking a deal Won, manually create the Engagement in the Engagements section. This two-step process ensures fees, mentor, and partner split data are entered correctly from the start.</p>',
+     quiz:[
+       {q:'What should happen when a client accepts a quote?',opts:['Delete the quote and start over','Mark quote Approved, move deal to Won, then create an Engagement','Archive the deal immediately'],a:1,exp:'Mark the quote approved, update the deal to Won, then manually create the Engagement — this preserves the full audit trail.'},
+       {q:'What does probability % on a pipeline deal affect?',opts:['Nothing — it is decorative','Weighted pipeline value in reports','The invoice amount'],a:1,exp:'Probability % drives weighted pipeline reporting, giving leadership a realistic revenue forecast.'},
+       {q:'Which stage follows "Qualified" in the pipeline?',opts:['Won','Mentee Identified','Proposal Sent'],a:1,exp:'Correct order: Lead → Qualified → Mentee Identified → Proposal Sent → Negotiation → Won/Lost.'}
+     ]},
+    {id:'sessions',title:'Sessions & Scheduling',icon:'○',roles:['ea','admin'],
+     summary:'Scheduling mentoring sessions, recording outcomes, and maintaining accurate session logs against each engagement.',
+     sop:'<h4>Session types</h4><p>Sessions are logged against a specific engagement. Each session records date, mentor, mentee, duration, format (in-person, video, phone), and completion status.</p><h4>Scheduling a session</h4><ol><li>Navigate to the relevant engagement in <strong>Engagements</strong> or <strong>Project Management</strong>.</li><li>Click <strong>+ Session</strong>.</li><li>Enter date, format, and any prep notes. Status defaults to <strong>Scheduled</strong>.</li></ol><h4>After a session</h4><ol><li>Update status to <strong>Completed</strong> and add outcome notes.</li><li>The session count on the engagement progress bar updates automatically.</li><li>If the session triggers a mentor payment, it will appear in <strong>Finance → Auto-Billing → Pending Payments</strong>.</li></ol><h4>Session pacing</h4><p>Each engagement has a planned session count (e.g. 12 per year for Chair Mentoring). Monitor the progress bar in Project Management. If a client is falling behind on sessions, flag this to the responsible partner promptly — this affects billing and the mentor relationship.</p><h4>Cancelled sessions</h4><p>Mark cancelled sessions as <em>Cancelled</em> with a note rather than deleting them. This maintains an accurate log and ensures they do not count toward progress or trigger payments.</p>',
+     quiz:[
+       {q:'Where do completed session payments appear for finance?',opts:['Tasks section','Finance → Auto-Billing → Pending Payments','Dashboard KPIs only'],a:1,exp:'Completed sessions that trigger mentor payments populate the Pending Payments queue in Finance, ready for the monthly auto-bill run.'},
+       {q:'What is the correct process for a cancelled session?',opts:['Delete the session record','Mark as Cancelled and add a note','Leave it as Scheduled'],a:1,exp:'Mark status as Cancelled and record a note. This keeps the log accurate and prevents the session counting toward progress or payments.'},
+       {q:'Where do you monitor session pacing for an engagement?',opts:['Pipeline view','Project Management engagement card progress bar','Reports section only'],a:1,exp:'The Project Management card shows completed vs planned sessions on a progress bar.'}
+     ]},
+    {id:'finance',title:'Finance: Billing & Invoicing',icon:'£', roles:['finance','admin'],
+     summary:'Running mentor auto-bills, reviewing and resending bills, issuing client invoices, and syncing everything with Xero.',
+     sop:'<h4>Auto-Billing — mentor payments</h4><p>At month-end, Finance runs the <strong>Auto-Bill</strong> to consolidate all pending mentor payments into supplier bills pushed to Xero.</p><ol><li>Go to <strong>Finance → Auto-Billing</strong>.</li><li>Review <strong>Pending Payments</strong> — these are amounts due to mentors for completed sessions this period.</li><li>Click <strong>Run Auto-Bill</strong> to consolidate into a bill run.</li><li>Click into any bill run to see the per-mentor breakdown with individual line items.</li><li>Use <strong>Edit</strong> on any mentor card to adjust line amounts if needed.</li><li>Click <strong>Resend</strong> after corrections — the bill goes directly to the mentor. A green ✓ Resent badge confirms it was reissued.</li><li>Once confirmed, push to Xero.</li></ol><h4>Client Invoicing</h4><ol><li>Go to <strong>Finance → Auto-Invoicing</strong>.</li><li>Click <strong>+ New Invoice</strong> to create a client invoice.</li><li>Click any invoice ID or use <strong>Preview</strong> to open the full invoice view.</li><li>From Preview: <strong>Send</strong> marks as sent, <strong>Download PDF</strong> opens the print dialog, <strong>Resend</strong> reissues after corrections.</li><li>Once payment received, click <strong>✓ Paid</strong>.</li><li>Push to Xero individually or use <strong>Push All</strong> for batch sync.</li></ol><h4>Xero integration</h4><p>The platform syncs with Xero for both supplier bills and sales invoices. Complete the Xero sync before month-end close. Unsynced invoices appear in the <strong>orange banner</strong> at the top of the invoicing view.</p>',
+     quiz:[
+       {q:'When should the monthly Auto-Bill run be executed?',opts:['Daily, automatically','At month-end, after reviewing all pending payments','Only when a mentor requests it'],a:1,exp:'The Auto-Bill is a manual month-end process — always review pending payments first, then run to consolidate and push to Xero.'},
+       {q:'A mentor bill had an error. What is the correct process?',opts:['Create a brand-new bill run','Open the bill run, edit the line amount, save, then Resend','Delete and recreate the entire bill run'],a:1,exp:'Open the bill run, use Edit on the mentor\'s card to fix the amount, save, then Resend. No need to recreate — the Resent badge records the correction.'},
+       {q:'Where do unsynced invoices appear?',opts:['In a red popup alert','In the orange Xero Sync Required banner at the top of invoicing','Only visible in the Xero dashboard'],a:1,exp:'Unsynced invoices trigger the orange banner, which shows the total value pending and a Push All button for batch sync.'}
+     ]},
+    {id:'reporting',title:'Reporting & Analytics',icon:'◈',roles:['all'],
+     summary:'Using the report builder to create, save, and share custom reports across all platform data.',
+     sop:'<h4>Standard reports</h4><p>Pre-built standard reports are available to all users, covering engagements, pipeline, revenue, and sessions. These update in real time from platform data and appear when you open the Reports section.</p><h4>Building a custom report</h4><ol><li>Go to <strong>Reports → Build Report</strong>.</li><li>Select a <strong>data source</strong>: Engagements, Pipeline, Invoices, Payments, Sessions, Tasks, or Quotes.</li><li>Choose the <strong>fields</strong> to include as columns.</li><li>Apply <strong>filters</strong> (e.g. status = active, partner = Sarah Jones).</li><li>Set a <strong>date range</strong> for time-scoped analysis — the platform holds up to 4 years of historical data.</li><li>Choose a sort order.</li><li>Click <strong>Preview</strong> then <strong>Export CSV</strong> to download results.</li></ol><h4>Saving and finding reports</h4><p>Click <strong>Save Report</strong>, enter a name, and save. Saved reports appear under <strong>My Reports</strong>. Use <strong>All Reports</strong> to see standard and team reports. The search bar filters by name across all saved reports.</p>',
+     quiz:[
+       {q:'Where are previously saved reports found?',opts:['Dashboard → My Items','Reports → My Reports tab','Admin → Saved Data'],a:1,exp:'Saved reports appear under the My Reports tab. Use the search bar to filter quickly.'},
+       {q:'Which of these is NOT an available report data source?',opts:['Engagements','Mentor Profiles','Pipeline'],a:1,exp:'Mentor Profiles are not a report data source. Sources are: Engagements, Pipeline, Invoices, Payments, Sessions, Tasks, and Quotes.'},
+       {q:'How do you download report results?',opts:['Print the page','Export CSV after previewing','Share via email from the platform'],a:1,exp:'Configure your report, preview it, then use Export CSV to download as a spreadsheet.'}
+     ]},
+    {id:'admin',title:'Admin & User Management',icon:'⚙',roles:['admin'],
+     summary:'Managing users, roles, system settings, and data across the GMG Ops Platform.',
+     sop:'<h4>Creating a new user</h4><ol><li>Go to <strong>Admin Settings</strong> (gear icon, bottom of sidebar).</li><li>Click <strong>+ Create User</strong>.</li><li>Enter the user\'s name, email address, and select their role: EA/Coordinator, Partner, Finance, or Admin.</li><li>For Partner accounts, enter the partner name exactly as it should appear in the PARTNERS reference list — this links the account to deal and engagement records.</li><li>The user receives login credentials by email.</li></ol><h4>Role permissions</h4><ul><li><strong>EA/Coordinator</strong> — Engagements, Sessions, Tasks, Mentor Library. No finance or admin access.</li><li><strong>Partner</strong> — Pipeline, Quoting, Engagements (own records). Read-only Finance.</li><li><strong>Finance</strong> — Full Finance access. Read-only Engagements and Pipeline.</li><li><strong>Admin</strong> — Full access to all sections including Admin Settings and user creation.</li></ul><h4>Data storage</h4><p>Platform data is stored in <strong>Supabase</strong> (cloud database) with a local browser cache. Changes sync automatically. If data appears stale, refresh the page to pull the latest from Supabase.</p><h4>Entities</h4><p>The platform operates across <strong>GMG</strong>, <strong>CMi</strong>, and <strong>Merryck</strong>. Engagements, finance, and invoicing can all be filtered by entity. Always ensure engagements are assigned to the correct entity at creation.</p>',
+     quiz:[
+       {q:'What extra field is required when creating a Partner user?',opts:['Their phone number','Their partner name as it appears in the PARTNERS list','Their start date'],a:1,exp:'Partner name must match the PARTNERS reference list exactly — it links the user\'s account to deal and engagement records.'},
+       {q:'Which role can access Admin Settings?',opts:['Finance','Partner','Admin only'],a:2,exp:'Only Admin role users can access Admin Settings and manage users.'},
+       {q:'Where is platform data stored?',opts:['Only in the browser','Supabase (cloud) with a local browser cache','On a GMG office server'],a:1,exp:'Data lives in Supabase with a browser cache for speed. Changes sync to Supabase automatically on save.'}
+     ]}
+  ];
+
+  const ROLE_LABELS={'all':'All Roles','ea':'EA & Coordinator','partner':'Partner','finance':'Finance','admin':'Admin'};
+  const ROLE_COLOURS={'ea':'b-blue','partner':'type-executive','finance':'b-green','admin':'b-red','all':'b-grey'};
+  const filtered=role==='all'?MODS:MODS.filter(m=>m.roles.includes('all')||m.roles.includes(role));
+
+  const moduleHtml=filtered.map(mod=>{
+    const isOpen=openMod===mod.id;
+    const roleBadges=mod.roles.map(r=>r==='all'?'<span class="badge b-grey" style="font-size:10px">All Roles</span>':'<span class="badge '+( ROLE_COLOURS[r]||'b-grey')+'" style="font-size:10px">'+ROLE_LABELS[r]+'</span>').join(' ');
+    const quizHtml=mod.quiz.map((q,qi)=>{
+      const opts=q.opts.map((o,oi)=>'<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer;margin-bottom:4px;border:1px solid var(--border);background:var(--white)" id="ql-'+mod.id+'-'+qi+'-'+oi+'"><input type="radio" name="q-'+mod.id+'-'+qi+'" value="'+oi+'" style="margin-top:2px;flex-shrink:0"><span style="font-size:12px">'+o+'</span></label>').join('');
+      return '<div style="margin-bottom:16px" id="qblock-'+mod.id+'-'+qi+'"><div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--nearblack)">'+(qi+1)+'. '+q.q+'</div>'+opts+'<div id="qfb-'+mod.id+'-'+qi+'" style="font-size:11px;margin-top:4px;display:none"></div></div>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:12px;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:'+(isOpen?'1px solid var(--border)':'none')+'" onclick="S.tab.trainOpen=S.tab.trainOpen===\''+mod.id+'\'?null:\''+mod.id+'\';renderView()"><div style="width:36px;height:36px;background:var(--narrow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+mod.icon+'</div><div style="flex:1"><div style="font-weight:700;font-size:14px;font-family:Georgia,serif;margin-bottom:3px">'+mod.title+'</div><div style="font-size:11px;color:var(--muted)">'+mod.summary+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:200px">'+roleBadges+'</div><div style="font-size:18px;color:var(--muted);margin-left:12px;transition:.2s;transform:'+(isOpen?'rotate(90deg)':'rotate(0deg)')+'">›</div></div>'+(isOpen?'<div style="padding:20px"><div class="tabs" style="margin-bottom:16px"><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?'':' active')+'" onclick="S.tab.trainTab=\''+mod.id+'-guide\';renderView()">📖 Guide</div><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?' active':'')+'" onclick="S.tab.trainTab=\''+mod.id+'-quiz\';renderView()">✏ Quiz</div></div>'+(S.tab.trainTab===mod.id+'-quiz'?'<div style="max-width:640px">'+quizHtml+'<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-primary" onclick="checkTrainingQuiz(\''+mod.id+'\','+JSON.stringify(mod.quiz)+')">Check Answers</button><button class="btn btn-outline" onclick="resetTrainingQuiz(\''+mod.id+'\','+mod.quiz.length+')">Reset</button></div><div id="quiz-score-'+mod.id+'" style="margin-top:12px;font-size:13px"></div></div>':'<div class="sop-content" style="line-height:1.7;font-size:13px;max-width:720px">'+mod.sop+'</div>')+'</div>':'')+'</div>';
+  }).join('');
+
+  c.innerHTML='<div class="phdr"><div><h2>Training & Onboarding</h2><p>Process guides and knowledge checks for every role</p></div></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">'+Object.entries(ROLE_LABELS).map(([k,v])=>'<button class="btn '+(role===k?'btn-primary':'btn-outline')+'" style="font-size:12px;padding:6px 14px" onclick="S.tab.trainRole=\''+k+'\';S.tab.trainOpen=null;renderView()">'+v+'</button>').join('')+'</div><div style="margin-bottom:8px;font-size:12px;color:var(--muted)">'+filtered.length+' module'+(filtered.length!==1?'s':'')+' for <strong>'+ROLE_LABELS[role]+'</strong> — click any module to expand</div>'+moduleHtml+'<style>.sop-content h4{font-family:Georgia,serif;font-size:15px;margin:16px 0 6px;color:var(--nearblack)}.sop-content p{margin-bottom:10px;color:#333}.sop-content ul,.sop-content ol{padding-left:20px;margin-bottom:10px;color:#333}.sop-content li{margin-bottom:4px}.sop-content strong{color:var(--nearblack)}.sop-content em{color:var(--cadmium)}</style>';
+}
+
+function checkTrainingQuiz(modId,questions){
+  let correct=0;
+  questions.forEach((q,qi)=>{
+    const sel=document.querySelector('input[name="q-'+modId+'-'+qi+'"]:checked');
+    const block=document.getElementById('qblock-'+modId+'-'+qi);
+    const fb=document.getElementById('qfb-'+modId+'-'+qi);
+    if(!block||!fb)return;
+    const answered=sel!==null;
+    const isCorrect=answered&&parseInt(sel.value)===q.a;
+    if(isCorrect)correct++;
+    // Colour the labels
+    q.opts.forEach((_,oi)=>{
+      const lbl=document.getElementById('ql-'+modId+'-'+qi+'-'+oi);
+      if(!lbl)return;
+      lbl.style.background=oi===q.a?'rgba(45,122,58,.08)':answered&&parseInt(sel?.value)===oi?'rgba(192,57,43,.08)':'var(--white)';
+      lbl.style.borderColor=oi===q.a?'var(--success)':answered&&parseInt(sel?.value)===oi?'var(--venetian)':'var(--border)';
+    });
+    if(!answered){fb.style.display='block';fb.style.color='var(--warn)';fb.textContent='Please select an answer.';}
+    else{fb.style.display='block';fb.style.color=isCorrect?'var(--success)':'var(--venetian)';fb.textContent=(isCorrect?'✓ Correct! ':'✗ Incorrect — ')+q.exp;}
+  });
+  const scoreEl=document.getElementById('quiz-score-'+modId);
+  if(scoreEl){const pct=Math.round(correct/questions.length*100);scoreEl.innerHTML='<div style="padding:12px 16px;border-radius:6px;background:'+(pct===100?'rgba(45,122,58,.08)':pct>=67?'rgba(185,83,0,.08)':'rgba(206,39,2,.08)')+';border:1px solid '+(pct===100?'var(--success)':pct>=67?'var(--cadmium)':'var(--venetian)')+'"><strong>Score: '+correct+' / '+questions.length+' ('+pct+'%)</strong>'+(pct===100?' — Excellent! Full marks.':pct>=67?' — Good effort. Review the explanations above.':' — Keep studying the guide and try again.')+'</div>';}
+}
+
+function resetTrainingQuiz(modId,count){
+  for(let i=0;i<count;i++){
+    const inputs=document.querySelectorAll('input[name="q-'+modId+'-'+i+'"]');
+    inputs.forEach(inp=>inp.checked=false);
+    const fb=document.getElementById('qfb-'+modId+'-'+i);
+    if(fb){fb.style.display='none';fb.textContent='';}
+    for(let oi=0;oi<4;oi++){const lbl=document.getElementById('ql-'+modId+'-'+i+'-'+oi);if(lbl){lbl.style.background='var(--white)';lbl.style.borderColor='var(--border)';}}
+  }
+  const scoreEl=document.getElementById('quiz-score-'+modId);
+  if(scoreEl)scoreEl.innerHTML='';
+}
+
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -356,7 +471,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
-    <div class="sb-item" data-v="chat" onclick="nav(this)"><span class="ic">💬</span>Team Chat</div>
+    <div class="sb-item" data-v="chat" onclick="nav(this)"><span class="ic">💬</span>Team Chat</div><div class="sb-item" data-v="training" onclick="nav(this)"><span class="ic">◎</span>Training</div>
   </div>
   <div class="sb-admin" id="sb-admin-section">
   <button class="sb-admin-btn" onclick="navAdmin()">
@@ -2048,7 +2163,7 @@ try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorEnt:'',mentorCat:'',mentorId:null};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',chat:'Team Chat'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',chat:'Team Chat',training:'Training & Onboarding'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -2185,7 +2300,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
   if(r[S.view]) r[S.view](c);
 }
 
