@@ -2626,7 +2626,7 @@ function rEngagements(c){
         <td><span class="badge ${tb[e.type]||'b-grey'}">${e.type}</span></td>
         <td style="font-size:12px">${cl?.name||'—'}</td>
         <td style="font-size:12px">${mn?.name?.split('—')[0]?.trim()||'—'}</td>
-        <td style="font-size:12px">${e.partner||'—'}${e.partnerSplit?' <span style="font-size:10px;color:var(--muted);font-weight:600">('+e.partnerSplit+'%)</span>':''}</td>
+        <td style="font-size:12px">${(e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits.map(ps=>ps.partner+(ps.percentage?' ('+ps.percentage+'%)':'')).join(', '):(e.partner||'—')}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
         <td><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
@@ -2738,7 +2738,7 @@ function rProjects(c){
         </div>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           <span class="badge ${typeBadge}">${e.type}</span>
-          ${e.partner?`<span class="badge b-grey">${e.partner}${e.partnerSplit?' ('+e.partnerSplit+'%)':''}</span>`:''}
+          ${(e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits.map(ps=>`<span class="badge b-grey">${ps.partner}${ps.percentage?' ('+ps.percentage+'%)':''}</span>`).join(''):e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
           ${e.country?`<span class="badge b-grey">${e.country}</span>`:''}
         </div>
         <div style="margin-bottom:12px">
@@ -4695,10 +4695,7 @@ function openEngModal(id){
       </select></div>
     </div>
     <div class="fgrow">
-      <div class="fg"><label>Partner</label><select id="em-partner">
-        ${PARTNERS.map(p=>`<option value="${p}"${e&&e.partner===p?' selected':''}>${p}</option>`).join('')}
-      </select></div>
-      <div class="fg" style="max-width:110px"><label>Split %</label><input id="em-split" type="number" min="0" max="100" step="1" value="${e?e.partnerSplit||0:0}" placeholder="0"></div>
+      <div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><label style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Partner Splits</label><button class="btn btn-sm btn-outline" type="button" onclick="addPartnerRow()">+ Add Partner</button></div><div id="em-partners-list">${(()=>{const sps=(e&&e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits:(e&&e.partner?[{partner:e.partner,percentage:e.partnerSplit||0}]:[]);return sps.map(sp=>'<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><select class="ps-name" style="flex:1">'+PARTNERS.map(p=>'<option value="'+p+'"'+(sp.partner===p?' selected':'')+'>'+p+'</option>').join('')+'</select><input type="number" class="ps-pct" min="0" max="100" value="'+(sp.percentage||0)+'" style="width:70px;text-align:center;border:1px solid var(--border);border-radius:4px;padding:4px" oninput="updateSplitTotal()" placeholder="%"><button type="button" style="padding:0 8px;color:var(--venetian);border:none;background:none;cursor:pointer;font-size:16px;line-height:1" onclick="this.parentElement.remove();updateSplitTotal()">&#10005;</button></div>').join('');})()}</div><div style="font-size:11px;color:var(--muted);margin-top:4px">GMG retains: <strong id="em-gmg-pct">100%</strong></div></div>
       <div class="fg"><label>Coordinator</label><input id="em-coord" type="text" value="${e?e.coordinator:S.user.name}"></div>
     </div>
     <div class="fgrow">
@@ -4737,6 +4734,20 @@ function openEngModal(id){
   `,true);
 }
 
+function addPartnerRow(name,pct){
+  const list=document.getElementById('em-partners-list');
+  if(!list)return;
+  const div=document.createElement('div');
+  div.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
+  div.innerHTML='<select class="ps-name" style="flex:1">'+PARTNERS.map(p=>'<option value="'+p+'"'+(name===p?' selected':'')+'>'+p+'</option>').join('')+'</select><input type="number" class="ps-pct" min="0" max="100" value="'+(pct||0)+'" style="width:70px;text-align:center;border:1px solid var(--border);border-radius:4px;padding:4px" oninput="updateSplitTotal()" placeholder="%"><button type="button" style="padding:0 8px;color:var(--venetian);border:none;background:none;cursor:pointer;font-size:16px;line-height:1" onclick="this.parentElement.remove();updateSplitTotal()">&#10005;</button>';
+  list.appendChild(div);
+  updateSplitTotal();
+}
+function updateSplitTotal(){
+  const used=[...document.querySelectorAll('#em-partners-list .ps-pct')].reduce((s,i)=>s+(+i.value||0),0);
+  const el=document.getElementById('em-gmg-pct');
+  if(el)el.textContent=Math.max(0,100-used)+'%';
+}
 function saveEng(id){
   const n=v=>document.getElementById(v);
   const name=n('em-name').value.trim();
@@ -4745,14 +4756,16 @@ function saveEng(id){
   const data={
     name,type,clientId:n('em-client').value,mentorId:n('em-mentor').value,
     status:n('em-status').value,coordinator:n('em-coord').value.trim(),
-    partner:n('em-partner').value.trim(),partnerSplit:+(n('em-split')?.value)||0,country:n('em-country').value.trim(),
+    country:n('em-country').value.trim(),
     entity:n('em-entity')?.value||'GMG',
     billingEntity:n('em-billing')?.value.trim()||'',
     startDate:n('em-start').value,endDate:n('em-end').value,
     notes:n('em-notes').value.trim(),
-    partnerSplits:(DB.engagements.find(x=>x.id===engId)||{}).partnerSplits||[],
-    stages:(DB.engagements.find(x=>x.id===engId)||{}).stages||[],
+    stages:(DB.engagements.find(x=>x.id===id)||{}).stages||[],
   };
+  const _ps=[...document.querySelectorAll('#em-partners-list .ps-name')].map((s,i)=>({partner:s.value,percentage:+(document.querySelectorAll('#em-partners-list .ps-pct')[i]?.value)||0})).filter(x=>x.partner);
+  data.partnerSplits=_ps;
+  data.partner=_ps[0]?.partner||'';
   if(type==='chair'){
     data.annualFee=+n('em-annual-fee').value||0;
     data.sessionsIncluded=+n('em-sessions').value||12;
@@ -4853,7 +4866,7 @@ function openEngDetail(engId){
       <div><span style="color:var(--muted)">Type</span><br><span class="badge ${tb[eng.type]||'b-grey'}">${eng.type}</span></div>
       <div><span style="color:var(--muted)">Client</span><br><strong>${cl?.name||'—'}</strong></div>
       <div><span style="color:var(--muted)">Mentor</span><br><strong>${mn?.name||'—'}</strong></div>
-      <div><span style="color:var(--muted)">Partner / Split</span><br><strong>${eng.partner||'—'}${eng.partnerSplit?' ('+eng.partnerSplit+'%)':''}</strong></div>
+      <div><span style="color:var(--muted)">Partner Splits</span><br>${(eng.partnerSplits&&eng.partnerSplits.length)?eng.partnerSplits.map(ps=>'<div><strong>'+ps.partner+'</strong>'+(ps.percentage?' <span style=\"color:var(--muted);font-size:11px\">('+ps.percentage+'%)</span>':'')+' <span style=\"font-size:10px;color:var(--success)\">→ '+fmt((eng.annualFee||eng.totalFee||0)*ps.percentage/100)+'</span></div>').join(''):'<strong>'+(eng.partner||'—')+'</strong>'}</div>
       <div><span style="color:var(--muted)">Start</span><br>${eng.startDate||'—'}</div>
       <div><span style="color:var(--muted)">End</span><br>${eng.endDate||'—'}</div>
     </div>
