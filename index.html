@@ -2725,85 +2725,109 @@ function addTaskNotif(assigneeName, taskTitle){
 
 function rEngDetail(c){
   if(!DB.engFiles) DB.engFiles=[];
-  const e=DB.engagements.find(x=>x.id===S.currentEngId);
+  var e=DB.engagements.find(function(x){return x.id===S.currentEngId;});
   if(!e){c.innerHTML='<p style="padding:32px;color:var(--muted)">Engagement not found.</p>';return;}
-  const cl=DB.contacts.find(x=>x.id===e.clientId);
-  const mn=DB.contacts.find(x=>x.id===e.mentorId);
-  const sess=(DB.sessions||[]).filter(s=>s.engId===e.id).sort((a,b)=>a.date>b.date?1:-1);
-  const files=(DB.engFiles||[]).filter(f=>f.engId===e.id);
-  const mentee=e.mentee||{};
-  const ea=e.menteeEA||{};
-  const cc=e.companyContact||{};
-  const tb2={chair:'type-chair',executive:'type-executive',team:'type-team'};
-  const fee=fmt(e.annualFee||e.totalFee||e.quarterlyFee||0);
-  const feeLabel=e.annualFee?'per annum':e.totalFee?'total fee':e.quarterlyFee?'per quarter':'';
-  const isCE=e.type==='chair'||e.type==='executive';
-  const sDone=sess.filter(s=>s.status==='completed').length;
-  const sTotal=e.sessionsIncluded||0;
-  const backFn="S.view='engagements';renderView();document.querySelectorAll('.sb-item').forEach(i=>{if(i.dataset.v==='engagements')i.classList.add('active');else i.classList.remove('active')})";
+  var cl=DB.contacts.find(function(x){return x.id===e.clientId;});
+  var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
+  var sess=(DB.sessions||[]).filter(function(s){return s.engId===e.id;}).sort(function(a,b){return a.date>b.date?1:-1;});
+  var files=(DB.engFiles||[]).filter(function(f){return f.engId===e.id;});
+  var mc=e.menteeContact||{};
+  var ec=e.eaContact||{};
+  var cc=e.companyContact||{};
+  var fmtFee=function(n){return n?'£'+Number(n).toLocaleString('en-GB'):'—';};
+  var scol=e.status==='active'?'#27ae60':e.status==='planning'?'#f39c12':'#7f8c8d';
+  var bFn="S.view='engagements';renderView()";
+  var inpSt='width:100%;padding:6px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:12px;box-sizing:border-box';
+  var lbl='font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px';
   c.innerHTML=
-  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
-  +'<button class="btn btn-outline" onclick="'+backFn+'">&#8592; Back</button>'
-  +'<div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-  +'<h2 style="margin:0;font-size:18px">'+e.name+'</h2>'
-  +'<span class="badge '+(tb2[e.type]||'b-grey')+'">'+e.type+'</span>'
-  +'<span class="badge '+(e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey')+'">'+e.status+'</span>'
-  +(e.entity?'<span class="badge b-grey">'+e.entity+'</span>':'')
-  +'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(e.startDate||'')+' → '+(e.endDate||'')+' · Partner: '+(e.partner||'—')+'</div></div>'
-  +'<button class="btn btn-outline" onclick="openEngModal(\''+e.id+'\')">Edit Engagement</button></div>'
-  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">'
-  +'<div class="kpi accent"><div class="kpi-label">Fee</div><div class="kpi-val" style="font-size:20px">'+fee+'</div><div class="kpi-sub">'+feeLabel+'</div></div>'
-  +'<div class="kpi"><div class="kpi-label">Client</div><div style="font-size:13px;font-weight:600;margin-top:4px">'+(cl?cl.name:'—')+'</div></div>'
-  +'<div class="kpi"><div class="kpi-label">Mentor</div><div style="font-size:13px;font-weight:600;margin-top:4px">'+(mn?(mn.name||'').split('—')[0].trim():'—')+'</div></div>'
-  +(isCE&&sTotal?'<div class="kpi gold"><div class="kpi-label">Sessions</div><div class="kpi-val" style="font-size:20px">'+sDone+'/'+sTotal+'</div><div class="kpi-sub">completed of included</div></div>':'')
-  +(e.notes?'<div class="kpi" style="grid-column:1/-1"><div class="kpi-label">Notes</div><div style="font-size:12px;margin-top:4px">'+e.notes+'</div></div>':'')
-  +'</div>'
-  +'<div class="card" style="margin-bottom:16px">'
-  +'<div class="card-hdr"><h3>Mentee &amp; Contact Information</h3><button class="btn btn-sm btn-outline" onclick="saveMenteeInfo(\''+e.id+'\')">Save</button></div>'
-  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;padding:16px">'
-  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Mentee</div>'
-  +'<div style="display:flex;flex-direction:column;gap:8px">'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="mt-name-'+e.id+'" class="fi" value="'+(mentee.name||'')+'" placeholder="e.g. Sarah Okonkwo"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Job Title</label><input id="mt-title-'+e.id+'" class="fi" value="'+(mentee.title||'')+'" placeholder="e.g. Chief Financial Officer"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="mt-email-'+e.id+'" class="fi" type="email" value="'+(mentee.email||'')+'" placeholder="sarah@company.com"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="mt-phone-'+e.id+'" class="fi" value="'+(mentee.phone||'')+'" placeholder="+44 20 ..."></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">LinkedIn</label><input id="mt-li-'+e.id+'" class="fi" value="'+(mentee.linkedin||'')+'" placeholder="linkedin.com/in/..."></div>'
-  +'</div></div>'
-  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">EA / Coordinator</div>'
-  +'<div style="display:flex;flex-direction:column;gap:8px">'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="ea-name-'+e.id+'" class="fi" value="'+(ea.name||'')+'" placeholder="EA name"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="ea-email-'+e.id+'" class="fi" type="email" value="'+(ea.email||'')+'" placeholder="ea@company.com"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="ea-phone-'+e.id+'" class="fi" value="'+(ea.phone||'')+'" placeholder="+44 20 ..."></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Notes</label><input id="ea-notes-'+e.id+'" class="fi" value="'+(ea.notes||'')+'" placeholder="Scheduling notes"></div>'
-  +'</div></div>'
-  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Company Contact</div>'
-  +'<div style="display:flex;flex-direction:column;gap:8px">'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="cc-name-'+e.id+'" class="fi" value="'+(cc.name||'')+'" placeholder="Contact name"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Job Title</label><input id="cc-title-'+e.id+'" class="fi" value="'+(cc.title||'')+'" placeholder="e.g. Head of Talent"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="cc-email-'+e.id+'" class="fi" type="email" value="'+(cc.email||'')+'" placeholder="contact@company.com"></div>'
-  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="cc-phone-'+e.id+'" class="fi" value="'+(cc.phone||'')+'" placeholder="+44 20 ..."></div>'
-  +'</div></div>'
-  +'</div></div>'
-  +(isCE?
-    '<div class="card" style="margin-bottom:16px">'
-    +'<div class="card-hdr"><h3>Sessions</h3><button class="btn btn-sm btn-primary" onclick="openAddSessionModal(\''+e.id+'\')">+ Log Session</button></div>'
-    +(sess.length===0?'<p style="padding:20px 16px;color:var(--muted);font-size:12px">No sessions logged yet. Click “+ Log Session” to add the first session.</p>'
-      :'<table class="tbl"><thead><tr><th>#</th><th>Date</th><th>Duration</th><th>Notes / Topics</th><th>Status</th><th>Mentor Paid</th><th></th></tr></thead><tbody>'
-      +sess.map(function(s,i){return'<tr><td style="font-size:11px;color:var(--muted)">'+(i+1)+'</td><td style="font-size:12px;font-weight:600">'+(s.date||'—')+'</td><td style="font-size:12px">'+(s.duration?s.duration+' min':'—')+'</td><td style="font-size:12px;max-width:260px">'+(s.notes||'—')+'</td><td><span class="badge '+(s.status==='completed'?'b-green':s.status==='scheduled'?'b-blue':'b-grey')+'">'+(s.status||'—')+'</span></td><td><span class="badge '+(s.mentorPaid?'b-green':'b-amber')+'">'+(s.mentorPaid?'Paid':'Pending')+'</span></td><td><button class="btn btn-sm btn-outline" onclick="openEditSessionModal(\''+s.id+'\')">Edit</button></td></tr>';}).join('')
-      +'</tbody></table>')
-    +(sTotal?'<div style="padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">'+sDone+' of '+sTotal+' included sessions completed'+(sTotal-sDone>0?' · '+(sTotal-sDone)+' remaining':' · Programme complete')+'</div>':'')
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
+    +'<button class="btn btn-outline" onclick="'+bFn+'">← Back</button>'
+    +'<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+    +'<h2 style="margin:0;font-size:18px">'+e.name+'</h2>'
+    +(e.type?'<span class="badge" style="text-transform:capitalize">'+e.type+'</span>':'')
+    +(e.status?'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+e.status+'</span>':'')
+    +'</div></div>'
+    +'<button class="btn btn-outline" onclick="openEngModal(\''+e.id+'\')">Edit Engagement</button>'
     +'</div>'
-  :'')
-  +'<div class="card" style="margin-bottom:16px">'
-  +'<div class="card-hdr"><h3>Documents &amp; Files</h3>'
-  +'<label class="btn btn-sm btn-outline" style="cursor:pointer">Upload File <input type="file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg" onchange="handleEngFileUpload(event,\''+e.id+'\')"></label>'
-  +'</div>'
-  +(files.length===0?'<p style="padding:20px 16px;color:var(--muted);font-size:12px">No files uploaded yet. Upload an SOW, engagement letter, or any supporting document.</p>'
-    :'<table class="tbl"><thead><tr><th>File Name</th><th>Type</th><th>Size</th><th>Uploaded</th><th>By</th><th>Actions</th></tr></thead><tbody>'
-    +files.map(function(f){return'<tr><td style="font-size:12px;font-weight:600">'+f.name+'</td><td style="font-size:11px;color:var(--muted)">'+(f.fileType||'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.size?Math.round(f.size/1024)+'KB':'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.uploadedAt||'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.uploadedBy||'—')+'</td><td>'+(f.dataUrl?'<a href="'+f.dataUrl+'" download="'+f.name+'" class="btn btn-sm btn-outline">Download</a> ':'')+'<button class="btn btn-sm btn-outline" onclick="deleteEngFile(\''+f.id+'\',\''+e.id+'\')" style="color:var(--cadmium)">Remove</button></td></tr>';}).join('')
-    +'</tbody></table>')
-  +'<div style="padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Accepted: PDF, Word, Excel, PowerPoint, Images · Max 10MB per file</div>'
-  +'</div>';
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Engagement Details</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">'
+    +'<div><div style="'+lbl+'">Client</div><div style="font-size:14px;font-weight:600">'+((cl?cl.name:e.clientId)||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Mentor</div><div style="font-size:14px;font-weight:600">'+((mn?mn.name:e.mentorId)||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Start Date</div><div style="font-size:13px">'+(e.startDate||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">End Date</div><div style="font-size:13px">'+(e.endDate||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Country</div><div style="font-size:13px">'+(e.country||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Annual Fee</div><div style="font-size:14px;font-weight:600;color:var(--venetian)">'+fmtFee(e.annualFee)+'</div></div>'
+    +(e.quarterlyFee?'<div><div style="'+lbl+'">Quarterly Fee</div><div style="font-size:13px;color:var(--venetian)">'+fmtFee(e.quarterlyFee)+' qtr</div></div>':'')
+    +'<div><div style="'+lbl+'">Partner</div><div style="font-size:13px">'+(e.partner||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Coordinator</div><div style="font-size:13px">'+(e.coordinator||'—')+'</div></div>'
+    +'<div><div style="'+lbl+'">Type</div><div style="font-size:13px;text-transform:capitalize">'+(e.type||'—')+'</div></div>'
+    +'</div>'
+    +(e.notes?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)"><div style="'+lbl+'">Notes</div><div style="font-size:13px;margin-top:4px;line-height:1.5">'+e.notes+'</div></div>':'')
+    +'</div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Sessions ('+sess.length+')</p>'
+    +'<button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="logSession(\''+e.id+'\')">+ Log Session</button>'
+    +'</div>'
+    +(sess.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No sessions logged yet.</p>'
+    :sess.map(function(s,i){
+      return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+        +'<div style="display:flex;gap:10px;align-items:center;margin-bottom:4px">'
+        +'<span style="font-size:12px;font-weight:600;color:var(--venetian)">Session '+(i+1)+'</span>'
+        +'<span style="font-size:11px;color:var(--muted)">'+s.date+'</span>'
+        +(s.status?'<span class="badge b-grey" style="font-size:10px">'+s.status+'</span>':'')
+        +(s.duration?'<span style="font-size:11px;color:var(--muted)">'+s.duration+' mins</span>':'')
+        +'</div>'
+        +(s.notes?'<p style="font-size:12px;margin:0;opacity:.8">'+s.notes+'</p>':'')
+        +'</div>';
+    }).join(''))
+    +'</div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Documents & Files</p>'
+    +'<label class="btn btn-outline" style="font-size:11px;padding:4px 12px;cursor:pointer">Upload<input type="file" style="display:none" onchange="uploadEngFile(\''+e.id+'\',this)"></label>'
+    +'</div>'
+    +(files.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No files uploaded yet.</p>'
+    :files.map(function(f){
+      return '<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+        +'<span style="font-size:20px">📄</span>'
+        +'<span style="font-size:12px;flex:1">'+f.name+'</span>'
+        +'<span style="font-size:11px;color:var(--muted)">'+new Date(f.uploadedAt).toLocaleDateString('en-GB')+'</span>'
+        +'</div>';
+    }).join(''))
+    +'</div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Mentee & Contact Information</p>'
+    +'<button class="btn btn-outline" style="font-size:11px;padding:4px 12px" onclick="saveMenteeInfo(\''+e.id+'\')">Save</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">'
+    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">Mentee</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +'<input id="mc-name" placeholder="Full Name" value="'+(mc.name||'')+'" style="'+inpSt+'">'
+    +'<input id="mc-title" placeholder="Job Title" value="'+(mc.title||'')+'" style="'+inpSt+'">'
+    +'<input id="mc-email" placeholder="Email" value="'+(mc.email||'')+'" style="'+inpSt+'">'
+    +'<input id="mc-phone" placeholder="Phone" value="'+(mc.phone||'')+'" style="'+inpSt+'">'
+    +'</div></div>'
+    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">EA / Coordinator</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +'<input id="ec-name" placeholder="Full Name" value="'+(ec.name||'')+'" style="'+inpSt+'">'
+    +'<input id="ec-email" placeholder="Email" value="'+(ec.email||'')+'" style="'+inpSt+'">'
+    +'<input id="ec-phone" placeholder="Phone" value="'+(ec.phone||'')+'" style="'+inpSt+'">'
+    +'<textarea id="ec-notes" placeholder="Notes" style="'+inpSt+';resize:vertical;min-height:56px;font-family:inherit">'+(ec.notes||'')+'</textarea>'
+    +'</div></div>'
+    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">Company Contact</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +'<input id="cc-name" placeholder="Full Name" value="'+(cc.name||'')+'" style="'+inpSt+'">'
+    +'<input id="cc-title" placeholder="Job Title" value="'+(cc.title||'')+'" style="'+inpSt+'">'
+    +'<input id="cc-email" placeholder="Email" value="'+(cc.email||'')+'" style="'+inpSt+'">'
+    +'<input id="cc-phone" placeholder="Phone" value="'+(cc.phone||'')+'" style="'+inpSt+'">'
+    +'</div></div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="card" style="margin-top:16px">'+renderComments('engagement',e.id)+'</div>'
+    ;
 }
 
 function saveMenteeInfo(engId){
