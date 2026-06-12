@@ -3528,20 +3528,49 @@ function saveTask(id){
 }
 
 /* ── REPORTS ─────────────────────────────────────────────────── */
+const SEED_REPORTS=[
+  {id:'sr001',name:'Active Engagements',src:'engagements',fields:['name','clientName','partnerName','status','fee','startDate','mentorName'],filters:[{f:'status',op:'equals',v:'active'}],sort:{f:'startDate',d:'desc'},dateF:'startDate',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr002',name:'All Engagements',src:'engagements',fields:['name','clientName','partnerName','status','fee','startDate','endDate','mentorName'],filters:[],sort:{f:'startDate',d:'desc'},dateF:'startDate',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr003',name:'Pipeline Overview',src:'pipeline',fields:['company','stage','value','probability','owner'],filters:[],sort:{f:'value',d:'desc'},dateF:'created',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr004',name:'Finance Summary',src:'engagements',fields:['name','clientName','fee','status','startDate','endDate'],filters:[],sort:{f:'fee',d:'desc'},dateF:'startDate',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr005',name:'Sessions Log',src:'sessions',fields:['date','mentor','client','engagementName','duration','fee','status'],filters:[],sort:{f:'date',d:'desc'},dateF:'date',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr006',name:'Mentor Directory',src:'mentors',fields:['name','title','sector','location','expertise'],filters:[],sort:{f:'name',d:'asc'},dateF:'',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr007',name:'Open Tasks',src:'tasks',fields:['title','priority','assignee','due','engagement','status'],filters:[{f:'status',op:'contains',v:'open'}],sort:{f:'due',d:'asc'},dateF:'due',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr008',name:'All Tasks',src:'tasks',fields:['title','status','priority','assignee','due','engagement'],filters:[],sort:{f:'due',d:'asc'},dateF:'due',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr009',name:'Project Tracker',src:'projects',fields:['name','client','status','startDate','endDate'],filters:[],sort:{f:'startDate',d:'desc'},dateF:'startDate',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr010',name:'Pending Quotes',src:'quotes',fields:['title','client','total','status','created','validUntil'],filters:[{f:'status',op:'contains',v:'pending'}],sort:{f:'created',d:'desc'},dateF:'created',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr011',name:'All Quotes',src:'quotes',fields:['title','client','status','total','created','validUntil'],filters:[],sort:{f:'created',d:'desc'},dateF:'created',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'},
+  {id:'sr012',name:'Contact List',src:'contacts',fields:['name','company','role','email','phone','type'],filters:[],sort:{f:'name',d:'asc'},dateF:'',dateFrom:'',dateTo:'',createdBy:'system',createdByName:'GMG System',createdAt:'2024-01-01T00:00:00.000Z',updatedAt:'2024-01-01T00:00:00.000Z'}
+];
+
+const SOURCES_RPT={
+  engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
+  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
+  projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
+  contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
+  mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
+  tasks:{label:'Tasks',data:()=>DB.tasks||[],dateFields:{due:'Due Date'},fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
+  sessions:{label:'Sessions',data:()=>DB.sessions||[],dateFields:{date:'Session Date'},fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration',status:'Status',fee:'Fee',engagementName:'Engagement'}},
+  quotes:{label:'Quotes',data:()=>DB.quotes||[],dateFields:{created:'Created Date',validUntil:'Valid Until'},fields:{title:'Title',client:'Client',status:'Status',total:'Total',created:'Created',validUntil:'Valid Until'}}
+};
+
 function rReports(c){
+  if(!DB.savedReports) DB.savedReports=[];
+  if(!DB.rptSeeded){
+    const ex=DB.savedReports.map(r=>r.id);
+    SEED_REPORTS.slice().reverse().forEach(r=>{if(!ex.includes(r.id))DB.savedReports.unshift(r);});
+    DB.rptSeeded=true;
+    save();
+  }
   if(!S.tab.rpt) S.tab.rpt={view:'list',listTab:'all',search:'',src:'engagements',fields:[],filters:[],sort:{f:'',d:'asc'},dateF:'',dateFrom:'',dateTo:'',results:null,ran:false,editId:null,saveName:''};
   const rpt=S.tab.rpt;
-  if(!DB.savedReports) DB.savedReports=[];
-  const SOURCES={
-    engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
-    pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
-    projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
-    contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
-    mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
-    tasks:{label:'Tasks',data:()=>DB.tasks||[],dateFields:{due:'Due Date'},fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
-    sessions:{label:'Sessions',data:()=>DB.sessions||[],dateFields:{date:'Session Date'},fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration',status:'Status',fee:'Fee',engagementName:'Engagement'}},
-    quotes:{label:'Quotes',data:()=>DB.quotes||[],dateFields:{created:'Created Date',validUntil:'Valid Until'},fields:{title:'Title',client:'Client',status:'Status',total:'Total',created:'Created',validUntil:'Valid Until'}}
-  };
+  const SOURCES=SOURCES_RPT;
+  const src=SOURCES[rpt.src];
+  const allFields=Object.keys(src.fields);
+  const dateFieldKeys=Object.keys(src.dateFields||{});
+  if(!rpt.fields.length) rpt.fields=allFields.slice(0,5);
+  if(dateFieldKeys.length&&!rpt.dateF) rpt.dateF=dateFieldKeys[0];
+  const OPS=['contains','equals','starts with','ends with','is empty','is not empty','>','<','>=','<='];
 
   if(rpt.view==='list'){
     const q=(rpt.search||'').toLowerCase();
@@ -3550,27 +3579,31 @@ function rReports(c){
     if(tab==='mine') rpts=rpts.filter(r=>r.createdBy===S.user.id);
     if(q) rpts=rpts.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.src||'').toLowerCase().includes(q));
     const cards=rpts.length?rpts.map(r=>{
-      const src=SOURCES[r.src];
+      const rs=SOURCES[r.src];
       const ago=r.updatedAt?new Date(r.updatedAt).toLocaleDateString('en-GB'):'';
-      return `<div class="card" style="margin-bottom:10px;cursor:pointer" onclick="loadSavedRpt('${r.id}')">
-        <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+      const isSystem=r.createdBy==='system';
+      return `<div class="card" style="margin-bottom:10px" onclick="loadSavedRpt('${r.id}')">
+        <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
           <div>
-            <div style="font-weight:600;font-size:14px;color:var(--nearblack)">${r.name}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${src?src.label:r.src} &bull; ${(r.fields||[]).length} fields${r.dateFrom||r.dateTo?' &bull; '+('date range'):''}${r.filters&&r.filters.length?' &bull; '+r.filters.length+' filter'+(r.filters.length>1?'s':''):''}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.createdByName||'Unknown'} &bull; ${ago}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-weight:600;font-size:14px;color:var(--nearblack)">${r.name}</span>
+              ${isSystem?'<span style="font-size:10px;padding:2px 7px;background:rgba(206,83,67,.1);color:var(--venetian);border-radius:10px;font-weight:600">DEFAULT</span>':''}
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${rs?rs.label:r.src} &bull; ${(r.fields||[]).length} fields${r.dateFrom||r.dateTo?' &bull; date range':''}${r.filters&&r.filters.length?' &bull; '+r.filters.length+' filter'+(r.filters.length>1?'s':''):''}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${isSystem?'Standard report':r.createdByName||'Unknown'} &bull; ${ago}</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button onclick="event.stopPropagation();loadSavedRpt('${r.id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Run</button>
-            <button onclick="event.stopPropagation();editSavedRpt('${r.id}')" class="btn btn-outline" style="font-size:12px;padding:5px 12px">Edit</button>
-            <button onclick="event.stopPropagation();deleteSavedRpt('${r.id}')" style="padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">Del</button>
+          <div style="display:flex;gap:8px" onclick="event.stopPropagation()">
+            <button onclick="loadSavedRpt('${r.id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Run</button>
+            ${!isSystem?`<button onclick="editSavedRpt('${r.id}')" class="btn btn-outline" style="font-size:12px;padding:5px 12px">Edit</button>`:''}
+            ${!isSystem?`<button onclick="deleteSavedRpt('${r.id}')" style="padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">Del</button>`:''}
           </div>
         </div>
       </div>`;
-    }).join(''):`<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">${q?'No reports match your search.':'No saved reports yet. Click <strong>+ New Report</strong> to create one.'}</div>`;
+    }).join(''):`<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">${q?'No reports match your search.':'No reports found.'}</div>`;
     c.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <span style="font-size:22px;font-family:Georgia,serif;font-weight:700;color:var(--nearblack)">Reports</span>
-      <button onclick="S.tab.rpt.view='builder';S.tab.rpt.editId=null;S.tab.rpt.saveName='';renderView()" class="btn btn-primary">+ New Report</button>
+      <button onclick="S.tab.rpt.view='builder';S.tab.rpt.editId=null;S.tab.rpt.saveName='';S.tab.rpt.fields=[];S.tab.rpt.filters=[];S.tab.rpt.ran=false;S.tab.rpt.results=null;renderView()" class="btn btn-primary">+ New Report</button>
     </div>
     <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
       <input value="${rpt.search||''}" oninput="S.tab.rpt.search=this.value;renderView()" placeholder="Search reports..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:240px;background:var(--surface);color:var(--nearblack)">
@@ -3582,12 +3615,6 @@ function rReports(c){
   }
 
   // Builder view
-  const src=SOURCES[rpt.src];
-  const allFields=Object.keys(src.fields);
-  const dateFieldKeys=Object.keys(src.dateFields||{});
-  if(!rpt.fields.length) rpt.fields=allFields.slice(0,5);
-  if(dateFieldKeys.length&&!rpt.dateF) rpt.dateF=dateFieldKeys[0];
-  const OPS=['contains','equals','starts with','ends with','is empty','is not empty','>','<','>=','<='];
   const fltHtml=rpt.filters.map((f,i)=>{
     const fOpts=allFields.map(k=>`<option value="${k}"${f.f===k?' selected':''}>${src.fields[k]}</option>`).join('');
     const opOpts=OPS.map(op=>`<option value="${op}"${f.op===op?' selected':''}>${op}</option>`).join('');
@@ -3674,7 +3701,7 @@ function rReports(c){
     <div class="card-hdr"><h3>${saveN}. Save Report</h3></div>
     <div class="card-body">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input id="rpt-name-inp" value="${rpt.saveName||''}" oninput="S.tab.rpt.saveName=this.value" placeholder="Report name..." style="padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:260px;background:var(--surface);color:var(--nearblack)">
+        <input value="${rpt.saveName||''}" oninput="S.tab.rpt.saveName=this.value" placeholder="Report name..." style="padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:260px;background:var(--surface);color:var(--nearblack)">
         <button onclick="saveRpt()" class="btn btn-primary" style="padding:7px 18px">Save Report</button>
       </div>
     </div>
@@ -3688,17 +3715,6 @@ function rReports(c){
     <div class="card-body">${resHtml}</div>
   </div>`;
 }
-
-const SOURCES_RPT={
-  engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
-  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
-  projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
-  contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
-  mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
-  tasks:{label:'Tasks',data:()=>DB.tasks||[],dateFields:{due:'Due Date'},fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
-  sessions:{label:'Sessions',data:()=>DB.sessions||[],dateFields:{date:'Session Date'},fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration',status:'Status',fee:'Fee',engagementName:'Engagement'}},
-  quotes:{label:'Quotes',data:()=>DB.quotes||[],dateFields:{created:'Created Date',validUntil:'Valid Until'},fields:{title:'Title',client:'Client',status:'Status',total:'Total',created:'Created',validUntil:'Valid Until'}}
-};
 
 function runRpt(){
   const rpt=S.tab.rpt;
@@ -3753,9 +3769,7 @@ function saveRpt(){
   const now=new Date().toISOString();
   if(rpt.editId){
     const idx=DB.savedReports.findIndex(r=>r.id===rpt.editId);
-    if(idx>-1){
-      DB.savedReports[idx]={...DB.savedReports[idx],name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,updatedAt:now};
-    }
+    if(idx>-1) DB.savedReports[idx]={...DB.savedReports[idx],name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,updatedAt:now};
   } else {
     DB.savedReports.push({id:uid(),name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,createdBy:S.user.id,createdByName:S.user.name,createdAt:now,updatedAt:now});
   }
