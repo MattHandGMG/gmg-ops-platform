@@ -381,7 +381,7 @@ input,select,textarea{font-family:inherit;outline:none}
       <input type="text" placeholder="Search" oninput="gSearch(this.value)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     </div>
-    <button class="btn btn-primary" id="tba" style="display:none;margin-left:12px" onclick="topAction()">+ Add</button>
+    <div style="position:relative;margin-left:12px"><button onclick="toggleNotifPanel()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 8px;position:relative" title="Notifications">&#128276;<span id="notif-badge" style="display:none;position:absolute;top:0;right:0;background:#e74c3c;color:#fff;border-radius:50%;width:16px;height:16px;font-size:10px;align-items:center;justify-content:center;font-weight:600">0</span></button><div id="notif-panel" style="display:none;position:absolute;top:100%;right:0;width:320px;max-height:400px;overflow-y:auto;background:#1c1c2e;border:1px solid var(--border);border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:1000"></div></div><button class="btn btn-primary" id="tba" style="display:none;margin-left:12px" onclick="topAction()">+ Add</button>
   </div>
   <div id="content"></div>
 </div>
@@ -1938,7 +1938,7 @@ sessions:[
   {id:'s7',engId:'e5',date:'2026-05-22',duration:90,notes:'Policy challenges and leadership style.',status:'completed',mentorPaid:true},
   {id:'s8',engId:'e5',date:'2026-07-10',duration:90,notes:'',status:'scheduled',mentorPaid:false},
 ],
-engFiles:[],appUsers:[],
+engFiles:[],appUsers:[],comments:[],notifications:[],
 clientInvoices:[
   {id:'i1',engId:'e1',clientId:'c1',amount:48000,type:'chair-annual',period:'2026 Annual',status:'paid',xeroSynced:true,issued:'2026-01-15',due:'2026-02-14',notes:'Annual Chair Mentoring fee.'},
   {id:'i2',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q1 2026',status:'paid',xeroSynced:true,issued:'2026-01-01',due:'2026-01-31',notes:'Executive Mentoring Q1 advance.'},
@@ -2191,6 +2191,7 @@ function renderView(){
   const c=document.getElementById('content');
   const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
   if(r[S.view]) r[S.view](c);
+  updateNotifBadge();
 }
 
 /* ── DASHBOARD ───────────────────────────────────────────────── */
@@ -2581,6 +2582,147 @@ function openEngDetail(id){
   renderView();
 }
 
+/* ── COMMENTS & NOTIFICATIONS ─────────────────────────────── */
+
+function renderComments(type, itemId) {
+  if(!DB.comments) DB.comments=[];
+  if(!DB.appUsers) DB.appUsers=[];
+  var items = DB.comments.filter(function(c){return c.type===type && c.itemId===itemId;});
+  var html = '<div class="comments-block" id="cb-'+type+'-'+itemId+'">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin-bottom:8px;text-transform:uppercase">&#128172; Comments ('+items.length+')</p>'
+    +(items.length===0?'<p style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:8px">No comments yet</p>'
+      :items.map(function(c){
+        var t=c.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/@(\w[\w .]*)/g,'<span style="color:var(--narrow);font-weight:600">@$1</span>');
+        return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+          +'<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:2px">'
+          +'<span style="font-size:12px;font-weight:600;color:var(--venetian)">'+c.userName+'</span>'
+          +'<span style="font-size:10px;color:var(--muted)">'+new Date(c.createdAt).toLocaleDateString('en-GB')+'</span>'
+          +'</div><p style="font-size:13px;line-height:1.5;margin:0">'+t+'</p></div>';
+      }).join(''))
+    +'<div style="position:relative;margin-top:8px">'
+    +'<textarea id="cmt-'+type+'-'+itemId+'" placeholder="Add a comment… type @ to mention someone" '
+    +'style="width:100%;padding:8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:12px;resize:vertical;min-height:52px;font-family:inherit;box-sizing:border-box" '
+    +'oninput="cmtAt(this,\''+type+'\',\''+itemId+'\')" '
+    +'onkeydown="if(event.ctrlKey&&event.key===\'Enter\'){cmtSubmit(\''+type+'\',\''+itemId+'\');event.preventDefault()}"></textarea>'
+    +'<div id="cmtdd-'+type+'-'+itemId+'" style="display:none;position:absolute;top:100%;left:0;background:#1c1c2e;border:1px solid var(--border);border-radius:6px;z-index:999;min-width:180px;box-shadow:0 4px 16px rgba(0,0,0,.4)"></div>'
+    +'</div>'
+    +'<button onclick="cmtSubmit(\''+type+'\',\''+itemId+'\')" class="btn btn-primary" style="margin-top:6px;font-size:11px;padding:4px 12px">Post (Ctrl+Enter)</button>'
+    +'</div>';
+  return html;
+}
+
+function cmtAt(ta, type, itemId) {
+  var v=ta.value, c=ta.selectionStart, at=v.lastIndexOf('@',c-1);
+  var dd=document.getElementById('cmtdd-'+type+'-'+itemId);
+  if(at!==-1 && c-at<=25){
+    var q=v.substring(at+1,c).toLowerCase();
+    var us=(DB.appUsers||[]).filter(function(u){return u.name.toLowerCase().includes(q);});
+    if(us.length){
+      dd.innerHTML=us.map(function(u){
+        return '<div onclick="cmtPick(\''+type+'\',\''+itemId+'\',\''+u.name.replace(/'/g,"\\'")+'\')" '
+          +'style="padding:7px 12px;cursor:pointer;font-size:12px" '
+          +'onmouseover="this.style.background=\'rgba(255,255,255,.1)\'" '
+          +'onmouseout="this.style.background=\'\'">&#128100; '+u.name+'</div>';
+      }).join('');
+      dd.style.display='block'; return;
+    }
+  }
+  dd.style.display='none';
+}
+
+function cmtPick(type, itemId, name) {
+  var ta=document.getElementById('cmt-'+type+'-'+itemId);
+  var v=ta.value, c=ta.selectionStart, at=v.lastIndexOf('@',c-1);
+  ta.value=v.substring(0,at)+'@'+name+' '+v.substring(c);
+  ta.focus();
+  document.getElementById('cmtdd-'+type+'-'+itemId).style.display='none';
+}
+
+function cmtSubmit(type, itemId) {
+  var ta=document.getElementById('cmt-'+type+'-'+itemId);
+  if(!ta) return;
+  var text=ta.value.trim();
+  if(!text) return;
+  if(!DB.comments) DB.comments=[];
+  if(!DB.notifications) DB.notifications=[];
+  var commentId=Date.now()+'';
+  DB.comments.push({id:commentId,type:type,itemId:itemId,userId:S.user.name,userName:S.user.name,text:text,createdAt:new Date().toISOString()});
+  // Create notifications for @mentioned users
+  var mentionRe=/@(\w[\w .]*)/g, m;
+  while((m=mentionRe.exec(text))!==null){
+    var mentioned=m[1].trim();
+    var targetUser=(DB.appUsers||[]).find(function(u){return u.name===mentioned;});
+    if(targetUser && targetUser.name!==S.user.name){
+      DB.notifications.push({id:Date.now()+Math.random()+'',userId:targetUser.name,type:'mention',
+        text:S.user.name+' mentioned you in a '+type+' comment: "'+text.substring(0,60)+(text.length>60?'...':'')+'"',
+        itemType:type,itemId:itemId,read:false,createdAt:new Date().toISOString()});
+    }
+  }
+  save();
+  var el=document.getElementById('cb-'+type+'-'+itemId);
+  if(el) el.outerHTML=renderComments(type,itemId);
+  updateNotifBadge();
+}
+
+function getMyNotifs(){
+  if(!DB.notifications) return [];
+  return DB.notifications.filter(function(n){return n.userId===S.user.name;});
+}
+
+function updateNotifBadge(){
+  var badge=document.getElementById('notif-badge');
+  if(!badge) return;
+  var unread=getMyNotifs().filter(function(n){return !n.read;}).length;
+  badge.textContent=unread;
+  badge.style.display=unread>0?'flex':'none';
+}
+
+function toggleNotifPanel(){
+  var panel=document.getElementById('notif-panel');
+  if(!panel) return;
+  var open=panel.style.display==='block';
+  panel.style.display=open?'none':'block';
+  if(!open){
+    // Mark all as read
+    (DB.notifications||[]).forEach(function(n){if(n.userId===S.user.name) n.read=true;});
+    save();
+    updateNotifBadge();
+    renderNotifPanel();
+  }
+}
+
+function renderNotifPanel(){
+  var panel=document.getElementById('notif-panel');
+  if(!panel) return;
+  var notifs=getMyNotifs().slice().reverse();
+  panel.innerHTML='<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-weight:600;font-size:13px">Notifications</span>'
+    +'<button onclick="clearNotifs()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px">Clear all</button>'
+    +'</div>'
+    +(notifs.length===0?'<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">No notifications</div>'
+      :notifs.slice(0,20).map(function(n){
+        return '<div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;line-height:1.4;'+(n.read?'opacity:.6':'')+'">'+n.text
+          +'<div style="font-size:10px;color:var(--muted);margin-top:3px">'+new Date(n.createdAt).toLocaleString('en-GB')+'</div></div>';
+      }).join(''));
+}
+
+function clearNotifs(){
+  if(!DB.notifications) DB.notifications=[];
+  DB.notifications=DB.notifications.filter(function(n){return n.userId!==S.user.name;});
+  save();
+  renderNotifPanel();
+  updateNotifBadge();
+}
+
+function addTaskNotif(assigneeName, taskTitle){
+  if(!DB.notifications) DB.notifications=[];
+  if(assigneeName && assigneeName!==S.user.name){
+    DB.notifications.push({id:Date.now()+Math.random()+'',userId:assigneeName,type:'task',
+      text:S.user.name+' assigned you a task: "'+taskTitle+'"',read:false,createdAt:new Date().toISOString()});
+    save();
+  }
+}
+
 function rEngDetail(c){
   if(!DB.engFiles) DB.engFiles=[];
   const e=DB.engagements.find(x=>x.id===S.currentEngId);
@@ -2712,7 +2854,7 @@ function openEditSessionModal(sessionId){
   +'<div class="fg"><label class="fl">Status</label><select id="es-status" class="fi">'+['completed','scheduled','cancelled'].map(function(v){return'<option value="'+v+'"'+(s.status===v?' selected':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</option>';}).join('')+'</select></div>'
   +'<div class="fg"><label class="fl">Topics / Notes</label><textarea id="es-notes" class="fi" rows="3">'+(s.notes||'')+'</textarea></div>'
   +'<div class="fg" style="display:flex;align-items:center;gap:8px"><input id="es-paid" type="checkbox"'+(s.mentorPaid?' checked':'')+'>< label class="fl" style="margin:0">Mentor fee paid for this session</label></div>'
-  +'</div>'
+  +'<div class="card" style="margin-top:16px">'+renderComments('engagement',e.id)+'</div>'+'</div>'
   +'<div class="mft"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditSession(\''+sessionId+'\')">Update</button></div>');
 }
 
@@ -3448,6 +3590,7 @@ function openDealModal(id,defaultStage){
       </select></div>
     </div>
     <div class="fg"><label>Notes</label><textarea id="dm-notes" rows="3">${o?o.notes:''}<\/textarea></div>
+    ${renderComments('pipeline',id)}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveDeal('${id||''}')">Save Deal</button>
@@ -4016,6 +4159,7 @@ function openTaskModal(id){
       <option value="done"${t.status==='done'?' selected':''}>Done</option>
     </select></div>`:''}
     <div class="fg"><label>Notes</label><textarea id="tm-notes" rows="3">${t?t.notes:''}<\/textarea></div>
+    ${renderComments('task',id)}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveTask('${id||''}')">Save Task</button>
@@ -4034,6 +4178,7 @@ function saveTask(id){
     DB.tasks.unshift({id:uid(),title,type:document.getElementById('tm-type').value,assignee:document.getElementById('tm-assignee').value,priority:document.getElementById('tm-pri').value,due:document.getElementById('tm-due').value,status:'todo',notes:document.getElementById('tm-notes').value.trim(),ref:null});
     addAct('◻',`Task created: ${title}`);
   }
+  var _asn=document.getElementById('tm-assignee');if(_asn)addTaskNotif(_asn.value,title);
   save();closeModal();renderView();
 }
 
