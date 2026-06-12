@@ -3290,6 +3290,8 @@ function saveDeal(id){
 function rFinance(c){
   const entity=S.tab.finEntity||'gmg';
   const section=S.tab.finSection||'autobill';
+  const viewBillId=S.tab.finBillId||null;
+  const viewInvId=S.tab.finInvId||null;
 
   const isGmg=entity==='gmg';
   const pendingPays=isGmg?DB.mentorPayments.filter(p=>p.status==='pending'):[];
@@ -3299,10 +3301,166 @@ function rFinance(c){
   const outstandingVal=allInvs.filter(i=>i.status==='sent').reduce((s,i)=>s+i.amount,0);
   const paidVal=allInvs.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
   const pendTotal=pendingPays.reduce((s,p)=>s+p.amount,0);
-
   const byMentor={};
   pendingPays.filter(p=>!p.autoBillId).forEach(p=>{if(!byMentor[p.mentorId])byMentor[p.mentorId]=[];byMentor[p.mentorId].push(p);});
 
+  /* ── BILL DETAIL VIEW ─────────────────────────────────── */
+  if(section==='autobill'&&viewBillId){
+    const bill=allBills.find(b=>b.id===viewBillId);
+    if(!bill){S.tab.finBillId=null;renderView();return;}
+    const pays=bill.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
+    const byM={};
+    pays.forEach(p=>{if(!byM[p.mentorId])byM[p.mentorId]=[];byM[p.mentorId].push(p);});
+    const editingMid=S.tab.editingBillMentor||null;
+    c.innerHTML=`
+    <div class="phdr" style="margin-bottom:16px">
+      <div>
+        <button class="btn btn-sm btn-outline" onclick="S.tab.finBillId=null;S.tab.editingBillMentor=null;renderView()" style="margin-bottom:8px">&#8592; Back to Auto-Billing</button>
+        <h2>${bill.id.toUpperCase()} &mdash; ${bill.period}</h2>
+        <p>${Object.keys(byM).length} mentors &nbsp;&middot;&nbsp; ${bill.payments.length} payments &nbsp;&middot;&nbsp;
+        <span class="badge ${bill.xeroSynced?'b-xero':'b-amber'}" style="vertical-align:middle">${bill.xeroSynced?'&#10003; Synced to Xero':'Pending Xero'}</span></p>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:24px;font-weight:700;font-family:'Cormorant Garamond',Georgia,serif;color:var(--cadmium)">${fmt(bill.totalAmount)}</div>
+        <div style="font-size:11px;opacity:.7">total bill value</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      ${Object.entries(byM).map(([mid,mPays])=>{
+        const m=DB.contacts.find(x=>x.id===mid);
+        const total=mPays.reduce((s,p)=>s+p.amount,0);
+        const isEditing=editingMid===mid;
+        const wasResent=mPays.some(p=>p.resent);
+        return`<div class="card" style="overflow:hidden">
+          <div class="card-hdr">
+            <div>
+              <strong style="font-size:14px">${m?.name||'Unknown Mentor'}</strong>
+              ${m?.email?`<span style="font-size:11px;color:var(--muted);margin-left:8px">${m.email}</span>`:''}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <strong style="font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:var(--cadmium)" id="mtotal_${mid}">${fmt(total)}</strong>
+              ${wasResent?`<span class="badge b-green" style="font-size:10px">&#10003; Resent</span>`:''}
+              ${isEditing
+                ?`<button class="btn btn-sm btn-outline" onclick="S.tab.editingBillMentor=null;renderView()">Cancel</button>
+                   <button class="btn btn-sm btn-success" onclick="saveBillEdits('${viewBillId}','${mid}')">Save Changes</button>`
+                :`<button class="btn btn-sm btn-outline" onclick="S.tab.editingBillMentor='${mid}';renderView()">&#9998; Edit</button>
+                   <button class="btn btn-sm btn-primary" onclick="resendBill('${viewBillId}','${mid}')">&#8594; Resend</button>`}
+            </div>
+          </div>
+          <table class="tbl" style="margin:0">
+            <thead><tr><th>Engagement</th><th>Description</th><th style="text-align:right">Amount</th></tr></thead>
+            <tbody>${mPays.map(p=>{
+              const e=DB.engagements.find(x=>x.id===p.engId);
+              return`<tr>
+                <td style="font-size:11px">${e?.name?.split('—')[0]?.trim()||e?.name||'—'}</td>
+                <td style="font-size:11px;color:var(--muted)">${p.description||'Mentor fee'}</td>
+                <td style="text-align:right">
+                  ${isEditing
+                    ?`<input type="number" id="bedit_${p.id}" value="${p.amount}" step="0.01"
+                        style="width:100px;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:13px;font-weight:700;border:1px solid var(--cadmium);border-radius:4px;padding:2px 6px;background:var(--halfnarrow)"
+                        onchange="updateBillLinePreview('${viewBillId}','${mid}')">`
+                    :`<span style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(p.amount)}</span>`}
+                </td>
+              </tr>`;}).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }).join('')}
+    </div>`;
+    return;
+  }
+
+  /* ── INVOICE PREVIEW VIEW ─────────────────────────────── */
+  if(section==='invoicing'&&viewInvId){
+    const inv=allInvs.find(i=>i.id===viewInvId);
+    if(!inv){S.tab.finInvId=null;renderView();return;}
+    const cl=DB.contacts.find(ct=>ct.id===inv.clientId);
+    const sb={draft:'b-grey',sent:'b-blue',paid:'b-green'}[inv.status]||'b-grey';
+    const lines=inv.lineItems||[{description:'Professional services',quantity:1,unitPrice:inv.amount,amount:inv.amount}];
+    const subtotal=lines.reduce((s,l)=>s+(l.amount||0),0);
+    const gst=Math.round(subtotal*0.1*100)/100;
+    c.innerHTML=`
+    <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <button class="btn btn-sm btn-outline" onclick="S.tab.finInvId=null;renderView()">&#8592; Back to Invoicing</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${!inv.xeroSynced?`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Push to Xero</button>`:''}
+        ${inv.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendInvoice('${inv.id}')">Send Invoice</button>`:''}
+        ${inv.status==='sent'?`<button class="btn btn-sm btn-primary" onclick="resendInvoice('${inv.id}')">&#8594; Resend</button>`:''}
+        ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">&#10003; Mark Paid</button>`:''}
+        <button class="btn btn-sm" style="background:var(--nearblack);color:#fff" onclick="downloadInvoicePDF('${inv.id}')">&#8659; Download PDF</button>
+      </div>
+    </div>
+    <div class="card" style="max-width:800px;margin:0 auto;padding:40px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px">
+        <div>
+          <h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:400;letter-spacing:2px;color:var(--nearblack);margin:0">INVOICE</h1>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">${inv.id.toUpperCase()}</div>
+          <div style="margin-top:6px">
+            <span class="badge ${sb}">${inv.status}</span>
+            <span class="badge ${inv.xeroSynced?'b-xero':'b-amber'}" style="margin-left:4px">${inv.xeroSynced?'&#10003; Xero':'Pending Xero'}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:18px;font-weight:700;color:var(--venetian)">Global Mentors Group</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;line-height:1.6">ABN 00 000 000 000<br>info@globalmentorsgroup.com</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px">
+        <div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">Bill To</div>
+          <div style="font-weight:700;font-size:14px">${cl?.name||'Client'}</div>
+          <div style="font-size:12px;color:var(--muted)">${cl?.company||''}</div>
+          <div style="font-size:12px;color:var(--muted)">${cl?.email||''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Invoice Date</div>
+            <strong style="font-size:13px">${inv.issueDate||new Date().toLocaleDateString('en-AU')}</strong>
+          </div>
+          <div style="margin-bottom:8px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Due Date</div>
+            <strong style="font-size:13px">${inv.dueDate||'On receipt'}</strong>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Period</div>
+            <strong style="font-size:13px">${inv.period||'—'}</strong>
+          </div>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
+        <thead><tr style="border-bottom:2px solid var(--nearblack)">
+          <th style="text-align:left;padding:8px 0;font-size:10px;text-transform:uppercase;letter-spacing:.06em">Description</th>
+          <th style="text-align:center;padding:8px 0;font-size:10px;text-transform:uppercase;letter-spacing:.06em;width:60px">Qty</th>
+          <th style="text-align:right;padding:8px 0;font-size:10px;text-transform:uppercase;letter-spacing:.06em;width:120px">Unit Price</th>
+          <th style="text-align:right;padding:8px 0;font-size:10px;text-transform:uppercase;letter-spacing:.06em;width:120px">Amount</th>
+        </tr></thead>
+        <tbody>${lines.map(l=>`<tr style="border-bottom:1px solid var(--border)">
+          <td style="padding:10px 0;font-size:13px">${l.description}</td>
+          <td style="padding:10px 0;text-align:center;font-size:13px">${l.quantity||1}</td>
+          <td style="padding:10px 0;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:14px">${fmt(l.unitPrice||l.amount)}</td>
+          <td style="padding:10px 0;text-align:right;font-family:'Cormorant Garamond',Georgia,serif;font-size:14px;font-weight:700">${fmt(l.amount)}</td>
+        </tr>`).join('')}</tbody>
+      </table>
+      <div style="display:flex;justify-content:flex-end">
+        <div style="width:260px">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px"><span>Subtotal</span><span style="font-family:'Cormorant Garamond',Georgia,serif">${fmt(subtotal)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;color:var(--muted)"><span>GST (10%)</span><span style="font-family:'Cormorant Garamond',Georgia,serif">${fmt(gst)}</span></div>
+          <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:16px;font-weight:700;border-top:2px solid var(--nearblack);margin-top:4px">
+            <span>Total (AUD)</span>
+            <span style="font-family:'Cormorant Garamond',Georgia,serif;color:var(--cadmium)">${fmt(subtotal+gst)}</span>
+          </div>
+        </div>
+      </div>
+      ${inv.notes?`<div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)">${inv.notes}</div>`:''}
+      <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center;line-height:1.8">
+        Payment due within 14 days. Please quote invoice number ${inv.id.toUpperCase()} on payment.<br>
+        Global Mentors Group &mdash; globalmentorsgroup.com
+      </div>
+    </div>`;
+    return;
+  }
+
+  /* ── MAIN LIST VIEW ──────────────────────────────────── */
   c.innerHTML=`
   <div class="phdr"><div><h2>Finance</h2><p>Billing, invoicing and Xero sync across entities</p></div></div>
   <div class="tabs" style="margin-bottom:6px">
@@ -3315,13 +3473,13 @@ function rFinance(c){
 
   ${section==='autobill'?`
   <div class="xero-banner" style="margin-bottom:20px">
-    <div><h4>Xero Integration Active — ${entity.toUpperCase()}</h4><p>Mentor payments consolidated and pushed as supplier bills at month-end.</p></div>
+    <div><h4>Xero Integration Active &mdash; ${entity.toUpperCase()}</h4><p>Mentor payments consolidated and pushed as supplier bills at month-end.</p></div>
     <div style="text-align:right"><div style="font-size:18px;font-weight:700">${fmt(pendTotal)}</div><div style="font-size:10px;opacity:.8">pending this month</div></div>
   </div>
   ${!isGmg?`<div class="empty"><div class="ei">&#9711;</div><p>No mentor payments for ${entity.toUpperCase()} this period</p></div>`:`
   <div class="g2" style="margin-bottom:18px">
     <div class="card">
-      <div class="card-hdr"><h3>Pending Payments — June 2026</h3>
+      <div class="card-hdr"><h3>Pending Payments &mdash; June 2026</h3>
         ${Object.keys(byMentor).length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill &#8594;</button>`:'<span class="badge b-green">&#10003; All processed</span>'}
       </div>
       <div class="card-body" style="padding:0">
@@ -3343,16 +3501,23 @@ function rFinance(c){
     <div class="card">
       <div class="card-hdr"><h3>Previous Auto-Bill Runs</h3></div>
       <div class="card-body" style="padding:0">
-        ${allBills.map(ab=>{
-          const pays=ab.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
-          const mids=[...new Set(pays.map(p=>p.mentorId))];
-          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-            <div style="flex:1"><strong style="font-size:12px">${ab.id.toUpperCase()} — ${ab.period}</strong>
-            <div style="font-size:10px;color:var(--muted)">${mids.length} mentors · ${ab.payments.length} payments</div></div>
-            <div><strong style="font-family:'Cormorant Garamond',Georgia,serif;color:var(--cadmium)">${fmt(ab.totalAmount)}</strong>
-            <span class="badge ${ab.xeroSynced?'b-xero':'b-amber'}" style="margin-left:6px">${ab.xeroSynced?'&#10003; Xero':'pending'}</span></div>
+        ${allBills.length===0?`<div class="empty"><div class="ei">&#9711;</div><p>No auto-bills run yet</p></div>`:''}
+        ${[...allBills].reverse().map(ab=>{
+          const abPays=ab.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
+          const mids=[...new Set(abPays.map(p=>p.mentorId))];
+          const hasResent=abPays.some(p=>p.resent);
+          return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;cursor:pointer;transition:.15s" onmouseenter="this.style.background='var(--halfnarrow)'" onmouseleave="this.style.background=''" onclick="viewAutoBill('${ab.id}')">
+            <div style="flex:1">
+              <strong style="font-size:12px">${ab.id.toUpperCase()} &mdash; ${ab.period}</strong>
+              <div style="font-size:10px;color:var(--muted)">${mids.length} mentors &middot; ${ab.payments.length} payments${hasResent?' &middot; <span style="color:var(--success)">resent</span>':''}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <strong style="font-family:'Cormorant Garamond',Georgia,serif;color:var(--cadmium)">${fmt(ab.totalAmount)}</strong>
+              <span class="badge ${ab.xeroSynced?'b-xero':'b-amber'}">${ab.xeroSynced?'&#10003; Xero':'pending'}</span>
+              <span style="color:var(--muted);font-size:18px">&#8250;</span>
+            </div>
           </div>`;
-        }).reverse().join('')}
+        }).join('')}
       </div>
     </div>
   </div>`}`:''}
@@ -3370,24 +3535,191 @@ function rFinance(c){
     <div class="card-hdr"><h3>Client Invoices</h3><button class="btn btn-sm btn-primary" onclick="openInvoiceModal()">+ New Invoice</button></div>
     <table class="tbl"><thead><tr><th>Invoice</th><th>Client</th><th>Period</th><th>Amount</th><th>Status</th><th>Xero</th><th>Actions</th></tr></thead>
     <tbody>${allInvs.map(inv=>{
-      const cl=DB.contacts.find(c=>c.id===inv.clientId);
+      const cl=DB.contacts.find(ct=>ct.id===inv.clientId);
       const sb={draft:'b-grey',sent:'b-blue',paid:'b-green'}[inv.status]||'b-grey';
-      return`<tr><td style="font-weight:600;font-size:11px">${inv.id.toUpperCase()}</td>
-      <td style="font-size:12px">${cl?.name||'—'}</td>
-      <td style="font-size:11px">${inv.period}</td>
-      <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(inv.amount)}</td>
-      <td><span class="badge ${sb}">${inv.status}</span></td>
-      <td><span class="badge ${inv.xeroSynced?'b-xero':'b-amber'}">${inv.xeroSynced?'&#10003;':'pending'}</span></td>
-      <td><div class="acts">
-        ${inv.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendInvoice('${inv.id}')">Send</button>`:''}
-        ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">&#10003; Paid</button>`:''}
-        ${!inv.xeroSynced?`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button>`:''}
-      </div></td></tr>`;
+      return`<tr>
+        <td style="font-weight:600;font-size:11px;cursor:pointer;color:var(--venetian);text-decoration:underline" onclick="viewInvoice('${inv.id}')">${inv.id.toUpperCase()}</td>
+        <td style="font-size:12px">${cl?.name||'—'}</td>
+        <td style="font-size:11px">${inv.period}</td>
+        <td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(inv.amount)}</td>
+        <td><span class="badge ${sb}">${inv.status}</span></td>
+        <td><span class="badge ${inv.xeroSynced?'b-xero':'b-amber'}">${inv.xeroSynced?'&#10003;':'pending'}</span></td>
+        <td><div class="acts">
+          <button class="btn btn-sm btn-outline" onclick="viewInvoice('${inv.id}')">Preview</button>
+          ${inv.status==='draft'?`<button class="btn btn-sm btn-outline" onclick="sendInvoice('${inv.id}')">Send</button>`:''}
+          ${inv.status==='sent'?`<button class="btn btn-sm btn-success" onclick="markPaid('${inv.id}')">&#10003; Paid</button>`:''}
+          ${!inv.xeroSynced?`<button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button>`:''}
+        </div></td>
+      </tr>`;
     }).join('')}</tbody></table>
   </div>`}`:''}`;
 }
 
-/* ── TASKS ───────────────────────────────────────────────────── */
+/* ── FINANCE HELPERS ─────────────────────────────────────────── */
+
+function viewAutoBill(id){S.tab.finBillId=id;renderView();}
+
+function viewInvoice(id){S.tab.finInvId=id;renderView();}
+
+function resendBill(billId,mentorId){
+  const bill=DB.autoBills.find(b=>b.id===billId);
+  if(!bill)return;
+  const pays=bill.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(p=>p&&p.mentorId===mentorId);
+  pays.forEach(p=>{p.resent=true;p.resentAt=new Date().toISOString();});
+  save();
+  addAct('finance','Mentor bill resent — '+billId.toUpperCase());
+  showToast('Bill resent to mentor');
+  renderView();
+}
+
+function resendInvoice(id){
+  const inv=DB.clientInvoices.find(i=>i.id===id);
+  if(!inv)return;
+  inv.resentAt=new Date().toISOString();
+  save();
+  addAct('finance','Invoice resent — '+id.toUpperCase());
+  showToast('Invoice resent');
+  renderView();
+}
+
+function updateBillLinePreview(billId,mentorId){
+  const bill=DB.autoBills.find(b=>b.id===billId);
+  if(!bill)return;
+  const pays=bill.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(p=>p&&p.mentorId===mentorId);
+  let t=0;
+  pays.forEach(p=>{const inp=document.getElementById('bedit_'+p.id);if(inp)t+=parseFloat(inp.value)||0;});
+  const el=document.getElementById('mtotal_'+mentorId);
+  if(el)el.textContent=fmt(t);
+}
+
+function saveBillEdits(billId,mentorId){
+  const bill=DB.autoBills.find(b=>b.id===billId);
+  if(!bill)return;
+  const pays=bill.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(p=>p&&p.mentorId===mentorId);
+  let changed=false;
+  pays.forEach(p=>{
+    const inp=document.getElementById('bedit_'+p.id);
+    if(inp){const v=parseFloat(inp.value);if(!isNaN(v)&&v!==p.amount){p.amount=v;changed=true;}}
+  });
+  if(changed){
+    const allPays=bill.payments.map(id=>DB.mentorPayments.find(p=>p.id===id)).filter(Boolean);
+    bill.totalAmount=allPays.reduce((s,p)=>s+p.amount,0);
+    save();
+    addAct('finance','Bill edited — '+billId.toUpperCase());
+    showToast('Changes saved');
+  }
+  S.tab.editingBillMentor=null;
+  renderView();
+}
+
+function downloadInvoicePDF(id){
+  const inv=DB.clientInvoices.find(i=>i.id===id);
+  if(!inv)return;
+  const cl=DB.contacts.find(ct=>ct.id===inv.clientId);
+  const lines=inv.lineItems||[{description:'Professional services',quantity:1,unitPrice:inv.amount,amount:inv.amount}];
+  const subtotal=lines.reduce((s,l)=>s+(l.amount||0),0);
+  const gst=Math.round(subtotal*0.1*100)/100;
+  const rows=lines.map(l=>`<tr><td>${l.description}</td><td style="text-align:center">${l.quantity||1}</td><td style="text-align:right">$${(l.unitPrice||l.amount).toFixed(2)}</td><td style="text-align:right;font-weight:700">$$x(l.amount).toFixed(2)}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Invoice ${inv.id.toUpperCase()}</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Helvetica Neue',Arial,sans-serif;color:#111;padding:50px;max-width:820px;margin:0 auto;font-size:13px}
+h1{font-size:38px;font-weight:300;letter-spacing:3px;margin-bottom:4px}.iid{color:#888;font-size:12px;margin-top:2px}
+.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:40px;padding-bottom:20px;border-bottom:1px solid #eee}
+.co strong{font-size:17px;color:#8B1A1A;display:block;text-align:right}.co p{font-size:11px;color:#888;text-align:right;margin-top:4px;line-height:1.6}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:36px}
+.lbl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:#888;margin-bottom:3px;font-weight:700}
+.val{font-size:13px;font-weight:600}.mr{text-align:right}
+table{width:100%;border-collapse:collapse;margin-bottom:28px}
+thead tr{border-bottom:2px solid #111}th{padding:8px 0;font-size:9px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;text-align:left}
+tbody tr{border-bottom:1px solid #eee}td{padding:10px 0}
+.tots{display:flex;justify-content:flex-end;margin-bottom:40px}.tbox{width:260px}
+.tr{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+.trfin{display:flex;justify-content:space-between;padding:10px 0;font-size:15px;font-weight:700;border-top:2px solid #111;margin-top:4px;color:#8B1A1A}
+.ft{margin-top:30px;padding-top:16px;border-top:1px solid #eee;font-size:10px;color:#888;text-align:center;line-height:1.8}
+@media print{body{padding:30px}}</style></head>
+<body>
+<div class="hdr">
+  <div><h1>INVOICE</h1><div class="iid">${inv.id.toUpperCase()}</div></div>
+  <div class="co"><strong>Global Mentors Group</strong><p>ABN 00 000 000 000<br>info@globalmentorsgroup.com</p></div>
+</div>
+<div class="meta">
+  <div>
+    <div class="lbl">Bill To</div>
+    <div class="val">${cl?.name||'Client'}</div>
+    <div style="color:#888">${cl?.company||''}</div>
+    <div style="color:#888">${cl?.email||''}</div>
+  </div>
+  <div class="mr">
+    <div style="margin-bottom:10px"><div class="lbl">Invoice Date</div><div class="val">${inv.issueDate||new Date().toLocaleDateString('en-AU')}</div></div>
+    <div style="margin-bottom:10px"><div class="lbl">Due Date</div><div class="val">${inv.dueDate||'On receipt'}</div></div>
+    <div><div class="lbl">Period</div><div class="val">${inv.period||'—'}</div></div>
+  </div>
+</div>
+<table>
+  <thead><tr><th>Description</th><th style="text-align:center;width:60px">Qty</th><th style="text-align:right;width:120px">Unit Price</th><th style="text-align:right;width:120px">Amount</th></tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="tots"><div class="tbox">
+  <div class="tr"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+  <div class="tr" style="color:#888"><span>GST (10%)</span><span>$${gst.toFixed(2)}</span></div>
+  <div class="trfin"><span>Total (AUD)</span><span>$${(subtotal+gst).toFixed(2)}</span></div>
+</div></div>
+<div class="ft">Payment due within 14 days &mdash; Please quote invoice number ${inv.id.toUpperCase()} on payment.<br>Global Mentors Group &mdash; globalmentorsgroup.com</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+  const w=window.open('','_blank','width=900,height=700');
+  if(w){w.document.write(html);w.document.close();}
+}
+
+function sendInvoice(id){
+  const inv=DB.clientInvoices.find(i=>i.id===id);if(!inv)return;
+  inv.status='sent';inv.sentAt=new Date().toISOString();
+  save();addAct('finance','Invoice sent — '+id.toUpperCase());showToast('Invoice sent');renderView();
+}
+
+function markPaid(id){
+  const inv=DB.clientInvoices.find(i=>i.id===id);if(!inv)return;
+  inv.status='paid';inv.paidAt=new Date().toISOString();
+  save();addAct('finance','Invoice marked paid — '+id.toUpperCase());showToast('Marked as paid');renderView();
+}
+
+function pushInvXero(id){
+  const inv=DB.clientInvoices.find(i=>i.id===id);if(!inv)return;
+  inv.xeroSynced=true;inv.xeroSyncedAt=new Date().toISOString();
+  save();addAct('finance','Invoice pushed to Xero — '+id.toUpperCase());showToast('Pushed to Xero');renderView();
+}
+
+function pushAllXero(){
+  DB.clientInvoices.filter(i=>!i.xeroSynced).forEach(i=>{i.xeroSynced=true;i.xeroSyncedAt=new Date().toISOString();});
+  save();addAct('finance','All invoices pushed to Xero');showToast('All invoices synced to Xero');renderView();
+}
+
+function openInvoiceModal(){showToast('Invoice creation coming soon');}
+
+function runAutoBill(){
+  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
+  if(!pending.length){showToast('No pending payments to bill');return;}
+  const billId='ab-'+Date.now();
+  const now=new Date();
+  const period=now.toLocaleString('en-AU',{month:'long',year:'numeric'});
+  const total=pending.reduce((s,p)=>s+p.amount,0);
+  const newBill={id:billId,period,payments:pending.map(p=>p.id),totalAmount:total,xeroSynced:false,createdAt:now.toISOString()};
+  pending.forEach(p=>{p.autoBillId=billId;p.status='billed';});
+  if(!DB.autoBills)DB.autoBills=[];
+  DB.autoBills.push(newBill);
+  save();addAct('finance','Auto-bill run — '+billId.toUpperCase()+' ('+fmt(total)+')');
+  showToast('Auto-bill created: '+billId.toUpperCase());renderView();
+}
+
+function showToast(msg,type){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:24px;right:24px;background:'+(type==='error'?'#c0392b':'var(--nearblack)')+';color:#fff;padding:10px 18px;border-radius:6px;font-size:13px;font-weight:500;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .2s';
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{t.style.opacity='1';});
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),200);},2800);
+}
+
+
 function rTasks(c){
   const viewMode=S.tab.taskView||'list';
   const assigneeF=S.tab.taskAssignee||'';
