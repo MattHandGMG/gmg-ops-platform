@@ -1938,6 +1938,7 @@ sessions:[
   {id:'s7',engId:'e5',date:'2026-05-22',duration:90,notes:'Policy challenges and leadership style.',status:'completed',mentorPaid:true},
   {id:'s8',engId:'e5',date:'2026-07-10',duration:90,notes:'',status:'scheduled',mentorPaid:false},
 ],
+engFiles:[],
 clientInvoices:[
   {id:'i1',engId:'e1',clientId:'c1',amount:48000,type:'chair-annual',period:'2026 Annual',status:'paid',xeroSynced:true,issued:'2026-01-15',due:'2026-02-14',notes:'Annual Chair Mentoring fee.'},
   {id:'i2',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q1 2026',status:'paid',xeroSynced:true,issued:'2026-01-01',due:'2026-01-31',notes:'Executive Mentoring Q1 advance.'},
@@ -2046,9 +2047,9 @@ try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
 // Auto-upgrade: if stored mentor count is less than seed, replace mentors while keeping all other data
 (function(){try{const seedMentors=SEED.contacts.filter(c=>c.type==='mentor');const storedMentors=(DB.contacts||[]).filter(c=>c.type==='mentor');if(storedMentors.length<seedMentors.length){const nonMentors=(DB.contacts||[]).filter(c=>c.type!=='mentor');DB.contacts=[...nonMentors,...seedMentors];try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}}}catch(e){}})();
 
-const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorEnt:'',mentorCat:'',mentorId:null};
+const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorEnt:'',mentorCat:'',mentorId:null,currentEngId:null};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',chat:'Team Chat',training:'Training & Onboarding'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',engagementDetail:'Engagement',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',chat:'Team Chat',training:'Training & Onboarding'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -2108,7 +2109,9 @@ async function bootApp(user){
   document.getElementById('sun').textContent=S.user.name;
   document.getElementById('sav').textContent=S.user.name.charAt(0).toUpperCase();
   document.getElementById('sur').textContent=ROLES[S.user.role]||S.user.role;
-  if(S.user.role==='admin') document.getElementById('sb-admin-section').style.display='block';
+  const ADMIN_EMAILS=['matt.hand@globalmentorsgroup.com'];
+  if(ADMIN_EMAILS.includes(user.email)) S.user.role='admin';
+  if(['admin','rm','partner'].includes(S.user.role)) document.getElementById('sb-admin-section').style.display='block';
   setupRealtime();
   nav(document.querySelector('[data-v="dashboard"]'));
 }
@@ -2185,7 +2188,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
   if(r[S.view]) r[S.view](c);
 }
 
@@ -2566,6 +2569,180 @@ async function saveAdminUser(userId){
     await sb.from('profiles').update({data,updated_at:new Date().toISOString()}).eq('id',userId);
     closeModal(); S.view='admin'; renderView();
   }catch(e){alert('Error saving: '+e.message);}
+}
+
+
+function openEngDetail(id){
+  S.currentEngId=id; S.view='engagementDetail';
+  const tb=document.getElementById('tbt'); if(tb) tb.textContent='Engagement';
+  const ab=document.getElementById('tba'); if(ab) ab.style.display='none';
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+  renderView();
+}
+
+function rEngDetail(c){
+  if(!DB.engFiles) DB.engFiles=[];
+  const e=DB.engagements.find(x=>x.id===S.currentEngId);
+  if(!e){c.innerHTML='<p style="padding:32px;color:var(--muted)">Engagement not found.</p>';return;}
+  const cl=DB.contacts.find(x=>x.id===e.clientId);
+  const mn=DB.contacts.find(x=>x.id===e.mentorId);
+  const sess=(DB.sessions||[]).filter(s=>s.engId===e.id).sort((a,b)=>a.date>b.date?1:-1);
+  const files=(DB.engFiles||[]).filter(f=>f.engId===e.id);
+  const mentee=e.mentee||{};
+  const ea=e.menteeEA||{};
+  const cc=e.companyContact||{};
+  const tb2={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  const fee=fmt(e.annualFee||e.totalFee||e.quarterlyFee||0);
+  const feeLabel=e.annualFee?'per annum':e.totalFee?'total fee':e.quarterlyFee?'per quarter':'';
+  const isCE=e.type==='chair'||e.type==='executive';
+  const sDone=sess.filter(s=>s.status==='completed').length;
+  const sTotal=e.sessionsIncluded||0;
+  const backFn="S.view='engagements';renderView();document.querySelectorAll('.sb-item').forEach(i=>{if(i.dataset.v==='engagements')i.classList.add('active');else i.classList.remove('active')})";
+  c.innerHTML=
+  '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
+  +'<button class="btn btn-outline" onclick="'+backFn+'">&#8592; Back</button>'
+  +'<div style="flex:1"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+  +'<h2 style="margin:0;font-size:18px">'+e.name+'</h2>'
+  +'<span class="badge '+(tb2[e.type]||'b-grey')+'">'+e.type+'</span>'
+  +'<span class="badge '+(e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey')+'">'+e.status+'</span>'
+  +(e.entity?'<span class="badge b-grey">'+e.entity+'</span>':'')
+  +'</div><div style="font-size:11px;color:var(--muted);margin-top:3px">'+(e.startDate||'')+' → '+(e.endDate||'')+' · Partner: '+(e.partner||'—')+'</div></div>'
+  +'<button class="btn btn-outline" onclick="openEngModal(\''+e.id+'\')">Edit Engagement</button></div>'
+  +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">'
+  +'<div class="kpi accent"><div class="kpi-label">Fee</div><div class="kpi-val" style="font-size:20px">'+fee+'</div><div class="kpi-sub">'+feeLabel+'</div></div>'
+  +'<div class="kpi"><div class="kpi-label">Client</div><div style="font-size:13px;font-weight:600;margin-top:4px">'+(cl?cl.name:'—')+'</div></div>'
+  +'<div class="kpi"><div class="kpi-label">Mentor</div><div style="font-size:13px;font-weight:600;margin-top:4px">'+(mn?(mn.name||'').split('—')[0].trim():'—')+'</div></div>'
+  +(isCE&&sTotal?'<div class="kpi gold"><div class="kpi-label">Sessions</div><div class="kpi-val" style="font-size:20px">'+sDone+'/'+sTotal+'</div><div class="kpi-sub">completed of included</div></div>':'')
+  +(e.notes?'<div class="kpi" style="grid-column:1/-1"><div class="kpi-label">Notes</div><div style="font-size:12px;margin-top:4px">'+e.notes+'</div></div>':'')
+  +'</div>'
+  +'<div class="card" style="margin-bottom:16px">'
+  +'<div class="card-hdr"><h3>Mentee &amp; Contact Information</h3><button class="btn btn-sm btn-outline" onclick="saveMenteeInfo(\''+e.id+'\')">Save</button></div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;padding:16px">'
+  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Mentee</div>'
+  +'<div style="display:flex;flex-direction:column;gap:8px">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="mt-name-'+e.id+'" class="fi" value="'+(mentee.name||'')+'" placeholder="e.g. Sarah Okonkwo"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Job Title</label><input id="mt-title-'+e.id+'" class="fi" value="'+(mentee.title||'')+'" placeholder="e.g. Chief Financial Officer"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="mt-email-'+e.id+'" class="fi" type="email" value="'+(mentee.email||'')+'" placeholder="sarah@company.com"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="mt-phone-'+e.id+'" class="fi" value="'+(mentee.phone||'')+'" placeholder="+44 20 ..."></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">LinkedIn</label><input id="mt-li-'+e.id+'" class="fi" value="'+(mentee.linkedin||'')+'" placeholder="linkedin.com/in/..."></div>'
+  +'</div></div>'
+  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">EA / Coordinator</div>'
+  +'<div style="display:flex;flex-direction:column;gap:8px">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="ea-name-'+e.id+'" class="fi" value="'+(ea.name||'')+'" placeholder="EA name"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="ea-email-'+e.id+'" class="fi" type="email" value="'+(ea.email||'')+'" placeholder="ea@company.com"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="ea-phone-'+e.id+'" class="fi" value="'+(ea.phone||'')+'" placeholder="+44 20 ..."></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Notes</label><input id="ea-notes-'+e.id+'" class="fi" value="'+(ea.notes||'')+'" placeholder="Scheduling notes"></div>'
+  +'</div></div>'
+  +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--border)">Company Contact</div>'
+  +'<div style="display:flex;flex-direction:column;gap:8px">'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Full Name</label><input id="cc-name-'+e.id+'" class="fi" value="'+(cc.name||'')+'" placeholder="Contact name"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Job Title</label><input id="cc-title-'+e.id+'" class="fi" value="'+(cc.title||'')+'" placeholder="e.g. Head of Talent"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Email</label><input id="cc-email-'+e.id+'" class="fi" type="email" value="'+(cc.email||'')+'" placeholder="contact@company.com"></div>'
+  +'<div><label style="font-size:10px;font-weight:600;color:var(--muted);display:block;margin-bottom:2px">Phone</label><input id="cc-phone-'+e.id+'" class="fi" value="'+(cc.phone||'')+'" placeholder="+44 20 ..."></div>'
+  +'</div></div>'
+  +'</div></div>'
+  +(isCE?
+    '<div class="card" style="margin-bottom:16px">'
+    +'<div class="card-hdr"><h3>Sessions</h3><button class="btn btn-sm btn-primary" onclick="openAddSessionModal(\''+e.id+'\')">+ Log Session</button></div>'
+    +(sess.length===0?'<p style="padding:20px 16px;color:var(--muted);font-size:12px">No sessions logged yet. Click “+ Log Session” to add the first session.</p>'
+      :'<table class="tbl"><thead><tr><th>#</th><th>Date</th><th>Duration</th><th>Notes / Topics</th><th>Status</th><th>Mentor Paid</th><th></th></tr></thead><tbody>'
+      +sess.map(function(s,i){return'<tr><td style="font-size:11px;color:var(--muted)">'+(i+1)+'</td><td style="font-size:12px;font-weight:600">'+(s.date||'—')+'</td><td style="font-size:12px">'+(s.duration?s.duration+' min':'—')+'</td><td style="font-size:12px;max-width:260px">'+(s.notes||'—')+'</td><td><span class="badge '+(s.status==='completed'?'b-green':s.status==='scheduled'?'b-blue':'b-grey')+'">'+(s.status||'—')+'</span></td><td><span class="badge '+(s.mentorPaid?'b-green':'b-amber')+'">'+(s.mentorPaid?'Paid':'Pending')+'</span></td><td><button class="btn btn-sm btn-outline" onclick="openEditSessionModal(\''+s.id+'\')">Edit</button></td></tr>';}).join('')
+      +'</tbody></table>')
+    +(sTotal?'<div style="padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">'+sDone+' of '+sTotal+' included sessions completed'+(sTotal-sDone>0?' · '+(sTotal-sDone)+' remaining':' · Programme complete')+'</div>':'')
+    +'</div>'
+  :'')
+  +'<div class="card" style="margin-bottom:16px">'
+  +'<div class="card-hdr"><h3>Documents &amp; Files</h3>'
+  +'<label class="btn btn-sm btn-outline" style="cursor:pointer">Upload File <input type="file" style="display:none" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.png,.jpg" onchange="handleEngFileUpload(event,\''+e.id+'\')"></label>'
+  +'</div>'
+  +(files.length===0?'<p style="padding:20px 16px;color:var(--muted);font-size:12px">No files uploaded yet. Upload an SOW, engagement letter, or any supporting document.</p>'
+    :'<table class="tbl"><thead><tr><th>File Name</th><th>Type</th><th>Size</th><th>Uploaded</th><th>By</th><th>Actions</th></tr></thead><tbody>'
+    +files.map(function(f){return'<tr><td style="font-size:12px;font-weight:600">'+f.name+'</td><td style="font-size:11px;color:var(--muted)">'+(f.fileType||'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.size?Math.round(f.size/1024)+'KB':'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.uploadedAt||'—')+'</td><td style="font-size:11px;color:var(--muted)">'+(f.uploadedBy||'—')+'</td><td>'+(f.dataUrl?'<a href="'+f.dataUrl+'" download="'+f.name+'" class="btn btn-sm btn-outline">Download</a> ':'')+'<button class="btn btn-sm btn-outline" onclick="deleteEngFile(\''+f.id+'\',\''+e.id+'\')" style="color:var(--cadmium)">Remove</button></td></tr>';}).join('')
+    +'</tbody></table>')
+  +'<div style="padding:10px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)">Accepted: PDF, Word, Excel, PowerPoint, Images · Max 10MB per file</div>'
+  +'</div>';
+}
+
+function saveMenteeInfo(engId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  const g=function(id){const el=document.getElementById(id);return el?el.value.trim():'';};
+  e.mentee={name:g('mt-name-'+engId),title:g('mt-title-'+engId),email:g('mt-email-'+engId),phone:g('mt-phone-'+engId),linkedin:g('mt-li-'+engId)};
+  e.menteeEA={name:g('ea-name-'+engId),email:g('ea-email-'+engId),phone:g('ea-phone-'+engId),notes:g('ea-notes-'+engId)};
+  e.companyContact={name:g('cc-name-'+engId),title:g('cc-title-'+engId),email:g('cc-email-'+engId),phone:g('cc-phone-'+engId)};
+  save();
+  const btn=event.target; if(btn){const old=btn.textContent;btn.textContent='Saved ✓';btn.style.color='var(--success)';setTimeout(function(){btn.textContent=old;btn.style.color='';},1800);}
+}
+
+function openAddSessionModal(engId){
+  const e=DB.engagements.find(x=>x.id===engId); if(!e) return;
+  showModal('<div class="mhdr"><h3>Log Session</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
+  +'<div class="mbd">'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+  +'<div class="fg"><label class="fl">Date</label><input id="as-date" class="fi" type="date" value="'+today()+'"></div>'
+  +'<div class="fg"><label class="fl">Duration (minutes)</label><input id="as-dur" class="fi" type="number" value="90" min="15" step="15"></div>'
+  +'</div>'
+  +'<div class="fg"><label class="fl">Status</label><select id="as-status" class="fi"><option value="completed">Completed</option><option value="scheduled">Scheduled</option><option value="cancelled">Cancelled</option></select></div>'
+  +'<div class="fg"><label class="fl">Topics / Notes</label><textarea id="as-notes" class="fi" rows="3" placeholder="Key topics discussed, outcomes, actions..."></textarea></div>'
+  +'<div class="fg" style="display:flex;align-items:center;gap:8px"><input id="as-paid" type="checkbox"><label class="fl" style="margin:0">Mentor fee paid for this session</label></div>'
+  +'</div>'
+  +'<div class="mft"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveNewSession(\''+engId+'\')">Save Session</button></div>');
+}
+
+function saveNewSession(engId){
+  if(!DB.sessions) DB.sessions=[];
+  const date=document.getElementById('as-date')?document.getElementById('as-date').value:'';
+  if(!date){alert('Please enter a date.');return;}
+  const s={id:uid(),engId:engId,date:date,duration:parseInt(document.getElementById('as-dur')?document.getElementById('as-dur').value:'90')||90,notes:document.getElementById('as-notes')?document.getElementById('as-notes').value.trim():'',status:document.getElementById('as-status')?document.getElementById('as-status').value:'completed',mentorPaid:document.getElementById('as-paid')?document.getElementById('as-paid').checked:false};
+  DB.sessions.push(s);
+  const e=DB.engagements.find(function(x){return x.id===engId;});
+  if(e&&s.status==='completed') e.sessionsUsed=(e.sessionsUsed||0)+1;
+  addAct('◈','Session logged: '+(e?e.name:engId)+' — '+s.date);
+  save(); closeModal(); renderView();
+}
+
+function openEditSessionModal(sessionId){
+  const s=(DB.sessions||[]).find(function(x){return x.id===sessionId;}); if(!s) return;
+  showModal('<div class="mhdr"><h3>Edit Session</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
+  +'<div class="mbd">'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+  +'<div class="fg"><label class="fl">Date</label><input id="es-date" class="fi" type="date" value="'+(s.date||'')+'"></div>'
+  +'<div class="fg"><label class="fl">Duration (minutes)</label><input id="es-dur" class="fi" type="number" value="'+(s.duration||90)+'" min="15" step="15"></div>'
+  +'</div>'
+  +'<div class="fg"><label class="fl">Status</label><select id="es-status" class="fi">'+['completed','scheduled','cancelled'].map(function(v){return'<option value="'+v+'"'+(s.status===v?' selected':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</option>';}).join('')+'</select></div>'
+  +'<div class="fg"><label class="fl">Topics / Notes</label><textarea id="es-notes" class="fi" rows="3">'+(s.notes||'')+'</textarea></div>'
+  +'<div class="fg" style="display:flex;align-items:center;gap:8px"><input id="es-paid" type="checkbox"'+(s.mentorPaid?' checked':'')+'>< label class="fl" style="margin:0">Mentor fee paid for this session</label></div>'
+  +'</div>'
+  +'<div class="mft"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveEditSession(\''+sessionId+'\')">Update</button></div>');
+}
+
+function saveEditSession(sessionId){
+  const s=(DB.sessions||[]).find(function(x){return x.id===sessionId;}); if(!s) return;
+  s.date=document.getElementById('es-date')?document.getElementById('es-date').value:s.date;
+  s.duration=parseInt(document.getElementById('es-dur')?document.getElementById('es-dur').value:s.duration)||s.duration;
+  s.status=document.getElementById('es-status')?document.getElementById('es-status').value:s.status;
+  s.notes=document.getElementById('es-notes')?document.getElementById('es-notes').value.trim():'';
+  s.mentorPaid=document.getElementById('es-paid')?document.getElementById('es-paid').checked:false;
+  save(); closeModal(); renderView();
+}
+
+function handleEngFileUpload(event,engId){
+  const file=event.target.files[0]; if(!file) return;
+  if(file.size>10*1024*1024){alert('File too large. Maximum size is 10MB.');return;}
+  if(!DB.engFiles) DB.engFiles=[];
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const record={id:uid(),engId:engId,name:file.name,fileType:file.type||file.name.split('.').pop(),size:file.size,uploadedAt:today(),uploadedBy:S.user?S.user.name:'Unknown',dataUrl:ev.target.result};
+    DB.engFiles.push(record);
+    addAct('📎','File uploaded: '+file.name);
+    save(); renderView();
+  };
+  reader.readAsDataURL(file);
+}
+
+function deleteEngFile(fileId,engId){
+  if(!confirm('Remove this file?')) return;
+  DB.engFiles=(DB.engFiles||[]).filter(function(f){return f.id!==fileId;});
+  save(); renderView();
 }
 
 
