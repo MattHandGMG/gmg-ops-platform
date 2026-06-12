@@ -3529,90 +3529,279 @@ function saveTask(id){
 
 /* ── REPORTS ─────────────────────────────────────────────────── */
 function rReports(c){
-  if(!S.tab.rpt) S.tab.rpt={src:'engagements',fields:[],filters:[],sort:{f:'',d:'asc'},results:null,ran:false};
+  if(!S.tab.rpt) S.tab.rpt={view:'list',listTab:'all',search:'',src:'engagements',fields:[],filters:[],sort:{f:'',d:'asc'},dateF:'',dateFrom:'',dateTo:'',results:null,ran:false,editId:null,saveName:''};
   const rpt=S.tab.rpt;
+  if(!DB.savedReports) DB.savedReports=[];
   const SOURCES={
-    engagements:{label:'Engagements',data:()=>DB.engagements||[],fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee (£)',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
-    pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],fields:{company:'Company',stage:'Stage',value:'Value (£)',probability:'Probability %',owner:'Owner',notes:'Notes'}},
-    projects:{label:'Projects',data:()=>DB.projects||[],fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
-    contacts:{label:'Contacts',data:()=>DB.contacts||[],fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
-    mentors:{label:'Mentors',data:()=>DB.mentors||[],fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
-    tasks:{label:'Tasks',data:()=>DB.tasks||[],fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
-    sessions:{label:'Sessions',data:()=>DB.sessions||[],fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration (hrs)',status:'Status',fee:'Fee (£)',engagementName:'Engagement'}},
-    quotes:{label:'Quotes',data:()=>DB.quotes||[],fields:{title:'Title',client:'Client',status:'Status',total:'Total (£)',created:'Created',validUntil:'Valid Until'}}
+    engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
+    pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
+    projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
+    contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
+    mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
+    tasks:{label:'Tasks',data:()=>DB.tasks||[],dateFields:{due:'Due Date'},fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
+    sessions:{label:'Sessions',data:()=>DB.sessions||[],dateFields:{date:'Session Date'},fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration',status:'Status',fee:'Fee',engagementName:'Engagement'}},
+    quotes:{label:'Quotes',data:()=>DB.quotes||[],dateFields:{created:'Created Date',validUntil:'Valid Until'},fields:{title:'Title',client:'Client',status:'Status',total:'Total',created:'Created',validUntil:'Valid Until'}}
   };
+
+  if(rpt.view==='list'){
+    const q=(rpt.search||'').toLowerCase();
+    const tab=rpt.listTab||'all';
+    let rpts=DB.savedReports||[];
+    if(tab==='mine') rpts=rpts.filter(r=>r.createdBy===S.user.id);
+    if(q) rpts=rpts.filter(r=>(r.name||'').toLowerCase().includes(q)||(r.src||'').toLowerCase().includes(q));
+    const cards=rpts.length?rpts.map(r=>{
+      const src=SOURCES[r.src];
+      const ago=r.updatedAt?new Date(r.updatedAt).toLocaleDateString('en-GB'):'';
+      return `<div class="card" style="margin-bottom:10px;cursor:pointer" onclick="loadSavedRpt('${r.id}')">
+        <div class="card-body" style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:600;font-size:14px;color:var(--nearblack)">${r.name}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${src?src.label:r.src} &bull; ${(r.fields||[]).length} fields${r.dateFrom||r.dateTo?' &bull; '+('date range'):''}${r.filters&&r.filters.length?' &bull; '+r.filters.length+' filter'+(r.filters.length>1?'s':''):''}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${r.createdByName||'Unknown'} &bull; ${ago}</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button onclick="event.stopPropagation();loadSavedRpt('${r.id}')" class="btn btn-primary" style="font-size:12px;padding:5px 14px">Run</button>
+            <button onclick="event.stopPropagation();editSavedRpt('${r.id}')" class="btn btn-outline" style="font-size:12px;padding:5px 12px">Edit</button>
+            <button onclick="event.stopPropagation();deleteSavedRpt('${r.id}')" style="padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">Del</button>
+          </div>
+        </div>
+      </div>`;
+    }).join(''):`<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">${q?'No reports match your search.':'No saved reports yet. Click <strong>+ New Report</strong> to create one.'}</div>`;
+    c.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="font-size:22px;font-family:Georgia,serif;font-weight:700;color:var(--nearblack)">Reports</span>
+      <button onclick="S.tab.rpt.view='builder';S.tab.rpt.editId=null;S.tab.rpt.saveName='';renderView()" class="btn btn-primary">+ New Report</button>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <input value="${rpt.search||''}" oninput="S.tab.rpt.search=this.value;renderView()" placeholder="Search reports..." style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:240px;background:var(--surface);color:var(--nearblack)">
+      <button onclick="S.tab.rpt.listTab='all';renderView()" style="padding:7px 18px;border-radius:20px;border:2px solid ${tab==='all'?'var(--venetian)':'var(--border)'};background:${tab==='all'?'var(--venetian)':'var(--surface)'};color:${tab==='all'?'#fff':'var(--nearblack)'};cursor:pointer;font-size:13px;font-weight:${tab==='all'?700:400}">All Reports</button>
+      <button onclick="S.tab.rpt.listTab='mine';renderView()" style="padding:7px 18px;border-radius:20px;border:2px solid ${tab==='mine'?'var(--venetian)':'var(--border)'};background:${tab==='mine'?'var(--venetian)':'var(--surface)'};color:${tab==='mine'?'#fff':'var(--nearblack)'};cursor:pointer;font-size:13px;font-weight:${tab==='mine'?700:400}">My Reports</button>
+    </div>
+    ${cards}`;
+    return;
+  }
+
+  // Builder view
   const src=SOURCES[rpt.src];
   const allFields=Object.keys(src.fields);
-  if(!rpt.fields.length) rpt.fields=[...allFields.slice(0,5)];
+  const dateFieldKeys=Object.keys(src.dateFields||{});
+  if(!rpt.fields.length) rpt.fields=allFields.slice(0,5);
+  if(dateFieldKeys.length&&!rpt.dateF) rpt.dateF=dateFieldKeys[0];
   const OPS=['contains','equals','starts with','ends with','is empty','is not empty','>','<','>=','<='];
-  const renderFilters=()=>rpt.filters.map((f,i)=>`
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-      <select onchange="S.tab.rpt.filters[${i}].f=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">
-        ${allFields.map(k=>`<option value="${k}" ${f.f===k?'selected':''}>${src.fields[k]}</option>`).join('')}
-      </select>
-      <select onchange="S.tab.rpt.filters[${i}].op=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">
-        ${OPS.map(op=>`<option value="${op}" ${f.op===op?'selected':''}>${op}</option>`).join('')}
-      </select>
+  const fltHtml=rpt.filters.map((f,i)=>{
+    const fOpts=allFields.map(k=>`<option value="${k}"${f.f===k?' selected':''}>${src.fields[k]}</option>`).join('');
+    const opOpts=OPS.map(op=>`<option value="${op}"${f.op===op?' selected':''}>${op}</option>`).join('');
+    return `<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
+      <select onchange="S.tab.rpt.filters[${i}].f=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">${fOpts}</select>
+      <select onchange="S.tab.rpt.filters[${i}].op=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">${opOpts}</select>
       <input value="${f.v||''}" oninput="S.tab.rpt.filters[${i}].v=this.value" placeholder="Value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;width:120px;background:var(--surface);color:var(--nearblack)">
-      <button onclick="S.tab.rpt.filters.splice(${i},1);renderView()" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">✕</button>
-    </div>`).join('');
-  const renderResults=()=>{
-    if(!rpt.ran) return `<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">Configure your report above and click <strong>Run Report</strong></div>`;
+      <button onclick="S.tab.rpt.filters.splice(${i},1);renderView()" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">x</button>
+    </div>`;
+  }).join('');
+  const dfOpts=dateFieldKeys.map(k=>`<option value="${k}"${rpt.dateF===k?' selected':''}>${src.dateFields[k]}</option>`).join('');
+  const dateCard=dateFieldKeys.length?`
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-hdr"><h3>3. Date Range <span style="font-size:11px;font-weight:400;color:var(--muted)">(optional)</span></h3></div>
+      <div class="card-body">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:12px;color:var(--muted);white-space:nowrap">Date field:</label>
+            <select onchange="S.tab.rpt.dateF=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">${dfOpts}</select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:12px;color:var(--muted)">From:</label>
+            <input type="date" value="${rpt.dateFrom||''}" onchange="S.tab.rpt.dateFrom=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <label style="font-size:12px;color:var(--muted)">To:</label>
+            <input type="date" value="${rpt.dateTo||''}" onchange="S.tab.rpt.dateTo=this.value" style="padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;background:var(--surface);color:var(--nearblack)">
+          </div>
+          ${(rpt.dateFrom||rpt.dateTo)?'<button onclick="S.tab.rpt.dateFrom=\'\';S.tab.rpt.dateTo=\'\';renderView()" style="padding:4px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--venetian);cursor:pointer;font-size:12px">Clear</button>':''}
+        </div>
+      </div>
+    </div>`:'';
+  const srcBtns=Object.entries(SOURCES).map(([k,s])=>`<button onclick="S.tab.rpt.src='${k}';S.tab.rpt.fields=[];S.tab.rpt.filters=[];S.tab.rpt.dateF='';S.tab.rpt.dateFrom='';S.tab.rpt.dateTo='';S.tab.rpt.ran=false;S.tab.rpt.results=null;renderView()" style="padding:7px 16px;border-radius:20px;border:2px solid ${rpt.src===k?'var(--venetian)':'var(--border)'};background:${rpt.src===k?'var(--venetian)':'var(--surface)'};color:${rpt.src===k?'#fff':'var(--nearblack)'};cursor:pointer;font-size:13px;font-weight:${rpt.src===k?700:400}">${s.label}</button>`).join('');
+  const fieldChk=allFields.map(k=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:4px 10px;border:1px solid ${rpt.fields.includes(k)?'var(--venetian)':'var(--border)'};border-radius:4px;background:${rpt.fields.includes(k)?'rgba(206,83,67,.08)':'var(--surface)'}"><input type="checkbox"${rpt.fields.includes(k)?' checked':''} onchange="const i=S.tab.rpt.fields.indexOf('${k}');if(this.checked){if(i===-1)S.tab.rpt.fields.push('${k}');}else{if(i>-1)S.tab.rpt.fields.splice(i,1);}renderView()" style="accent-color:var(--venetian)">${src.fields[k]}</label>`).join('');
+  const filterN=dateFieldKeys.length?4:3;
+  const saveN=filterN+1;
+  let resHtml;
+  if(!rpt.ran){
+    resHtml='<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">Configure your report above and click <strong>Run Report</strong></div>';
+  } else {
     const rows=rpt.results||[];
-    if(!rows.length) return `<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">No records match your criteria</div>`;
-    const cols=rpt.fields.filter(f=>allFields.includes(f));
-    return `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <span style="font-size:13px;color:var(--muted)">${rows.length} record${rows.length!==1?'s':''} found</span>
-      <button onclick="exportRptCSV()" class="btn btn-outline" style="font-size:12px;padding:5px 14px">↓ Export CSV</button>
-    </div>
-    <div style="overflow-x:auto">
-    <table class="tbl"><thead><tr>${cols.map(f=>`<th onclick="if(S.tab.rpt.sort.f==='${f}'){S.tab.rpt.sort.d=S.tab.rpt.sort.d==='asc'?'desc':'asc';}else{S.tab.rpt.sort.f='${f}';S.tab.rpt.sort.d='asc';}runRpt();" style="cursor:pointer;user-select:none">${src.fields[f]||f}${S.tab.rpt.sort.f===f?(S.tab.rpt.sort.d==='asc'?' ▲':' ▼'):''}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(row=>`<tr>${cols.map(f=>`<td>${row[f]!=null?row[f]:''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
-  };
+    if(!rows.length){
+      resHtml='<div style="text-align:center;padding:48px;color:var(--muted);font-size:14px">No records match your criteria</div>';
+    } else {
+      const cols=rpt.fields.filter(f=>allFields.includes(f));
+      const thHtml=cols.map(f=>`<th onclick="if(S.tab.rpt.sort.f==='${f}'){S.tab.rpt.sort.d=S.tab.rpt.sort.d==='asc'?'desc':'asc';}else{S.tab.rpt.sort.f='${f}';S.tab.rpt.sort.d='asc';}runRpt();" style="cursor:pointer;user-select:none">${src.fields[f]||f}${rpt.sort.f===f?(rpt.sort.d==='asc'?' ▲':' ▼'):''}</th>`).join('');
+      const tbHtml=rows.map(row=>`<tr>${cols.map(f=>`<td>${row[f]!=null?row[f]:''}</td>`).join('')}</tr>`).join('');
+      resHtml=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <span style="font-size:13px;color:var(--muted)">${rows.length} record${rows.length!==1?'s':''} found</span>
+        <button onclick="exportRptCSV()" class="btn btn-outline" style="font-size:12px;padding:5px 14px">Export CSV</button>
+      </div><div style="overflow-x:auto"><table class="tbl"><thead><tr>${thHtml}</tr></thead><tbody>${tbHtml}</tbody></table></div>`;
+    }
+  }
   c.innerHTML=`
-  <div style="display:flex;gap:4px;align-items:center;margin-bottom:20px">
-    <span style="font-size:22px;font-family:Georgia,serif;font-weight:700;color:var(--nearblack)">Report Builder</span>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button onclick="S.tab.rpt.view='list';S.tab.rpt.ran=false;renderView()" style="padding:5px 10px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--nearblack);cursor:pointer;font-size:13px">← Back</button>
+      <span style="font-size:22px;font-family:Georgia,serif;font-weight:700;color:var(--nearblack)">${rpt.editId?'Edit Report':'New Report'}</span>
+    </div>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="card-hdr"><h3>1. Data Source</h3></div>
-    <div class="card-body">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${Object.entries(SOURCES).map(([k,s])=>`<button onclick="S.tab.rpt.src='${k}';S.tab.rpt.fields=[];S.tab.rpt.filters=[];S.tab.rpt.ran=false;S.tab.rpt.results=null;renderView()" style="padding:7px 16px;border-radius:20px;border:2px solid ${rpt.src===k?'var(--venetian)':'var(--border)'};background:${rpt.src===k?'var(--venetian)':'var(--surface)'};color:${rpt.src===k?'#fff':'var(--nearblack)'};cursor:pointer;font-size:13px;font-weight:${rpt.src===k?700:400}">${s.label}</button>`).join('')}
-      </div>
-    </div>
+    <div class="card-body"><div style="display:flex;gap:8px;flex-wrap:wrap">${srcBtns}</div></div>
   </div>
   <div class="card" style="margin-bottom:16px">
     <div class="card-hdr"><h3>2. Fields to Include</h3></div>
     <div class="card-body">
       <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button onclick="S.tab.rpt.fields=[...Object.keys(SOURCES[S.tab.rpt.src].fields||{})].slice=== undefined?[]:Object.keys(SOURCES[S.tab.rpt.src]?.fields||{});renderView()" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);color:var(--nearblack)">Select all</button>
+        <button onclick="S.tab.rpt.fields=Object.keys(SOURCES_RPT[S.tab.rpt.src].fields);renderView()" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);color:var(--nearblack)">Select all</button>
         <button onclick="S.tab.rpt.fields=[];renderView()" style="font-size:11px;padding:3px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--surface);color:var(--nearblack)">Clear</button>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
-        ${allFields.map(k=>`<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px;padding:4px 10px;border:1px solid ${rpt.fields.includes(k)?'var(--venetian)':'var(--border)'};border-radius:4px;background:${rpt.fields.includes(k)?'rgba(206,83,67,.08)':'var(--surface)'}">
-          <input type="checkbox" ${rpt.fields.includes(k)?'checked':''} onchange="const i=S.tab.rpt.fields.indexOf('${k}');if(this.checked){if(i===-1)S.tab.rpt.fields.push('${k}');}else{if(i>-1)S.tab.rpt.fields.splice(i,1);}renderView()" style="accent-color:var(--venetian)">${src.fields[k]}
-        </label>`).join('')}
+      <div style="display:flex;flex-wrap:wrap;gap:8px">${fieldChk}</div>
+    </div>
+  </div>
+  ${dateCard}
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <h3>${filterN}. Filters <span style="font-size:11px;font-weight:400;color:var(--muted)">(optional)</span></h3>
+      <button onclick="S.tab.rpt.filters.push({f:Object.keys(SOURCES_RPT[S.tab.rpt.src].fields)[0],op:'contains',v:''});renderView()" class="btn btn-outline" style="font-size:12px;padding:4px 12px">+ Add Filter</button>
+    </div>
+    <div class="card-body">${rpt.filters.length===0?'<span style="color:var(--muted);font-size:13px">No filters</span>':fltHtml}</div>
+  </div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h3>${saveN}. Save Report</h3></div>
+    <div class="card-body">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="rpt-name-inp" value="${rpt.saveName||''}" oninput="S.tab.rpt.saveName=this.value" placeholder="Report name..." style="padding:7px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px;width:260px;background:var(--surface);color:var(--nearblack)">
+        <button onclick="saveRpt()" class="btn btn-primary" style="padding:7px 18px">Save Report</button>
       </div>
     </div>
   </div>
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
-      <h3>3. Filters <span style="font-size:11px;font-weight:400;color:var(--muted)">(optional)</span></h3>
-      <button onclick="S.tab.rpt.filters.push({f:Object.keys(SOURCES[S.tab.rpt.src].fields)[0],op:'contains',v:''});renderView()" class="btn btn-outline" style="font-size:12px;padding:4px 12px">+ Add Filter</button>
-    </div>
-    <div class="card-body">
-      ${rpt.filters.length===0?'<span style="color:var(--muted);font-size:13px">No filters — showing all records</span>':renderFilters()}
-    </div>
-  </div>
-  <div style="margin-bottom:20px;display:flex;gap:10px;align-items:center">
-    <button onclick="runRpt()" class="btn btn-primary" style="padding:10px 28px;font-size:14px">▶ Run Report</button>
-    <button onclick="S.tab.rpt={src:'engagements',fields:[],filters:[],sort:{f:'',d:'asc'},results:null,ran:false};renderView()" class="btn btn-outline" style="padding:10px 18px;font-size:14px">Reset</button>
+  <div style="margin-bottom:20px;display:flex;gap:10px">
+    <button onclick="runRpt()" class="btn btn-primary" style="padding:10px 28px;font-size:14px">Run Report</button>
+    <button onclick="S.tab.rpt.src='engagements';S.tab.rpt.fields=[];S.tab.rpt.filters=[];S.tab.rpt.sort={f:'',d:'asc'};S.tab.rpt.dateF='';S.tab.rpt.dateFrom='';S.tab.rpt.dateTo='';S.tab.rpt.results=null;S.tab.rpt.ran=false;S.tab.rpt.saveName='';S.tab.rpt.editId=null;renderView()" class="btn btn-outline" style="padding:10px 18px;font-size:14px">Reset</button>
   </div>
   <div class="card">
     <div class="card-hdr"><h3>Results</h3></div>
-    <div class="card-body">${renderResults()}</div>
+    <div class="card-body">${resHtml}</div>
   </div>`;
 }
+
+const SOURCES_RPT={
+  engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
+  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
+  projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
+  contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
+  mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
+  tasks:{label:'Tasks',data:()=>DB.tasks||[],dateFields:{due:'Due Date'},fields:{title:'Title',status:'Status',priority:'Priority',assignee:'Assignee',due:'Due Date',engagement:'Engagement',notes:'Notes'}},
+  sessions:{label:'Sessions',data:()=>DB.sessions||[],dateFields:{date:'Session Date'},fields:{mentor:'Mentor',client:'Client',date:'Date',duration:'Duration',status:'Status',fee:'Fee',engagementName:'Engagement'}},
+  quotes:{label:'Quotes',data:()=>DB.quotes||[],dateFields:{created:'Created Date',validUntil:'Valid Until'},fields:{title:'Title',client:'Client',status:'Status',total:'Total',created:'Created',validUntil:'Valid Until'}}
+};
+
+function runRpt(){
+  const rpt=S.tab.rpt;
+  const src=SOURCES_RPT[rpt.src];
+  if(!src) return;
+  let rows=[...src.data()];
+  if(rpt.dateF&&(rpt.dateFrom||rpt.dateTo)){
+    rows=rows.filter(row=>{
+      const rv=row[rpt.dateF];
+      if(!rv) return false;
+      const d=new Date(rv);
+      if(isNaN(d)) return true;
+      if(rpt.dateFrom&&d<new Date(rpt.dateFrom)) return false;
+      if(rpt.dateTo&&d>new Date(rpt.dateTo+'T23:59:59')) return false;
+      return true;
+    });
+  }
+  rpt.filters.forEach(f=>{
+    rows=rows.filter(row=>{
+      const val=String(row[f.f]||'').toLowerCase();
+      const fv=(f.v||'').toLowerCase();
+      if(f.op==='contains') return val.includes(fv);
+      if(f.op==='equals') return val===fv;
+      if(f.op==='starts with') return val.startsWith(fv);
+      if(f.op==='ends with') return val.endsWith(fv);
+      if(f.op==='is empty') return !row[f.f];
+      if(f.op==='is not empty') return !!row[f.f];
+      const n=parseFloat(row[f.f]||0),fn=parseFloat(f.v||0);
+      if(f.op==='>') return n>fn;
+      if(f.op==='<') return n<fn;
+      if(f.op==='>=') return n>=fn;
+      if(f.op==='<=') return n<=fn;
+      return true;
+    });
+  });
+  if(rpt.sort.f){
+    rows.sort((a,b)=>{
+      const av=String(a[rpt.sort.f]||''),bv=String(b[rpt.sort.f]||'');
+      return rpt.sort.d==='asc'?av.localeCompare(bv,undefined,{numeric:true}):bv.localeCompare(av,undefined,{numeric:true});
+    });
+  }
+  rpt.results=rows;
+  rpt.ran=true;
+  renderView();
+}
+
+function saveRpt(){
+  const rpt=S.tab.rpt;
+  const name=(rpt.saveName||'').trim();
+  if(!name){alert('Please enter a report name.');return;}
+  if(!DB.savedReports) DB.savedReports=[];
+  const now=new Date().toISOString();
+  if(rpt.editId){
+    const idx=DB.savedReports.findIndex(r=>r.id===rpt.editId);
+    if(idx>-1){
+      DB.savedReports[idx]={...DB.savedReports[idx],name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,updatedAt:now};
+    }
+  } else {
+    DB.savedReports.push({id:uid(),name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,createdBy:S.user.id,createdByName:S.user.name,createdAt:now,updatedAt:now});
+  }
+  save();
+  addAct('📊','Saved report: '+name);
+  S.tab.rpt.view='list';
+  S.tab.rpt.editId=null;
+  renderView();
+}
+
+function loadSavedRpt(id){
+  const r=(DB.savedReports||[]).find(x=>x.id===id);
+  if(!r) return;
+  S.tab.rpt={view:'builder',listTab:'all',search:'',src:r.src,fields:[...(r.fields||[])],filters:JSON.parse(JSON.stringify(r.filters||[])),sort:{...(r.sort||{f:'',d:'asc'})},dateF:r.dateF||'',dateFrom:r.dateFrom||'',dateTo:r.dateTo||'',results:null,ran:false,editId:r.id,saveName:r.name};
+  runRpt();
+}
+
+function editSavedRpt(id){
+  const r=(DB.savedReports||[]).find(x=>x.id===id);
+  if(!r) return;
+  S.tab.rpt={view:'builder',listTab:'all',search:'',src:r.src,fields:[...(r.fields||[])],filters:JSON.parse(JSON.stringify(r.filters||[])),sort:{...(r.sort||{f:'',d:'asc'})},dateF:r.dateF||'',dateFrom:r.dateFrom||'',dateTo:r.dateTo||'',results:null,ran:false,editId:r.id,saveName:r.name};
+  renderView();
+}
+
+function deleteSavedRpt(id){
+  if(!confirm('Delete this report?')) return;
+  DB.savedReports=(DB.savedReports||[]).filter(r=>r.id!==id);
+  save();
+  renderView();
+}
+
+function exportRptCSV(){
+  const rpt=S.tab.rpt;
+  const src=SOURCES_RPT[rpt.src];
+  if(!src||!rpt.results) return;
+  const allF=Object.keys(src.fields);
+  const cols=rpt.fields.filter(f=>allF.includes(f));
+  const header=cols.map(f=>src.fields[f]||f).join(',');
+  const body=(rpt.results||[]).map(row=>cols.map(f=>{const v=String(row[f]||'');return v.includes(',')||v.includes('"')?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));
+  const csv=[header,...body].join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='report_'+rpt.src+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
 
 function runRpt(){
   const rpt=S.tab.rpt;
