@@ -2613,7 +2613,7 @@ function rEngagements(c){
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.engStatus='';S.tab.engType='';S.tab.engPartner='';renderView()">&#10005; Clear</button>`:''}
   </div>
   <div class="card">
-    <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Client</th><th>Mentor</th><th>Partner</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
+    <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Client</th><th>Mentor</th><th>Partner / Split</th><th>Fee</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody>
     ${engs.length===0?`<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">No engagements found.</td></tr>`:
     engs.map(e=>{
@@ -2626,7 +2626,7 @@ function rEngagements(c){
         <td><span class="badge ${tb[e.type]||'b-grey'}">${e.type}</span></td>
         <td style="font-size:12px">${cl?.name||'—'}</td>
         <td style="font-size:12px">${mn?.name?.split('—')[0]?.trim()||'—'}</td>
-        <td style="font-size:12px">${e.partner||'—'}</td>
+        <td style="font-size:12px">${e.partner||'—'}${e.partnerSplit?' <span style="font-size:10px;color:var(--muted);font-weight:600">('+e.partnerSplit+'%)</span>':''}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
         <td><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
@@ -2738,7 +2738,7 @@ function rProjects(c){
         </div>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           <span class="badge ${typeBadge}">${e.type}</span>
-          ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
+          ${e.partner?`<span class="badge b-grey">${e.partner}${e.partnerSplit?' ('+e.partnerSplit+'%)':''}</span>`:''}
           ${e.country?`<span class="badge b-grey">${e.country}</span>`:''}
         </div>
         <div style="margin-bottom:12px">
@@ -4698,6 +4698,7 @@ function openEngModal(id){
       <div class="fg"><label>Partner</label><select id="em-partner">
         ${PARTNERS.map(p=>`<option value="${p}"${e&&e.partner===p?' selected':''}>${p}</option>`).join('')}
       </select></div>
+      <div class="fg" style="max-width:110px"><label>Split %</label><input id="em-split" type="number" min="0" max="100" step="1" value="${e?e.partnerSplit||0:0}" placeholder="0"></div>
       <div class="fg"><label>Coordinator</label><input id="em-coord" type="text" value="${e?e.coordinator:S.user.name}"></div>
     </div>
     <div class="fgrow">
@@ -4744,7 +4745,7 @@ function saveEng(id){
   const data={
     name,type,clientId:n('em-client').value,mentorId:n('em-mentor').value,
     status:n('em-status').value,coordinator:n('em-coord').value.trim(),
-    partner:n('em-partner').value.trim(),country:n('em-country').value.trim(),
+    partner:n('em-partner').value.trim(),partnerSplit:+(n('em-split')?.value)||0,country:n('em-country').value.trim(),
     entity:n('em-entity')?.value||'GMG',
     billingEntity:n('em-billing')?.value.trim()||'',
     startDate:n('em-start').value,endDate:n('em-end').value,
@@ -4852,7 +4853,7 @@ function openEngDetail(engId){
       <div><span style="color:var(--muted)">Type</span><br><span class="badge ${tb[eng.type]||'b-grey'}">${eng.type}</span></div>
       <div><span style="color:var(--muted)">Client</span><br><strong>${cl?.name||'—'}</strong></div>
       <div><span style="color:var(--muted)">Mentor</span><br><strong>${mn?.name||'—'}</strong></div>
-      <div><span style="color:var(--muted)">Partner</span><br><strong>${eng.partner||'—'}</strong></div>
+      <div><span style="color:var(--muted)">Partner / Split</span><br><strong>${eng.partner||'—'}${eng.partnerSplit?' ('+eng.partnerSplit+'%)':''}</strong></div>
       <div><span style="color:var(--muted)">Start</span><br>${eng.startDate||'—'}</div>
       <div><span style="color:var(--muted)">End</span><br>${eng.endDate||'—'}</div>
     </div>
