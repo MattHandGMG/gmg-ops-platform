@@ -2300,7 +2300,7 @@ function rDashboardRM(c){
           <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'…':e.name}</div>
           <div style="font-size:10px;color:var(--muted)">${mn?.name||'—'} · ${e.coordinator}</div></div>
-          <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
+          <button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button></div>`;
       }).join('')}
       </div></div>`:''}
   </div>
@@ -2365,7 +2365,7 @@ function rDashboardPartner(c, forName){
           <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name}</div>
           <div style="font-size:10px;color:var(--muted)">${cl?.name||'—'} · ${mn?.name||'—'}</div></div>
           <div style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val)}</div>
-          <button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button></div>`;
+          <button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button></div>`;
       }).join('')}
     </div>
   </div>`;
@@ -2949,7 +2949,7 @@ function rEngagements(c){
         <td style="font-size:12px">${(e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits.map(ps=>ps.partner+(ps.percentage?' ('+ps.percentage+'%)':'')).join(', '):(e.partner||'—')}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
-        <td><button class="btn btn-sm btn-outline" onclick="openEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
+        <td><button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
       </tr>`;
     }).join('')}
     </tbody></table>
@@ -3130,6 +3130,7 @@ function rProjectDetail(c,engId){
   else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
   else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
   else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
+  var _pc=document.createElement('div');_pc.className='card';_pc.style.marginTop='16px';_pc.innerHTML=renderComments('project',e.id);c.appendChild(_pc);
 }
 
 function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
