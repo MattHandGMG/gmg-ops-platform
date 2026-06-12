@@ -1938,7 +1938,7 @@ sessions:[
   {id:'s7',engId:'e5',date:'2026-05-22',duration:90,notes:'Policy challenges and leadership style.',status:'completed',mentorPaid:true},
   {id:'s8',engId:'e5',date:'2026-07-10',duration:90,notes:'',status:'scheduled',mentorPaid:false},
 ],
-engFiles:[],
+engFiles:[],appUsers:[],
 clientInvoices:[
   {id:'i1',engId:'e1',clientId:'c1',amount:48000,type:'chair-annual',period:'2026 Annual',status:'paid',xeroSynced:true,issued:'2026-01-15',due:'2026-02-14',notes:'Annual Chair Mentoring fee.'},
   {id:'i2',engId:'e2',clientId:'c2',amount:18000,type:'exec-quarterly',period:'Q1 2026',status:'paid',xeroSynced:true,issued:'2026-01-01',due:'2026-01-31',notes:'Executive Mentoring Q1 advance.'},
@@ -2112,6 +2112,7 @@ async function bootApp(user){
   const ADMIN_EMAILS=['matt.hand@globalmentorsgroup.com'];
   if(ADMIN_EMAILS.includes(user.email)) S.user.role='admin';
   if(['admin','rm','partner'].includes(S.user.role)) document.getElementById('sb-admin-section').style.display='block';
+  if(!DB.appUsers)DB.appUsers=[];const _ui=DB.appUsers.findIndex(u=>u.id===(user.id||''));const _ur={id:user.id||'',email:user.email||'',name:S.user.name,role:S.user.role,entity:'GMG',lastActive:new Date().toISOString()};if(_ui>=0)DB.appUsers[_ui]=_ur;else DB.appUsers.push(_ur);save();
   setupRealtime();
   nav(document.querySelector('[data-v="dashboard"]'));
 }
@@ -2469,9 +2470,9 @@ function rDashboardAdmin(c){
 async function rAdmin(c){
   c.innerHTML=`<div class="phdr"><div><h2>&#9881; Admin</h2><p>User management and platform access</p></div></div>
   <div class="card"><div style="padding:20px;text-align:center;color:var(--muted)">Loading users…</div></div>`;
-  // Fetch profiles from Supabase
-  let profiles=[];
-  try{const{data}=await sb.from('profiles').select('id,data,updated_at').order('updated_at',{ascending:false});profiles=data||[];}catch(e){}
+  // Read users from app storage
+  if(!DB.appUsers)DB.appUsers=[];
+  const profiles=DB.appUsers.map(u=>({id:u.id,data:{name:u.name,role:u.role,entity:u.entity||'GMG',partnerName:u.partnerName||''},updated_at:u.lastActive||''}));
   const roleLabels={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
   c.innerHTML=`
   <div class="phdr"><div><h2>&#9881; Admin</h2><p>${profiles.length} registered user${profiles.length!==1?'s':''}</p></div>
@@ -2558,7 +2559,7 @@ async function createUser(){
   if(error){err.textContent=error.message;err.style.display='block';btn.textContent='Create User';btn.disabled=false;return;}
   if(data.user){
     await sb.from('profiles').upsert({id:data.user.id,data:{name,role,entity,partnerName},updated_at:new Date().toISOString()});
-    closeModal();S.view='admin';renderView();
+    if(!DB.appUsers)DB.appUsers=[];if(data.user)DB.appUsers.push({id:data.user.id,email:email,name:name,role:role,entity:'GMG',lastActive:new Date().toISOString()});save();closeModal();S.view='admin';renderView();
   }
 }
 async function saveAdminUser(userId){
