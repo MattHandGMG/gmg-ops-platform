@@ -350,6 +350,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
+    <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div>
     <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
@@ -2189,7 +2190,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
   if(r[S.view]) r[S.view](c);
   updateNotifBadge();
 }
@@ -2722,6 +2723,199 @@ function addTaskNotif(assigneeName, taskTitle){
     save();
   }
 }
+function generateSOW(engId){
+  var e=DB.engagements.find(function(x){return x.id===engId;});
+  if(!e)return;
+  var cl=DB.contacts.find(function(x){return x.id===e.clientId;});
+  var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
+  var today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  var ref='SOW-'+e.id.toUpperCase()+'-'+new Date().getFullYear();
+  var html='<!DOCTYPE html><html><head><title>Statement of Work — '+e.name+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:32px;color:#1a1a2e;line-height:1.5}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid #CE3702}'
+    +'.logo{font-size:20px;font-weight:700;color:#CE3702;letter-spacing:1px}h1{font-size:26px;margin-bottom:4px}h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#CE3702;border-bottom:1px solid #e0e0e0;padding-bottom:6px;margin:28px 0 14px}'
+    +'.meta{color:#666;font-size:12px}.field{display:flex;gap:12px;margin:7px 0;font-size:13px}.field label{font-weight:600;min-width:160px;color:#333}'
+    +'.fee-box{background:#f9f5f4;border-left:4px solid #CE3702;padding:16px 20px;margin:12px 0;border-radius:0 6px 6px 0}'
+    +'.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:16px}.sig-line{border-top:1px solid #333;padding-top:8px;margin-top:48px}'
+    +'.sig-line p{font-size:12px;color:#444;margin-top:6px}'
+    +'@media print{body{margin:0;padding:24px}.no-print{display:none}}</style></head><body>'
+    +'<div class="header"><div class="logo">Global Mentors Group</div><div style="text-align:right"><div style="font-size:11px;color:#666">Reference: '+ref+'</div><div style="font-size:11px;color:#666">Date: '+today+'</div></div></div>'
+    +'<h1>Statement of Work</h1>'
+    +'<p class="meta" style="margin-top:6px">This Statement of Work sets out the terms agreed between Global Mentors Group and the Client.</p>'
+    +'<h2>Engagement Details</h2>'
+    +'<div class="field"><label>Programme Name:</label><span>'+e.name+'</span></div>'
+    +'<div class="field"><label>Engagement Type:</label><span style="text-transform:capitalize">'+(e.type||'—')+'</span></div>'
+    +'<div class="field"><label>Client Organisation:</label><span>'+(cl?cl.name:'—')+'</span></div>'
+    +'<div class="field"><label>Mentor / Advisor:</label><span>'+(mn?mn.name:'—')+'</span></div>'
+    +'<div class="field"><label>Country:</label><span>'+(e.country||'—')+'</span></div>'
+    +'<div class="field"><label>Commencement Date:</label><span>'+(e.startDate||'—')+'</span></div>'
+    +'<div class="field"><label>Completion Date:</label><span>'+(e.endDate||'—')+'</span></div>'
+    +'<div class="field"><label>Lead Partner:</label><span>'+(e.partner||'—')+'</span></div>'
+    +'<div class="field"><label>Programme Coordinator:</label><span>'+(e.coordinator||'—')+'</span></div>'
+    +'<h2>Fees &amp; Payment Terms</h2>'
+    +'<div class="fee-box">'
+    +(e.annualFee?'<div class="field"><label>Annual Programme Fee:</label><span style="font-weight:700;font-size:15px">£'+Number(e.annualFee).toLocaleString('en-GB')+'</span></div>':'')
+    +(e.quarterlyFee?'<div class="field"><label>Quarterly Instalment:</label><span style="font-weight:700">£'+Number(e.quarterlyFee).toLocaleString('en-GB')+'</span></div>':'')
+    +'<div class="field" style="margin-top:8px"><label>Invoicing:</label><span>'+(e.quarterlyFee?'Quarterly in advance':'Annually in advance')+'</span></div>'
+    +'</div>'
+    +(e.notes?'<h2>Programme Notes</h2><p style="font-size:13px;line-height:1.7">'+e.notes+'</p>':'')
+    +'<h2>Authorisation</h2>'
+    +'<div class="sig-grid">'
+    +'<div><p style="font-size:13px">Signed for and on behalf of<br><strong>Global Mentors Group</strong></p><div class="sig-line"><p>Name: ________________________________</p><p>Title: _________________________________</p><p>Date: _________________________________</p></div></div>'
+    +'<div><p style="font-size:13px">Signed for and on behalf of<br><strong>'+(cl?cl.name:'Client Organisation')+'</strong></p><div class="sig-line"><p>Name: ________________________________</p><p>Title: _________________________________</p><p>Date: _________________________________</p></div></div>'
+    +'</div>'
+    +'<div class="no-print" style="margin-top:32px;text-align:center"><button onclick="window.print()" style="padding:10px 28px;background:#CE3702;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer">Print / Save as PDF</button></div>'
+    +'</body></html>';
+  var w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+function generateMFS(engId){
+  var e=DB.engagements.find(function(x){return x.id===engId;});
+  if(!e)return;
+  var cl=DB.contacts.find(function(x){return x.id===e.clientId;});
+  var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
+  var today=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  var ref='MFS-'+e.id.toUpperCase()+'-'+new Date().getFullYear();
+  var rows='';
+  var total=0;
+  if(e.startDate){
+    var isPeriodic=!!(e.quarterlyFee||e.annualFee);
+    var periodMonths=e.quarterlyFee?3:12;
+    var instalment=e.quarterlyFee?e.quarterlyFee:(e.annualFee||0);
+    var label=e.quarterlyFee?'Quarterly':'Annual';
+    var start=new Date(e.startDate);
+    var end=e.endDate?new Date(e.endDate):new Date(start.getFullYear()+1,start.getMonth(),start.getDate());
+    var cur=new Date(start);
+    var n=1;
+    while(cur<=end&&n<=20){
+      var due=cur.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+      rows+='<tr><td style="padding:8px 12px;border-bottom:1px solid #eee">'+n+'</td>'
+        +'<td style="padding:8px 12px;border-bottom:1px solid #eee">'+label+' Instalment '+n+'</td>'
+        +'<td style="padding:8px 12px;border-bottom:1px solid #eee">'+due+'</td>'
+        +'<td style="padding:8px 12px;border-bottom:1px solid #eee;font-weight:600">£'+Number(instalment).toLocaleString('en-GB')+'</td></tr>';
+      total+=instalment;
+      cur.setMonth(cur.getMonth()+periodMonths);
+      n++;
+    }
+  }
+  var html='<!DOCTYPE html><html><head><title>Fee Schedule — '+e.name+'</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Georgia,serif;max-width:800px;margin:40px auto;padding:32px;color:#1a1a2e}'
+    +'.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:3px solid #CE3702}'
+    +'.logo{font-size:20px;font-weight:700;color:#CE3702;letter-spacing:1px}h1{font-size:26px;margin-bottom:4px}h2{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#CE3702;border-bottom:1px solid #e0e0e0;padding-bottom:6px;margin:24px 0 12px}'
+    +'table{width:100%;border-collapse:collapse;font-size:13px}th{background:#CE3702;color:#fff;padding:10px 12px;text-align:left;font-weight:600}'
+    +'.total-row td{background:#f9f5f4;font-weight:700;font-size:14px;padding:10px 12px;border-top:2px solid #CE3702}'
+    +'.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:20px 0}'
+    +'.sumcard{background:#f9f5f4;border-radius:6px;padding:14px;text-align:center}.sumcard .val{font-size:20px;font-weight:700;color:#CE3702}.sumcard .lbl{font-size:11px;color:#666;text-transform:uppercase;margin-top:4px}'
+    +'@media print{body{margin:0;padding:24px}.no-print{display:none}}</style></head><body>'
+    +'<div class="header"><div class="logo">Global Mentors Group</div><div style="text-align:right"><div style="font-size:11px;color:#666">Reference: '+ref+'</div><div style="font-size:11px;color:#666">Date: '+today+'</div></div></div>'
+    +'<h1>Fee Schedule</h1>'
+    +'<p style="font-size:13px;color:#555;margin-top:6px"><strong>'+e.name+'</strong></p>'
+    +'<p style="font-size:12px;color:#666;margin-top:4px">Client: '+(cl?cl.name:'—')+' · Mentor: '+(mn?mn.name:'—')+' · Period: '+(e.startDate||'—')+' to '+(e.endDate||'—')+'</p>';
+  html+=
+    '<div class="summary">'
+    +'<div class="sumcard"><div class="val">'+(e.annualFee?'£'+Number(e.annualFee).toLocaleString('en-GB'):'—')+'</div><div class="lbl">Annual Fee</div></div>'
+    +'<div class="sumcard"><div class="val">'+(e.quarterlyFee?'£'+Number(e.quarterlyFee).toLocaleString('en-GB'):'—')+'</div><div class="lbl">Per Instalment</div></div>'
+    +'<div class="sumcard"><div class="val">'+(total?'£'+Number(total).toLocaleString('en-GB'):'—')+'</div><div class="lbl">Total Payable</div></div>'
+    +'</div>'
+    +'<h2>Payment Schedule</h2>'
+    +'<table><thead><tr><th>#</th><th>Description</th><th>Due Date</th><th>Amount</th></tr></thead><tbody>'
+    +(rows||'<tr><td colspan="4" style="padding:20px;text-align:center;color:#888;font-style:italic">No schedule — please set start and end dates on the engagement.</td></tr>')
+    +(total?'<tr class="total-row"><td colspan="3">Total</td><td>£'+Number(total).toLocaleString('en-GB')+'</td></tr>':'')
+    +'</tbody></table>'
+    +'<div class="no-print" style="margin-top:32px;text-align:center"><button onclick="window.print()" style="padding:10px 28px;background:#CE3702;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer">Print / Save as PDF</button></div>'
+    +'</body></html>';
+  var w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+function rClients(c){
+  if(!S) return;
+  var clients=DB.contacts.filter(function(x){return x.type==='client';});
+  var engs=DB.engagements||[];
+  c.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    +'<h2 style="margin:0;font-size:20px">Clients</h2>'
+    +'<div style="font-size:13px;color:var(--muted)">'+clients.length+' client'+(clients.length===1?'':'s')+'</div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">'
+    +clients.map(function(cl){
+      var cEngs=engs.filter(function(e){return e.clientId===cl.id;});
+      var activeEngs=cEngs.filter(function(e){return e.status==='active';});
+      var totalFee=cEngs.reduce(function(s,e){return s+(e.annualFee||0);},0);
+      var scol=cl.status==='active'||!cl.status?'#27ae60':'#7f8c8d';
+      return '<div class="card" style="cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'var(--venetian)\'" onmouseout="this.style.borderColor=\'\'" onclick="S.currentClientId=\''+cl.id+'\';S.view=\'clientDetail\';renderView()">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'
+        +'<div><div style="font-size:16px;font-weight:700;margin-bottom:3px">'+cl.name+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+cl.org+'</div></div>'
+        +'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+(cl.status||'Active')+'</span>'
+        +'</div>'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'
+        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
+        +'<div style="font-size:20px;font-weight:700;color:var(--venetian)">'+cEngs.length+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Engs</div></div>'
+        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
+        +'<div style="font-size:20px;font-weight:700;color:#27ae60">'+activeEngs.length+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Active</div></div>'
+        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--venetian)">'+(totalFee?'£'+Math.round(totalFee/1000)+'k':'—')+'</div>'
+        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Annual</div></div>'
+        +'</div>'
+        +(cl.email?'<div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px">'+cl.email+'</div>':'')
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+function rClientDetail(c){
+  var cl=DB.contacts.find(function(x){return x.id===S.currentClientId;});
+  if(!cl){c.innerHTML='<p style="padding:32px;color:var(--muted)">Client not found.</p>';return;}
+  var engs=(DB.engagements||[]).filter(function(e){return e.clientId===cl.id;});
+  var totalFee=engs.reduce(function(s,e){return s+(e.annualFee||0);},0);
+  var activeCount=engs.filter(function(e){return e.status==='active';}).length;
+  var sessCount=(DB.sessions||[]).filter(function(s){return engs.some(function(e){return e.id===s.engId;});}).length;
+  var fmtFee=function(n){return '£'+Number(n).toLocaleString('en-GB');};
+  var lbl='font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px';
+  c.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
+    +'<button class="btn btn-outline" onclick="S.view=\'clients\';renderView()">← Back</button>'
+    +'<div style="flex:1"><h2 style="margin:0;font-size:20px">'+cl.name+'</h2>'
+    +'<div style="font-size:13px;color:var(--muted);margin-top:2px">'+cl.org+'</div></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">'
+    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--venetian)">'+engs.length+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Engagements</div></div>'
+    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:#27ae60">'+activeCount+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Active</div></div>'
+    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:22px;font-weight:700;color:var(--venetian)">'+(totalFee?fmtFee(totalFee):'—')+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Total Annual Fees</div></div>'
+    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700">'+sessCount+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Sessions</div></div>'
+    +'</div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Contact Details</p>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">'
+    +(cl.email?'<div><div style="'+lbl+'">Email</div><div style="font-size:13px">'+cl.email+'</div></div>':'')
+    +(cl.phone?'<div><div style="'+lbl+'">Phone</div><div style="font-size:13px">'+cl.phone+'</div></div>':'')
+    +(cl.org?'<div><div style="'+lbl+'">Organisation</div><div style="font-size:13px">'+cl.org+'</div></div>':'')
+    +'<div><div style="'+lbl+'">Status</div><div style="font-size:13px;text-transform:capitalize">'+(cl.status||'Active')+'</div></div>'
+    +'</div>'
+    +(cl.notes?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="'+lbl+'">Notes</div><div style="font-size:13px;margin-top:4px">'+cl.notes+'</div></div>':'')
+    +'</div>'
+    +'<div class="card" style="margin-bottom:16px">'
+    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Engagements ('+engs.length+')</p>'
+    +(engs.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No engagements yet.</p>'
+    :engs.map(function(e){
+      var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
+      var scol=e.status==='active'?'#27ae60':e.status==='planning'?'#f39c12':'#7f8c8d';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="S.currentEngId=\''+e.id+'\';S.view=\'engagementDetail\';renderView()">'
+        +'<div style="flex:1">'
+        +'<div style="font-size:13px;font-weight:600;margin-bottom:3px">'+e.name+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+(mn?mn.name:'No mentor assigned')+' · '+(e.startDate||'—')+' → '+(e.endDate||'—')+'</div>'
+        +'</div>'
+        +(e.annualFee?'<div style="font-size:13px;font-weight:600;color:var(--venetian)">'+fmtFee(e.annualFee)+' pa</div>':'')
+        +'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+e.status+'</span>'
+        +'</div>';
+    }).join(''))
+    +'</div>'
+    +'<div class="card">'+renderComments('client',cl.id)+'</div>'
+  ;
+}
 
 function rEngDetail(c){
   if(!DB.engFiles) DB.engFiles=[];
@@ -2748,6 +2942,8 @@ function rEngDetail(c){
     +(e.status?'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+e.status+'</span>':'')
     +'</div></div>'
     +'<button class="btn btn-outline" onclick="openEngModal(\''+e.id+'\')">Edit Engagement</button>'
+    +'<button class="btn btn-outline" style="font-size:12px;padding:4px 10px;margin-left:8px" onclick="generateSOW(\''+ e.id +'\')" >SOW</button>'
+    +'<button class="btn btn-outline" style="font-size:12px;padding:4px 10px" onclick="generateMFS(\''+ e.id +'\')" >Fee Schedule</button>'
     +'</div>'
     +'<div class="card" style="margin-bottom:16px">'
     +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Engagement Details</p>'
