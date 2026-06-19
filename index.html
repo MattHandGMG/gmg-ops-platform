@@ -3049,7 +3049,7 @@ function rEngDetail(id){
   const nextLabel=nextSess?new Date(nextSess.date+' ').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):isEnded?'Closed':'None';
   const nextSub=nextSess?`${nextSess.duration} mins`:isEnded?'Engagement closed':'Schedule a session';
 
-  document.getElementById('main').innerHTML=`
+  document.getElementById('content').innerHTML=`
 <div style="background:var(--halfnarrow);min-height:100vh">
 
   <!-- ░░ HERO ░░ -->
