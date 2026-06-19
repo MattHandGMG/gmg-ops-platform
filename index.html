@@ -3328,7 +3328,7 @@ function rEngagements(c){
         <td style="font-size:12px">${(e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits.map(ps=>ps.partner+(ps.percentage?' ('+ps.percentage+'%)':'')).join(', '):(e.partner||'—')}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
-        <td><button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
+        <td><button class="btn btn-sm btn-outline" onclick="rEngDetail('${e.id}')">View</button> <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button></td>
       </tr>`;
     }).join('')}
     </tbody></table>
