@@ -2585,7 +2585,7 @@ async function rAdmin(c){
 
   </div>`;
 }
-ction openAdminUserModal(userId, dataStr){
+function openAdminUserModal(userId, dataStr){
   const d=dataStr?JSON.parse(dataStr):{};
   showModal(`<div class="mhdr"><h3>${userId?'Edit User':'User Slot'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
