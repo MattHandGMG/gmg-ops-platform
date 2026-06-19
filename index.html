@@ -3647,6 +3647,7 @@ function rQuoting(c){
 }
 
 function rProjects(c){
+  if(S.tab.projDetail){rProjectDetail(c,S.tab.projDetail);return;}
   const allTeam=DB.engagements.filter(e=>e.type==='team');
   const statusFilter=S.tab.projStatus||'all';
   const partnerFilter=S.tab.projPartner||'';
@@ -3709,7 +3710,7 @@ function rProjects(c){
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} open task${openTasks>1?'s':''}</span>`:'No open tasks'}</div>
           <div style="display:flex;gap:6px">
-            <button class="btn btn-sm btn-outline" onclick="rProjectDetail(document.getElementById('content'),'${e.id}')">View</button>
+            <button class="btn btn-sm btn-outline" onclick="S.tab.projDetail='${e.id}';S.tab.projDetailTab='overview';renderView()">View</button>
             <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
             <button class="btn btn-sm btn-outline" onclick="openProjTaskModal('${e.id}')">+ Task</button>
           </div>
