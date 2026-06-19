@@ -2481,7 +2481,7 @@ async function rAdmin(c){
   if(!DB.minimumPricing){DB.minimumPricing={executive:0,team:0};save();}
   const minP=DB.minimumPricing||{executive:0,team:0};
 
-  const userRows=users.map(u=>`<tr>
+  const userRows=users.map(u=>`<tr style="border-bottom:1px solid var(--border)">
     <td style="padding:10px 12px;font-size:13px;font-weight:500">${u.username||u.email||'—'}</td>
     <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.role||'User'}</td>
     <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.entity||'GMG'}</td>
@@ -2507,22 +2507,27 @@ async function rAdmin(c){
     </tr>`).join('');
 
   c.innerHTML=`
-  <div class="phdr"><div><h2>&#x2699; Admin</h2><p>${users.length} registered user${users.length!==1?'s':''}</p></div>
-    <button class="btn btn-primary" onclick="openUserModal(null)">+ Create User</button>
-  </div>
+  <div class="phdr"><div><h2>&#x2699; Admin</h2><p>${users.length} registered user${users.length!==1?'s':''}</p></div></div>
 
   <div style="padding:0 28px 28px;display:flex;flex-direction:column;gap:24px">
 
     <!-- USERS -->
-    <div class="card" style="overflow:auto">
+    <div class="card" style="overflow:auto;padding:0">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid var(--border)">
+        <div>
+          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 2px;color:var(--nearblack)">Users</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0">${users.length} registered user${users.length!==1?'s':''}</p>
+        </div>
+        <button class="btn btn-primary" onclick="openUserModal(null)">+ Create User</button>
+      </div>
       <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="border-bottom:2px solid var(--border)">
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Name</th>
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Role</th>
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Entity</th>
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Partner (for EAs)</th>
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Last Active</th>
-          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Actions</th>
+        <thead><tr style="background:var(--halfnarrow)">
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Name</th>
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Role</th>
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Entity</th>
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Partner (for EAs)</th>
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Last Active</th>
+          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Actions</th>
         </tr></thead>
         <tbody>${userRows||'<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No users yet.</td></tr>'}</tbody>
       </table>
@@ -2532,7 +2537,7 @@ async function rAdmin(c){
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
         <div>
-          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px">&#x1F4B0; Pricing Structure</h3>
+          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px;color:var(--nearblack)">&#x1F4B0; Pricing Structure</h3>
           <p style="font-size:12px;color:var(--muted);margin:0">Configure minimum fees for chair pricing options and executive / team engagement types.</p>
         </div>
       </div>
@@ -2549,8 +2554,10 @@ async function rAdmin(c){
           <tbody>${pricingRows}</tbody>
         </table>
 
+        <div style="border-top:1px solid var(--border);margin:0 0 18px"></div>
+
         <!-- Executive & Team minimums -->
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Executive & Team — Minimum Fees</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Executive &amp; Team — Minimum Fees</div>
         <div style="display:flex;gap:20px;flex-wrap:wrap">
           <div style="flex:1;min-width:160px">
             <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px">Executive Minimum (£/year)</label>
@@ -2568,14 +2575,17 @@ async function rAdmin(c){
           </div>
         </div>
 
+        <div style="border-top:1px solid var(--border);margin:20px 0 0"></div>
+        <div style="padding-top:16px;display:flex;justify-content:flex-end">
+          <button onclick="save();const btn=this;btn.textContent='Saved ✓';btn.style.background='#059669';btn.style.borderColor='#059669';setTimeout(()=>{btn.textContent='Save Pricing';btn.style.background='';btn.style.borderColor='';},2000)" style="background:var(--venetian);color:#fff;border:1px solid var(--venetian);border-radius:6px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s">Save Pricing</button>
+        </div>
+
       </div>
     </div>
 
   </div>`;
 }
-
-
-function openAdminUserModal(userId, dataStr){
+ction openAdminUserModal(userId, dataStr){
   const d=dataStr?JSON.parse(dataStr):{};
   showModal(`<div class="mhdr"><h3>${userId?'Edit User':'User Slot'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
@@ -3004,8 +3014,7 @@ function rEngDetail(id){
   const enPay=DB.mentorPayments.filter(p=>p.engId===id);
   const enFiles=(DB.engagementFiles||[]).filter(f=>f.engId===id);
 
-  const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?(e.annualFee||(e.quarterlyFee*4)||0):e.totalFee||0;
-  const feeLabel=e.type==='chair'?'Annual Fee':e.type==='executive'?'Annual Value':'Total Fee';
+  const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?'Annual Value':'Total Fee';
   const totalBilled=enInv.reduce((a,i)=>a+(i.amount||0),0);
   const totalPaid=enPay.reduce((a,p)=>a+(p.amount||0),0);
 
@@ -3031,11 +3040,11 @@ function rEngDetail(id){
   const minFee=e.type==='chair'?(selOpt?selOpt.minFee||0:0):((DB.minimumPricing||{})[e.type]||0);
   const pricingDiff=minFee>0?mainFee-minFee:null;
 
-  const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'?';
+  const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'â';
 
   const avatar=(name,sub,bg)=>`<div style="display:flex;align-items:center;gap:12px">
     <div style="width:38px;height:38px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${initials(name||'')}</div>
-    <div><div style="font-size:13px;font-weight:600;color:var(--nearblack);line-height:1.2">${name||'—'}</div><div style="font-size:11px;color:var(--muted)">${sub}</div></div>
+    <div><div style="font-size:13px;font-weight:600;color:var(--nearblack);line-height:1.2">${name||'â'}</div><div style="font-size:11px;color:var(--muted)">${sub}</div></div>
   </div>`;
 
   const sectionHeader=(title,action)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
@@ -3051,14 +3060,14 @@ function rEngDetail(id){
       return `<div style="display:flex;gap:14px;cursor:pointer;border-radius:8px;padding:6px 4px;transition:background .12s" onclick="openSessionDetail('${s.id}','${id}')" onmouseover="this.style.background='#F9FAFB'" onmouseout="this.style.background='transparent'">
         <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:2px">
           <div style="width:11px;height:11px;border-radius:50%;background:${sc};border:2px solid #fff;box-shadow:0 0 0 2px ${sc};flex-shrink:0"></div>
-          ${i<enSess.length-1?`<div style="width:2px;flex:1;background:#E5E7EB;margin:4px 0;min-height:24px"></div>`:''}
+          ${i<enSess.length-1?`<div style="width:2px;flex:1;background:#E5E7EB;margin:4px 0;min-height:24px"></div>`:''}  
         </div>
         <div style="flex:1;padding-bottom:${i<enSess.length-1?'18px':'4px'}">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
             <span style="font-weight:600;font-size:12px;color:var(--nearblack)">Session ${i+1}</span>
             <span style="font-size:10px;font-weight:600;color:${sc};background:${sc}15;padding:2px 7px;border-radius:20px;text-transform:capitalize">${s.status}</span>
-            <span style="font-size:11px;color:var(--muted)">${sd} · ${s.duration} mins</span>
-            <span style="font-size:10px;color:var(--muted);margin-left:auto;opacity:.7">↗ click to edit</span>
+            <span style="font-size:11px;color:var(--muted)">${sd} Â· ${s.duration} mins</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:auto;opacity:.7">â click to edit</span>
           </div>
           ${s.notes?`<p style="font-size:12px;color:var(--muted);margin:0;line-height:1.5">${s.notes}</p>`:''}
           ${s.createdBy?`<div style="font-size:10px;color:var(--muted);margin-top:3px;opacity:.7">Added by ${s.createdBy}</div>`:''}
@@ -3072,7 +3081,7 @@ function rEngDetail(id){
       const sc={paid:'#059669',sent:'#D97706',draft:'#9CA3AF',overdue:'#DC2626'}[i.status]||'#9CA3AF';
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
         <div><div style="font-size:12px;font-weight:600;color:var(--nearblack)">${i.period}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${i.type} · Issued ${i.issued}</div></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${i.type} Â· Issued ${i.issued}</div></div>
         <div style="text-align:right">
           <div style="font-size:14px;font-weight:700;color:var(--cadmium)">${fmt(i.amount)}</div>
           <span style="font-size:10px;color:${sc};background:${sc}15;padding:1px 7px;border-radius:10px;font-weight:600;text-transform:capitalize">${i.status}</span>
@@ -3084,7 +3093,7 @@ function rEngDetail(id){
     :`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Mentor Payments</div>
       ${enPay.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F9FAFB">
-        <span style="font-size:11px;color:var(--muted)">${p.period} · ${p.type}</span>
+        <span style="font-size:11px;color:var(--muted)">${p.period} Â· ${p.type}</span>
         <span style="font-size:12px;font-weight:600;color:var(--cadmium)">${fmt(p.amount)}</span>
       </div>`).join('')}
     </div>`;
@@ -3105,6 +3114,7 @@ function rEngDetail(id){
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Annual Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.annualFee)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Rate / Session</span><span style="font-size:12px;font-weight:600">${fmt(e.sessionRate)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Sessions Included</span><span style="font-size:12px;font-weight:600">${e.sessionsIncluded}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--border);margin-top:4px"><span style="font-size:12px;font-weight:700;color:var(--nearblack)">Gross Profit</span><span style="font-size:14px;font-weight:700;color:var(--venetian)">${fmt((e.annualFee||0)-((e.mentorMonthlyFee||0)*12))}</span></div>
       <div style="padding:12px 0 4px">
         <div style="display:flex;justify-content:space-between;margin-bottom:7px">
           <span style="font-size:11px;color:var(--muted)">Sessions Used</span>
@@ -3120,35 +3130,42 @@ function rEngDetail(id){
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Annual Client Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(execAnnualFee)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Annual (40%)</span><span style="font-size:12px;font-weight:600">${fmt(execMentorAnnual)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Monthly</span><span style="font-size:12px;font-weight:600;color:#059669">${fmt(execMentorMonthly)}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:9px 0"><span style="font-size:11px;color:var(--muted)">Engagement Length</span><span style="font-size:12px;font-weight:500">${engMonths} months</span></div>`;
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Engagement Length</span><span style="font-size:12px;font-weight:500">${engMonths} months</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--border);margin-top:4px"><span style="font-size:12px;font-weight:700;color:var(--nearblack)">Gross Profit</span><span style="font-size:14px;font-weight:700;color:var(--venetian)">${fmt(execAnnualFee-execMentorAnnual)}</span></div>`;
   } else {
     finHtml=`
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Total Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.totalFee||0)}</span></div>
-      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Fee</span><span style="font-size:12px;font-weight:600">${fmt(e.mentorFee||0)}</span></div>`;
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Fee</span><span style="font-size:12px;font-weight:600">${fmt(e.mentorFee||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px 0;border-top:2px solid var(--border);margin-top:4px"><span style="font-size:12px;font-weight:700;color:var(--nearblack)">Gross Profit</span><span style="font-size:14px;font-weight:700;color:var(--venetian)">${fmt((e.totalFee||0)-(e.mentorFee||0))}</span></div>`;
   }
 
   const commissions=e.commissions||[];
   const commRows=commissions.map((c,ci)=>`
     <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
-      <input value="${c.name||''}" placeholder="Name" onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].name=this.value;save();}})()" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11px;font-family:inherit;outline:none;min-width:0" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-      <select onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].role=this.value;save();}})()" style="border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-size:11px;font-family:inherit;outline:none;background:#fff;color:var(--nearblack)" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+      <input value="${c.name||''}" placeholder="Name" onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].name=this.value;save();}})()"
+ style="flex:1;border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:11px;font-family:inherit;outline:none;min-width:0" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+      <select onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].role=this.value;save();}})()"
+ style="border:1px solid var(--border);border-radius:5px;padding:5px 7px;font-size:11px;font-family:inherit;outline:none;background:#fff;color:var(--nearblack)" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
         <option value="partner" ${c.role==='partner'?'selected':''}>Partner</option>
         <option value="mentor" ${c.role==='mentor'?'selected':''}>Mentor</option>
         <option value="other" ${c.role==='other'?'selected':''}>Other</option>
       </select>
       <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
-        <input type="number" value="${c.pct||0}" min="0" max="100" onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].pct=parseFloat(this.value)||0;save();}})()" style="width:52px;border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:11px;font-family:inherit;outline:none;text-align:right" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+        <input type="number" value="${c.pct||0}" min="0" max="100" onchange="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions[${ci}].pct=parseFloat(this.value)||0;save();}})()"
+ style="width:52px;border:1px solid var(--border);border-radius:5px;padding:5px 6px;font-size:11px;font-family:inherit;outline:none;text-align:right" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
         <span style="font-size:11px;color:var(--muted)">%</span>
       </div>
-      <button onclick="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions.splice(${ci},1);save();rEngDetail('${id}');}})()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;flex-shrink:0" title="Remove">✕</button>
+      <button onclick="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions.splice(${ci},1);save();rEngDetail('${id}');}})()"
+ style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;flex-shrink:0" title="Remove">✕</button>
     </div>`).join('');
 
   const totalCommPct=commissions.reduce((a,c)=>a+(parseFloat(c.pct)||0),0);
   const commHtml=`
     ${commRows||`<div style="text-align:center;padding:14px 0;color:var(--muted);font-size:12px;font-style:italic">No commission allocations added.</div>`}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-      <button onclick="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions.push({name:'',role:'partner',pct:0});save();rEngDetail('${id}');}})()" style="font-size:11px;padding:5px 12px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:inherit;font-weight:500;color:var(--nearblack)">+ Add Allocation</button>
-      ${commissions.length>0?`<span style="font-size:11px;color:${totalCommPct>100?'#DC2626':'var(--muted)'};font-weight:600">Total: ${totalCommPct}%${totalCommPct>100?' ⚠ over 100%':''}</span>`:''}
+      <button onclick="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions.push({name:'',role:'partner',pct:0});save();rEngDetail('${id}');}})()"
+ style="font-size:11px;padding:5px 12px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:inherit;font-weight:500;color:var(--nearblack)">+ Add Allocation</button>
+      ${commissions.length>0?`<span style="font-size:11px;color:${totalCommPct>100?'#DC2626':'var(--muted)'};font-weight:600">Total: ${totalCommPct}%${totalCommPct>100?' â  over 100%':''}</span>`:''}
     </div>`;
 
   const sfBar=isEnded
@@ -3160,7 +3177,7 @@ function rEngDetail(id){
     <div style="min-width:0">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap">${label}</div>
       <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:var(--nearblack);margin:2px 0;line-height:1">${value}</div>
-      ${sub?`<div style="font-size:10px;color:var(--muted);white-space:nowrap">${sub}</div>`:''}
+      ${sub?`<div style="font-size:10px;color:var(--muted);white-space:nowraw">${sub}</div>`:''}
     </div>
   </div>`;
 
@@ -3190,7 +3207,7 @@ function rEngDetail(id){
     <div style="position:absolute;top:-50px;right:-30px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none"></div>
     <div style="position:absolute;bottom:-80px;left:30%;width:280px;height:280px;border-radius:50%;background:rgba(0,0,0,.08);pointer-events:none"></div>
     <div style="position:relative;z-index:1">
-      <button onclick="S.view='engagements';renderView()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:14px" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">← Back to Engagements</button>
+      <button onclick="S.view='engagements';renderView()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:14px" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">â Back to Engagements</button>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
         <div style="min-width:0">
           <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#fff;margin:0 0 10px;line-height:1.15;letter-spacing:-.01em">${e.name}</h1>
@@ -3205,8 +3222,8 @@ function rEngDetail(id){
           <div style="font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.02em">${fmt(mainFee)}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">${e.type==='chair'?'per year':e.type==='executive'?'per year':'total programme'}</div>
           ${pricingDiff!==null?`<div style="margin-top:7px;display:inline-flex;align-items:center;gap:4px;background:${pricingDiff>=0?'rgba(16,185,129,.22)':'rgba(220,38,38,.22)'};border:1px solid ${pricingDiff>=0?'rgba(16,185,129,.45)':'rgba(220,38,38,.45)'};border-radius:12px;padding:3px 10px">
-            <span style="font-size:11px;font-weight:600;color:${pricingDiff>=0?'#6EE7B7':'#FCA5A5'}">${pricingDiff>=0?'+':'−'}${fmt(Math.abs(pricingDiff))} ${pricingDiff>=0?'above':'below'} minimum</span>
-          </div>`:''}
+            <span style="font-size:11px;font-weight:600;color:${pricingDiff>=0?'#6EE7B7':'#FCA5A5'}">${pricingDiff>=0?'+':'â'}${fmt(Math.abs(pricingDiff))} ${pricingDiff>=0?'above':'below'} minimum</span>
+          </div>`:''}  
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap;gap:10px">
@@ -3217,10 +3234,6 @@ function rEngDetail(id){
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openSOWModal&&openSOWModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>`:''}
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Mentor Fee Schedule</button>`:''}
           ${e.type==='team'?`<button class="btn btn-sm" onclick="S.view='projects';S.projectEngId='${id}';renderView()" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Salesforce Sync</span>
-          ${sfBar}
         </div>
       </div>
     </div>
@@ -3260,7 +3273,7 @@ function rEngDetail(id){
         ${sectionHeader('Comments','')}
         <div id="comments-${id}"></div>
         <div style="margin-top:14px;display:flex;gap:8px">
-          <input id="comment-input-${id}" type="text" placeholder="Add a comment… type @ to mention someone" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="comment-input-${id}" type="text" placeholder="Add a commentâ¦ type @ to mention someone" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
           <button class="btn btn-sm btn-primary" onclick="if(document.getElementById('comment-input-${id}').value.trim()){postComment&&postComment('${id}',document.getElementById('comment-input-${id}').value);document.getElementById('comment-input-${id}').value=''}">Post</button>
         </div>
       </div>
@@ -3274,9 +3287,9 @@ function rEngDetail(id){
         ${sectionHeader('Engagement Info','')}
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Type</span><span style="font-size:12px;font-weight:600;text-transform:capitalize">${e.type} Mentoring</span></div>
         ${e.type==='chair'?`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Pricing Option</span><span style="font-size:12px;font-weight:600;color:${selOpt?'var(--nearblack)':'var(--muted)'}">${selOpt?selOpt.name:'Not set'}</span></div>`:''}
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'—'}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'—'}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'â'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'â'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'â'}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Start Date</span><span style="font-size:12px;font-weight:500">${e.startDate}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:11px;color:var(--muted)">End Date</span><span style="font-size:12px;font-weight:500">${e.endDate}</span></div>
       </div>
@@ -3299,13 +3312,13 @@ function rEngDetail(id){
         ${sectionHeader('People','')}
         <div style="margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Client</div>
-          ${avatar(cl?.name,cl?.org||'Client','#CE2702')}
-          ${cl?.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${cl.email}</div>`:''}
+          ${avatar(cl?cl.name:'â',cl?cl.org||'Client':'Client','#CE2702')}
+          ${cl?cl.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${cl.email}</div>`:'':''}
         </div>
         <div style="border-top:1px solid var(--border);padding-top:14px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Mentor</div>
-          ${avatar(mn?.name,mn?.org||'Mentor','#059669')}
-          ${mn?.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${mn.email}</div>`:''}
+          ${avatar(mn?mn.name:'â',mn?mn.org||'Mentor':'Mentor','#059669')}
+          ${mn?mn.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${mn.email}</div>`:'':''}
         </div>
       </div>
 
@@ -3316,11 +3329,12 @@ function rEngDetail(id){
       </div>`:''}
 
     </div>
-  </div>
+ "</div>
 </div>`;
 
   if(typeof renderComments==='function') setTimeout(()=>renderComments(id),50);
 }
+
 
 function openSessionDetail(sessId,engId){
   const s=DB.sessions.find(x=>x.id===sessId);
@@ -3501,6 +3515,14 @@ function deleteEngFile(fileId,engId){
 
 function rEngagements(c){
   if(!DB.engagements) DB.engagements=[];
+  // Pre-populate from saved defaults if no filters set yet
+  if(!S._engFiltersLoaded){
+    const saved=(DB.userPrefs||{}).engFilters||{};
+    if(!S.tab.engStatus&&saved.status) S.tab.engStatus=saved.status;
+    if(!S.tab.engType&&saved.type) S.tab.engType=saved.type;
+    if(!S.tab.engPartner&&saved.partner) S.tab.engPartner=saved.partner;
+    S._engFiltersLoaded=true;
+  }
   const statusF=S.tab.engStatus||'';
   const typeF=S.tab.engType||'';
   const partnerF=S.tab.engPartner||'';
@@ -3536,10 +3558,11 @@ function rEngagements(c){
       <option value="executive"${typeF==='executive'?' selected':''}>Executive</option>
       <option value="team"${typeF==='team'?' selected':''}>Team</option>
     </select>
-    <select onchange="S.tab.engPartner=this.value;renderView()">h
+    <select onchange="S.tab.engPartner=this.value;renderView()">
       <option value="">All Partners</option>
       ${allPartners.map(p=>`<option value="${p}"${partnerF===p?' selected':''}>${p}</option>`).join('')}
     </select>
+    <button id="eng-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.engFilters={status:S.tab.engStatus||'',type:S.tab.engType||'',partner:S.tab.engPartner||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button>
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.engStatus='';S.tab.engType='';S.tab.engPartner='';renderView()">&#10005; Clear</button>`:''}
   </div>
   <div class="card">
@@ -3548,14 +3571,14 @@ function rEngagements(c){
     ${engs.length===0?`<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">No engagements found.</td></tr>`:
     engs.map(e=>{
       const cl=DB.contacts.find(x=>x.id===e.clientId);
-      const mn=DB.contacts.find(x=>x.id===e.mentorId);
+      const mn=DB.contacts.find(m=>m.id===e.mentorId);
       const fee=fmt(e.annualFee||e.totalFee||e.quarterlyFee||0);
       const feeLabel=e.annualFee?'pa':e.totalFee?'total':e.quarterlyFee?'qtr':'';
       return`<tr>
         <td><div style="font-weight:600;font-size:12px">${e.name}</div><div style="font-size:10px;color:var(--muted)">${e.startDate||''}${e.endDate?' → '+e.endDate:''}</div></td>
         <td><span class="badge ${tb[e.type]||'b-grey'}">${e.type}</span></td>
-        <td style="font-size:12px">${cl?.name||'—'}</td>
-        <td style="font-size:12px">${mn?.name?.split('—')[0]?.trim()||'—'}</td>
+        <td style="font-size:12px">${cl?cl.name||'—':'—'}</td>
+        <td style="font-size:12px">${mn?mn.name?mn.name.trim()||'—':'—':'—'}</td>
         <td style="font-size:12px">${(e.partnerSplits&&e.partnerSplits.length)?e.partnerSplits.map(ps=>ps.partner+(ps.percentage?' ('+ps.percentage+'%)':'')).join(', '):(e.partner||'—')}</td>
         <td style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fee}<span style="font-size:9px;color:var(--muted);font-family:inherit;font-weight:400"> ${feeLabel}</span></td>
         <td><span class="badge ${e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey'}">${e.status}</span></td>
@@ -3565,6 +3588,7 @@ function rEngagements(c){
     </tbody></table>
   </div>`;
 }
+
 
 function rQuoting(c){
   if(!DB.quotes) DB.quotes=[];
@@ -3637,7 +3661,7 @@ function rProjects(c){
   const focusId=S.projectEngId||null;
 
   c.innerHTML=`
-  <div class="phdr"><div><h2>Project Management</h2><p>${activeCount} active team programme${activeCount!==1?'s':''} · ${allTeam.length} total</p></div></div>
+  <div class="phdr"><div><h2>Project Management</h2><p>${activeCount} active team programme${activeCount!==1?'s':''} Â· ${allTeam.length} total</p></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
     <select class="filter-sel" onchange="S.tab.projStatus=this.value;renderView()">
       <option value="all"${statusFilter==='all'?' selected':''}>All Statuses</option>
@@ -3647,7 +3671,7 @@ function rProjects(c){
       <option value="">All Partners</option>
       ${partnerOpts.map(p=>`<option value="${p}"${partnerFilter===p?' selected':''}>${p}</option>`).join('')}
     </select>
-    ${hasFilter?`<button class="filter-clear" onclick="S.tab.projStatus='all';S.tab.projPartner='';renderView()">✕ Clear</button>`:''}
+    ${hasFilter?`<button class="filter-clear" onclick="S.tab.projStatus='all';S.tab.projPartner='';renderView()">✕ Clear</button>`:''}  
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
     ${engs.map(e=>{
@@ -3665,14 +3689,14 @@ function rProjects(c){
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} · ${mentor?mentor.name:'No mentor'}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} Â· ${mentor?mentor.name:'No mentor'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
           ${e.country?`<span class="badge b-grey">🌍 ${e.country}</span>`:''}
-          ${e.startDate?`<span class="badge b-grey">${e.startDate} → ${e.endDate||'ongoing'}</span>`:''}
+          ${e.startDate?`<span class="badge b-grey">${e.startDate} â ${e.endDate||'ongoing'}</span>`:''}
         </div>
         <div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
@@ -3685,7 +3709,7 @@ function rProjects(c){
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div style="font-size:11px;color:var(--muted)">${openTasks>0?`<span style="color:var(--cadmium)">${openTasks} open task${openTasks>1?'s':''}</span>`:'No open tasks'}</div>
           <div style="display:flex;gap:6px">
-            <button class="btn btn-sm btn-outline" onclick="rEngDetail('${e.id}')">View</button>
+            <button class="btn btn-sm btn-outline" onclick="rProjectDetail(document.getElementById('content'),'${e.id}')">View</button>
             <button class="btn btn-sm btn-outline" onclick="openEngModal('${e.id}')">Edit</button>
             <button class="btn btn-sm btn-outline" onclick="openProjTaskModal('${e.id}')">+ Task</button>
           </div>
@@ -3701,10 +3725,9 @@ function rProjects(c){
       if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
       S.projectEngId=null;
     },100);
-  }
-}
+  
 
-function rProjectDetail(c,engId){
+function rProjectDetail(c, engId){
   const e=DB.engagements.find(x=>x.id===engId);
   if(!e){S.tab.projDetail='';renderView();return;}
   const tab=S.tab.projDetailTab||'overview';
@@ -3714,25 +3737,85 @@ function rProjectDetail(c,engId){
   const tasks=DB.tasks.filter(t=>t.ref===engId);
   const sessions=DB.sessions.filter(s=>s.engId===engId);
   const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
-  const tabs=['overview','tasks','gantt','timeline','calendar','financials'];
+  const stColor=e.status==='active'?'rgba(16,185,129,.3)':e.status==='planning'?'rgba(217,119,6,.3)':'rgba(107,114,128,.3)';
+  const stTextColor=e.status==='active'?'#6EE7B7':e.status==='planning'?'#FDE68A':'#D1D5DB';
+  const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+  const openTasks=tasks.filter(t=>t.status!=='done').length;
+  const doneSess=sessions.filter(s=>s.status==='completed').length;
+  const totalSess=e.sessionsPlanned||sessions.length||1;
+  const pct=Math.min(100,Math.round((doneSess/totalSess)*100));
+
+  const navTabs=[
+    {id:'overview',label:'Overview'},
+    {id:'gantt',label:'Gantt'},
+    {id:'calendar',label:'Calendar'},
+    {id:'financials',label:'Financials'}
+  ];
+
   c.innerHTML=`
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button class="btn btn-outline" onclick="S.tab.projDetail='';S.tab.projDetailTab='overview';renderView()" style="font-size:12px;padding:6px 14px">&#8592; Projects</button>
-      <div>
-        <h2 style="margin:0;font-family:Georgia,serif">${e.name}</h2>
-        <div style="font-size:12px;color:var(--muted);margin-top:3px">${client?client.name:'â'} &middot; ${e.partner||'No partner'} &middot; ${e.country||''}&nbsp;<span class="badge ${stBadge}" style="font-size:10px">${e.status}</span></div>
+<div style="background:var(--halfnarrow);min-height:100vh">
+
+  <!-- HERO BANNER -->
+  <div style="background:linear-gradient(135deg,#18060088 0%,#6B1A0A 35%,#CE2702 100%),repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,.015) 40px,rgba(255,255,255,.015) 80px);padding:28px 32px 24px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-50px;right:-30px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none"></div>
+    <div style="position:absolute;bottom:-80px;left:30%;width:280px;height:280px;border-radius:50%;background:rgba(0,0,0,.08);pointer-events:none"></div>
+    <div style="position:relative;z-index:1">
+
+      <!-- Breadcrumb -->
+      <button onclick="S.tab.projDetail='';S.tab.projDetailTab='overview';renderView()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:16px;font-family:inherit" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">&#8592; Back to Projects</button>
+
+      <!-- Title row -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap">
+        <div style="min-width:0">
+          <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#fff;margin:0 0 10px;line-height:1.15;letter-spacing:-.01em">${e.name}</h1>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;text-transform:capitalize;letter-spacing:.03em">${e.type} Programme</span>
+            <span style="background:${stColor};color:${stTextColor};font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;text-transform:capitalize">${e.status}</span>
+            <span style="color:rgba(255,255,255,.55);font-size:12px">${client?client.name:'No client'}${e.partner?' · '+e.partner:''}</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+            <button class="btn btn-sm" onclick="openEngModal('${e.id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x270F; Edit</button>
+            <button class="btn btn-sm" onclick="openStageModal&&openStageModal('${e.id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Stage</button>
+            <button class="btn btn-sm" onclick="openProjTaskModal('${e.id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Task</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="text-align:right">
+              <div style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em">Sessions</div>
+              <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#fff;line-height:1">${doneSess}<span style="font-size:13px;color:rgba(255,255,255,.55)"> / ${totalSess}</span></div>
+            </div>
+            ${openTasks>0?`<div style="text-align:right">
+              <div style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.08em">Open Tasks</div>
+              <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#FDE68A;line-height:1">${openTasks}</div>
+            </div>`:''}
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.15)">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.6);margin-bottom:7px">
+          <span>Programme progress</span>
+          <span>${pct}% complete · ${doneSess} of ${totalSess} sessions</span>
+        </div>
+        <div style="background:rgba(255,255,255,.15);border-radius:4px;height:6px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${pct===100?'#6EE7B7':'rgba(255,255,255,.75)'};border-radius:4px;transition:width .4s ease"></div>
+        </div>
       </div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-outline" onclick="openEngModal('${e.id}')">Edit Project</button>
-      <button class="btn btn-primary" onclick="openStageModal(&apos;${e.id}&apos;)">+ Stage</button>
-    </div>
   </div>
-  <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px;overflow-x:auto">
-    ${tabs.map(t=>`<button onclick="S.tab.projDetailTab='${t}';renderView()" style="padding:10px 18px;border:none;background:none;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:${tab===t?'600':'400'};color:${tab===t?'var(--venetian)':'var(--muted)'};border-bottom:${tab===t?'2px solid var(--venetian)':'2px solid transparent'};margin-bottom:-2px">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('')}
+
+  <!-- TAB NAV -->
+  <div style="background:#fff;border-bottom:2px solid var(--border);padding:0 32px;display:flex;gap:0;overflow-x:auto">
+    ${navTabs.map(t=>`<button onclick="S.tab.projDetailTab='${t.id}';renderView()" style="padding:13px 20px;border:none;background:none;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:${tab===t.id?'600':'400'};color:${tab===t.id?'var(--venetian)':'var(--muted)'};border-bottom:${tab===t.id?'2px solid var(--venetian)':'2px solid transparent'};margin-bottom:-2px;font-family:inherit;transition:color .15s">${t.label}</button>`).join('')}
   </div>
-  <div id="pd-body"></div>`;
+
+  <!-- TAB BODY -->
+  <div style="padding:24px 32px 48px" id="pd-body"></div>
+
+</div>`;
+
   const body=document.getElementById('pd-body');
   if(tab==='overview') rProjOverview(body,e,client,mentor,stages,tasks,sessions);
   else if(tab==='tasks') rProjTasks(body,e,tasks);
@@ -3740,8 +3823,15 @@ function rProjectDetail(c,engId){
   else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
   else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
   else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
-  var _pc=document.createElement('div');_pc.className='card';_pc.style.marginTop='16px';_pc.innerHTML=renderComments('project',e.id);c.appendChild(_pc);
+
+  // Comments card
+  var _pc=document.createElement('div');
+  _pc.className='card';
+  _pc.style.marginTop='16px';
+  if(typeof renderComments==='function') _pc.innerHTML=renderComments('project',e.id);
+  c.querySelector('#pd-body').parentNode.appendChild(_pc);
 }
+
 
 function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
   const done=sessions.filter(s=>s.status==='completed').length;
@@ -4098,6 +4188,14 @@ function saveProjTask(engId){
 
 function rPipeline(c){
   if(!DB.opportunities) DB.opportunities=[];
+  // Pre-populate from saved defaults if no filters set yet
+  if(!S._pipelineFiltersLoaded){
+    const saved=(DB.userPrefs||{}).pipelineFilters||{};
+    if(!S.tab.plPartner&&saved.partner) S.tab.plPartner=saved.partner;
+    if(!S.tab.plCountry&&saved.country) S.tab.plCountry=saved.country;
+    if(!S.tab.plSolution&&saved.solution) S.tab.plSolution=saved.solution;
+    S._pipelineFiltersLoaded=true;
+  }
   const partnerF=S.tab.plPartner||'';
   const countryF=S.tab.plCountry||'';
   const solutionF=S.tab.plSolution||'';
@@ -4140,6 +4238,7 @@ function rPipeline(c){
       <option value="executive"${solutionF==='executive'?' selected':''}>Executive</option>
       <option value="team"${solutionF==='team'?' selected':''}>Team</option>
     </select>
+    <button id="pl-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.pipelineFilters={partner:S.tab.plPartner||'',country:S.tab.plCountry||'',solution:S.tab.plSolution||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button>
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.plPartner='';S.tab.plCountry='';S.tab.plSolution='';renderView()">&#10005; Clear</button>`:''}
   </div>
   <div class="lc-board">
@@ -4168,6 +4267,7 @@ function rPipeline(c){
     }).join('')}
   </div>`;
 }
+
 
 function openDealModal(id,defaultStage){
   const o=id?DB.opportunities.find(x=>x.id===id):null;
@@ -5367,20 +5467,21 @@ function rMentors(c){
 
   // Active filter pills
   const activePills=[];
-  if(filterCat) activePills.push({label:catLabels[filterCat],clear:"S.mentorCat='';"});
-  if(filterSector) activePills.push({label:filterSector,clear:"S.mentorSector='';"});
-  if(filterEnt) activePills.push({label:filterEnt,clear:"S.mentorEnt='';"});
-  if(q) activePills.push({label:`"${q}"`,clear:"S.search='';"});
+  if(filterCat) activePills.push({label:catLabels[filterCat],clear:"S.mentorCat='';"}); 
+  if(filterSector) activePills.push({label:filterSector,clear:"S.mentorSector='';"}); 
+  if(filterEnt) activePills.push({label:filterEnt,clear:"S.mentorEnt='';"}); 
+  if(q) activePills.push({label:`"${q}"`,clear:"S.search='';"}); 
 
   c.innerHTML=`
   <div class="phdr" style="margin-bottom:20px">
     <div><h2>Mentor Library</h2></div>
-    <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Mentor</button>
+    <button class="btn btn-primary" onclick="openContactModal(null,'mentor')">+ Add Contact</button>
   </div>
 
   <!-- Stat cards -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
-    ${[
+    ${
+      [
       {label:'Total Mentors',val:allMentors.length,cat:'',colour:'#1a1a2e'},
       {label:'Chair Mentors',val:chairs.length,cat:'chair',colour:'#5E1100'},
       {label:'Executive Mentors',val:executives.length,cat:'executive',colour:'#A0191A'},
@@ -5399,7 +5500,7 @@ function rMentors(c){
     <!-- Search -->
     <div style="flex:1;min-width:220px;position:relative">
       <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted);pointer-events:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="inp" placeholder="Search mentors…" value="${S.search||''}"
+      <input class="inp" placeholder="Search mentorsâ¦" value="${S.search||''}"
         oninput="S.search=this.value;renderView()"
         style="padding:9px 12px 9px 36px;width:100%;box-sizing:border-box;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg);transition:border-color .15s"
         onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
@@ -5421,6 +5522,55 @@ function rMentors(c){
       <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--muted);pointer-events:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
       <select onchange="S.mentorEnt=this.value;renderView()"
         style="appearance:none;-webkit-appearance:none;padding:9px 28px 9px 28px;border:1.5px solid ${filterEnt?'var(--venetian)':'var(--border)'};border-radius:8px;font-size:13px;background:var(--bg);cursor:pointer;width:100%;transition:border-color .15s;font-family:inherit;color:${filterEnt?'var(--venetian)':'var(--nearblack)'}">
+        <option value="">Entity</option>
+        ${allComs.map(com=>`<option value="${com}"${filterEnt===com?' selected':''}>${com}</option>`).join('')}
+      </select>
+      <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);width:12px;height:12px;color:var(--muted);pointer-events:none" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+    </div>
+    ${(filterSector||filterEnt||q||filterCat)?`
+    <button onclick="S.search='';S.mentorSector='';S.mentorEnt='';S.mentorCat='';renderView()"
+      style="padding:8px 14px;border:1.5px solid var(--border);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;color:var(--muted);white-space:nowrap;font-family:inherit;transition:.15s"
+      onmouseover="this.style.borderColor='#c00';this.style.color='#c00'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      ✕ Clear all
+    </button>`:''}  
+  </div>
+
+  <!-- Active filter pills -->
+  ${activePills.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+    ${activePills.map(p=>`<span onclick="${p.clear}renderView()" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;background:var(--venetian);color:#fff;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:.02em">
+      ${p.label} <span style="opacity:.7;font-size:13px;line-height:1">Ã</span>
+    </span>`).join('')}
+  </div>`:''}  
+
+  <!-- Count -->
+  <div style="font-size:12px;color:var(--muted);margin-bottom:16px;font-weight:500">${shown.length} mentor${shown.length!==1?'s':''} shown</div>
+
+  <!-- Grid -->
+  <div class="mentor-grid">
+    ${shown.length===0?`<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--muted)">No mentors match your search.</div>`:
+    shown.map(m=>{
+      const comBadge=entityBadge[m.entity]||'b-grey';
+      const cat=mentorCategory(m);
+      const catC=catColours[cat]||'#888';
+      const hasProfile=!!(m.bio);
+      return`<div class="mentor-card" style="cursor:pointer;transition:box-shadow .18s,transform .18s" onmouseover="this.style.boxShadow='0 4px 16px rgba(0,0,0,.12)';this.style.transform='translateY(-1px)'" onmouseout="this.style.boxShadow='';this.style.transform=''" onclick="viewContact('${m.id}')">
+        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:10px">
+          <div class="mentor-av">${initials(m.name)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;line-height:1.3">${m.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title||''}</div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--nearblack);margin-bottom:8px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.org||'â'}</div>
+        ${(m.sectors||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(m.sectors||[]).slice(0,3).map(s=>`<span style="font-size:9px;font-weight:600;padding:2px 8px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;white-space:nowrap">${s}</span>`).join('')}${(m.sectors||[]).length>3?`<span style="font-size:9px;color:var(--muted);padding:2px 4px">+${m.sectors.length-3}</span>`:''}</div>`:''}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:auto">
+          ${m.entity?`<span class="badge ${comBadge}" style="font-size:9px">${m.entity}</span>`:'<span></span>'}
+          <span style="font-size:10px;font-weight:700;color:${catC};letter-spacing:.03em">${(catLabels[cat]||'').toUpperCase()}</span>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}t-size:13px;background:var(--bg);cursor:pointer;width:100%;transition:border-color .15s;font-family:inherit;color:${filterEnt?'var(--venetian)':'var(--nearblack)'}">
         <option value="">Entity</option>
         ${allComs.map(com=>`<option value="${com}"${filterEnt===com?' selected':''}>${com}</option>`).join('')}
       </select>
