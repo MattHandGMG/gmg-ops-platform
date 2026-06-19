@@ -2917,113 +2917,272 @@ function rClientDetail(c){
   ;
 }
 
-function rEngDetail(c){
-  if(!DB.engFiles) DB.engFiles=[];
-  var e=DB.engagements.find(function(x){return x.id===S.currentEngId;});
-  if(!e){c.innerHTML='<p style="padding:32px;color:var(--muted)">Engagement not found.</p>';return;}
-  var cl=DB.contacts.find(function(x){return x.id===e.clientId;});
-  var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
-  var sess=(DB.sessions||[]).filter(function(s){return s.engId===e.id;}).sort(function(a,b){return a.date>b.date?1:-1;});
-  var files=(DB.engFiles||[]).filter(function(f){return f.engId===e.id;});
-  var mc=e.menteeContact||{};
-  var ec=e.eaContact||{};
-  var cc=e.companyContact||{};
-  var fmtFee=function(n){return n?'£'+Number(n).toLocaleString('en-GB'):'—';};
-  var scol=e.status==='active'?'#27ae60':e.status==='planning'?'#f39c12':'#7f8c8d';
-  var bFn="S.view='engagements';renderView()";
-  var inpSt='width:100%;padding:6px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:6px;color:#fff;font-size:12px;box-sizing:border-box';
-  var lbl='font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px';
-  c.innerHTML=
-    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
-    +'<button class="btn btn-outline" onclick="'+bFn+'">← Back</button>'
-    +'<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-    +'<h2 style="margin:0;font-size:18px">'+e.name+'</h2>'
-    +(e.type?'<span class="badge" style="text-transform:capitalize">'+e.type+'</span>':'')
-    +(e.status?'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+e.status+'</span>':'')
-    +'</div></div>'
-    +'<button class="btn btn-outline" onclick="openEngModal(\''+e.id+'\')">Edit Engagement</button>'
-    +'<button class="btn btn-outline" style="font-size:12px;padding:4px 10px;margin-left:8px" onclick="generateSOW(\''+ e.id +'\')" >SOW</button>'
-    +'<button class="btn btn-outline" style="font-size:12px;padding:4px 10px" onclick="generateMFS(\''+ e.id +'\')" >Fee Schedule</button>'
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Engagement Details</p>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px">'
-    +'<div><div style="'+lbl+'">Client</div><div style="font-size:14px;font-weight:600">'+((cl?cl.name:e.clientId)||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Mentor</div><div style="font-size:14px;font-weight:600">'+((mn?mn.name:e.mentorId)||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Start Date</div><div style="font-size:13px">'+(e.startDate||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">End Date</div><div style="font-size:13px">'+(e.endDate||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Country</div><div style="font-size:13px">'+(e.country||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Annual Fee</div><div style="font-size:14px;font-weight:600;color:var(--venetian)">'+fmtFee(e.annualFee)+'</div></div>'
-    +(e.quarterlyFee?'<div><div style="'+lbl+'">Quarterly Fee</div><div style="font-size:13px;color:var(--venetian)">'+fmtFee(e.quarterlyFee)+' qtr</div></div>':'')
-    +'<div><div style="'+lbl+'">Partner</div><div style="font-size:13px">'+(e.partner||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Coordinator</div><div style="font-size:13px">'+(e.coordinator||'—')+'</div></div>'
-    +'<div><div style="'+lbl+'">Type</div><div style="font-size:13px;text-transform:capitalize">'+(e.type||'—')+'</div></div>'
-    +'</div>'
-    +(e.notes?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)"><div style="'+lbl+'">Notes</div><div style="font-size:13px;margin-top:4px;line-height:1.5">'+e.notes+'</div></div>':'')
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Sessions ('+sess.length+')</p>'
-    +'<button class="btn btn-primary" style="font-size:11px;padding:4px 12px" onclick="logSession(\''+e.id+'\')">+ Log Session</button>'
-    +'</div>'
-    +(sess.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No sessions logged yet.</p>'
-    :sess.map(function(s,i){
-      return '<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
-        +'<div style="display:flex;gap:10px;align-items:center;margin-bottom:4px">'
-        +'<span style="font-size:12px;font-weight:600;color:var(--venetian)">Session '+(i+1)+'</span>'
-        +'<span style="font-size:11px;color:var(--muted)">'+s.date+'</span>'
-        +(s.status?'<span class="badge b-grey" style="font-size:10px">'+s.status+'</span>':'')
-        +(s.duration?'<span style="font-size:11px;color:var(--muted)">'+s.duration+' mins</span>':'')
-        +'</div>'
-        +(s.notes?'<p style="font-size:12px;margin:0;opacity:.8">'+s.notes+'</p>':'')
-        +'</div>';
-    }).join(''))
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Documents & Files</p>'
-    +'<label class="btn btn-outline" style="font-size:11px;padding:4px 12px;cursor:pointer">Upload<input type="file" style="display:none" onchange="uploadEngFile(\''+e.id+'\',this)"></label>'
-    +'</div>'
-    +(files.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No files uploaded yet.</p>'
-    :files.map(function(f){
-      return '<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)">'
-        +'<span style="font-size:20px">📄</span>'
-        +'<span style="font-size:12px;flex:1">'+f.name+'</span>'
-        +'<span style="font-size:11px;color:var(--muted)">'+new Date(f.uploadedAt).toLocaleDateString('en-GB')+'</span>'
-        +'</div>';
-    }).join(''))
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0;text-transform:uppercase">Mentee & Contact Information</p>'
-    +'<button class="btn btn-outline" style="font-size:11px;padding:4px 12px" onclick="saveMenteeInfo(\''+e.id+'\')">Save</button>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px">'
-    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">Mentee</p>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +'<input id="mc-name" placeholder="Full Name" value="'+(mc.name||'')+'" style="'+inpSt+'">'
-    +'<input id="mc-title" placeholder="Job Title" value="'+(mc.title||'')+'" style="'+inpSt+'">'
-    +'<input id="mc-email" placeholder="Email" value="'+(mc.email||'')+'" style="'+inpSt+'">'
-    +'<input id="mc-phone" placeholder="Phone" value="'+(mc.phone||'')+'" style="'+inpSt+'">'
-    +'</div></div>'
-    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">EA / Coordinator</p>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +'<input id="ec-name" placeholder="Full Name" value="'+(ec.name||'')+'" style="'+inpSt+'">'
-    +'<input id="ec-email" placeholder="Email" value="'+(ec.email||'')+'" style="'+inpSt+'">'
-    +'<input id="ec-phone" placeholder="Phone" value="'+(ec.phone||'')+'" style="'+inpSt+'">'
-    +'<textarea id="ec-notes" placeholder="Notes" style="'+inpSt+';resize:vertical;min-height:56px;font-family:inherit">'+(ec.notes||'')+'</textarea>'
-    +'</div></div>'
-    +'<div><p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--venetian);margin:0 0 10px;text-transform:uppercase">Company Contact</p>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +'<input id="cc-name" placeholder="Full Name" value="'+(cc.name||'')+'" style="'+inpSt+'">'
-    +'<input id="cc-title" placeholder="Job Title" value="'+(cc.title||'')+'" style="'+inpSt+'">'
-    +'<input id="cc-email" placeholder="Email" value="'+(cc.email||'')+'" style="'+inpSt+'">'
-    +'<input id="cc-phone" placeholder="Phone" value="'+(cc.phone||'')+'" style="'+inpSt+'">'
-    +'</div></div>'
-    +'</div>'
-    +'</div>'
-    +'<div class="card" style="margin-top:16px">'+renderComments('engagement',e.id)+'</div>'
-    ;
+function rEngDetail(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  const mn=DB.contacts.find(m=>m.id===e.mentorId);
+  const enSess=DB.sessions.filter(s=>s.engId===id).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const enInv=DB.clientInvoices.filter(i=>i.engId===id);
+  const enPay=DB.mentorPayments.filter(p=>p.engId===id);
+  const enFiles=(DB.engagementFiles||[]).filter(f=>f.engId===id);
+
+  const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?(e.quarterlyFee*4)||e.annualFee:e.totalFee||0;
+  const feeLabel=e.type==='chair'?'Annual Fee':e.type==='executive'?'Annual Value':'Total Fee';
+  const totalBilled=enInv.reduce((a,i)=>a+(i.amount||0),0);
+  const totalPaid=enPay.reduce((a,p)=>a+(p.amount||0),0);
+
+  const today=new Date().toISOString().split('T')[0];
+  const nextSess=enSess.find(s=>s.status==='scheduled'&&s.date>=today);
+  const isEnded=e.status==='ended'||e.status==='completed';
+
+  const sessUsed=e.sessionsUsed||enSess.filter(s=>s.status==='completed').length;
+  const sessTotal=e.sessionsIncluded||0;
+  const sessProgress=sessTotal>0?Math.round(sessUsed/sessTotal*100):0;
+  const sessBarColor=sessProgress>=80?'#DC2626':sessProgress>=50?'#D97706':'#059669';
+
+  const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'?';
+
+  const avatar=(name,sub,bg)=>`<div style="display:flex;align-items:center;gap:12px">
+    <div style="width:38px;height:38px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${initials(name||'')}</div>
+    <div><div style="font-size:13px;font-weight:600;color:var(--nearblack);line-height:1.2">${name||'—'}</div><div style="font-size:11px;color:var(--muted)">${sub}</div></div>
+  </div>`;
+
+  const sectionHeader=(title,action)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+    <h4 style="font-family:Georgia,serif;font-size:13px;font-weight:700;color:var(--nearblack);margin:0;letter-spacing:.02em;text-transform:uppercase">${title}</h4>
+    ${action||''}
+  </div>`;
+
+  const sessHtml=enSess.length===0
+    ?`<div style="text-align:center;padding:28px 0;color:var(--muted);font-size:12px;font-style:italic">No sessions logged yet.</div>`
+    :enSess.map((s,i)=>{
+      const sc={completed:'#059669',scheduled:'#D97706',cancelled:'#9CA3AF'}[s.status]||'#9CA3AF';
+      const sd=new Date(s.date+' ').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      return `<div style="display:flex;gap:14px">
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;padding-top:2px">
+          <div style="width:11px;height:11px;border-radius:50%;background:${sc};border:2px solid #fff;box-shadow:0 0 0 2px ${sc};flex-shrink:0"></div>
+          ${i<enSess.length-1?`<div style="width:2px;flex:1;background:#E5E7EB;margin:4px 0;min-height:24px"></div>`:''}
+        </div>
+        <div style="flex:1;padding-bottom:${i<enSess.length-1?'18px':'4px'}">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">
+            <span style="font-weight:600;font-size:12px;color:var(--nearblack)">Session ${i+1}</span>
+            <span style="font-size:10px;font-weight:600;color:${sc};background:${sc}15;padding:2px 7px;border-radius:20px;text-transform:capitalize">${s.status}</span>
+            <span style="font-size:11px;color:var(--muted)">${sd} · ${s.duration} mins</span>
+          </div>
+          ${s.notes?`<p style="font-size:12px;color:var(--muted);margin:0;line-height:1.5">${s.notes}</p>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+  const invHtml=enInv.length===0
+    ?`<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:12px;font-style:italic">No invoices raised.</div>`
+    :enInv.map(i=>{
+      const sc={paid:'#059669',sent:'#D97706',draft:'#9CA3AF',overdue:'#DC2626'}[i.status]||'#9CA3AF';
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+        <div><div style="font-size:12px;font-weight:600;color:var(--nearblack)">${i.period}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${i.type} · Issued ${i.issued}</div></div>
+        <div style="text-align:right">
+          <div style="font-size:14px;font-weight:700;color:var(--cadmium)">${fmt(i.amount)}</div>
+          <span style="font-size:10px;color:${sc};background:${sc}15;padding:1px 7px;border-radius:10px;font-weight:600;text-transform:capitalize">${i.status}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+  const payHtml=enPay.length===0?''
+    :`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Mentor Payments</div>
+      ${enPay.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #F9FAFB">
+        <span style="font-size:11px;color:var(--muted)">${p.period} · ${p.type}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--cadmium)">${fmt(p.amount)}</span>
+      </div>`).join('')}
+    </div>`;
+
+  const filesHtml=enFiles.length===0
+    ?`<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:12px;font-style:italic">No files uploaded yet.</div>`
+    :enFiles.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:20px">📄</span>
+      <span style="flex:1;font-size:12px;font-weight:500">${f.name}</span>
+      <button onclick="deleteEngFile('${id}','${f.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px" title="Delete">✕</button>
+    </div>`).join('');
+
+  let finHtml='';
+  if(e.type==='chair'){
+    finHtml=`
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Annual Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.annualFee)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Rate / Session</span><span style="font-size:12px;font-weight:600">${fmt(e.sessionRate)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Sessions Included</span><span style="font-size:12px;font-weight:600">${e.sessionsIncluded}</span></div>
+      <div style="padding:12px 0 4px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:7px">
+          <span style="font-size:11px;color:var(--muted)">Sessions Used</span>
+          <span style="font-size:12px;font-weight:700;color:${sessBarColor}">${sessUsed} / ${sessTotal}</span>
+        </div>
+        <div style="background:#E5E7EB;border-radius:4px;height:7px;overflow:hidden">
+          <div style="background:${sessBarColor};width:${sessProgress}%;height:100%;border-radius:4px;transition:width .4s ease"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:5px;text-align:right">${sessProgress}% utilised</div>
+      </div>`;
+  } else if(e.type==='executive'){
+    finHtml=`
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Quarterly Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.quarterlyFee)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Annual Value</span><span style="font-size:12px;font-weight:600">${fmt(e.annualFee)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Monthly</span><span style="font-size:12px;font-weight:600">${fmt(Math.round((e.quarterlyFee||0)/3*0.4))}</span></div>`;
+  } else {
+    finHtml=`
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Total Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.totalFee||0)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Mentor Fee</span><span style="font-size:12px;font-weight:600">${fmt(e.mentorFee||0)}</span></div>`;
+  }
+
+  const sfBar=isEnded
+    ?`<span style="font-size:11px;color:#9CA3AF;background:#F3F4F6;padding:4px 12px;border-radius:20px;font-weight:500">Closed</span>`
+    :`<div style="display:flex;gap:8px"><button class="btn btn-sm" style="background:rgba(255,255,255,.12);border:1px solid rgba(220,38,38,.6);color:#FCA5A5;font-size:11px" onclick="markEngEnded('${id}')">&#x2715; Engagement Ended</button><button class="btn btn-sm" style="background:#059669;color:#fff;border:none;font-size:11px" onclick="renewEngagement('${id}')">&#x21BA; Renewed</button></div>`;
+
+  const tile=(icon,label,value,sub,accent)=>`<div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:18px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+    <div style="width:42px;height:42px;border-radius:9px;background:${accent}14;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${icon}</div>
+    <div style="min-width:0">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);white-space:nowrap">${label}</div>
+      <div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:var(--nearblack);margin:2px 0;line-height:1">${value}</div>
+      ${sub?`<div style="font-size:10px;color:var(--muted);white-space:nowrap">${sub}</div>`:''}
+    </div>
+  </div>`;
+
+  const sessLabel=e.type==='chair'?`${sessUsed}/${sessTotal}`:`${enSess.filter(s=>s.status==='completed').length}`;
+  const sessSub=e.type==='chair'?`${sessProgress}% utilised`:`${enSess.length} total`;
+  const nextLabel=nextSess?new Date(nextSess.date+' ').toLocaleDateString('en-GB',{day:'numeric',month:'short'}):isEnded?'Closed':'None';
+  const nextSub=nextSess?`${nextSess.duration} mins`:isEnded?'Engagement closed':'Schedule a session';
+
+  document.getElementById('main').innerHTML=`
+<div style="background:var(--halfnarrow);min-height:100vh">
+
+  <!-- ░░ HERO ░░ -->
+  <div style="background:linear-gradient(135deg,#18060088 0%,#6B1A0A 35%,#CE2702 100%),repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,.015) 40px,rgba(255,255,255,.015) 80px);padding:28px 32px 22px;position:relative;overflow:hidden">
+    <div style="position:absolute;top:-50px;right:-30px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none"></div>
+    <div style="position:absolute;bottom:-80px;left:30%;width:280px;height:280px;border-radius:50%;background:rgba(0,0,0,.08);pointer-events:none"></div>
+
+    <div style="position:relative;z-index:1">
+      <button onclick="renderView('engagements')" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:14px;transition:background .15s" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">← Back to Engagements</button>
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+        <div style="min-width:0">
+          <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#fff;margin:0 0 10px;line-height:1.15;letter-spacing:-.01em">${e.name}</h1>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="background:rgba(255,255,255,.18);color:#fff;font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;text-transform:capitalize;letter-spacing:.03em">${e.type} Mentoring</span>
+            <span style="background:${isEnded?'rgba(107,114,128,.35)':'rgba(16,185,129,.3)'};color:${isEnded?'#D1D5DB':'#6EE7B7'};font-size:11px;font-weight:600;padding:3px 11px;border-radius:20px;text-transform:capitalize">${e.status}</span>
+            <span style="color:rgba(255,255,255,.55);font-size:12px">${e.startDate} &rarr; ${e.endDate}</span>
+          </div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">${feeLabel}</div>
+          <div style="font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.02em">${fmt(mainFee)}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">${e.type==='chair'?'per year':e.type==='executive'?'per year':'total programme'}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="openEngModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x270F; Edit</button>
+          ${e.type==='chair'?`<button class="btn btn-sm" onclick="openSessionModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Log Session</button>`:''}
+          <button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Invoice</button>
+          <button class="btn btn-sm" onclick="openSOW('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>
+          <button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Fee Schedule</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:10px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">Salesforce Sync</span>
+          ${sfBar}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ░░ STAT TILES ░░ -->
+  <div style="padding:20px 32px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+    ${tile('&#x1F4CB;',e.type==='chair'?'Sessions Used':'Sessions',sessLabel,sessSub,'#7C3AED')}
+    ${tile('&#x1F4B0;','Total Billed',fmt(totalBilled),enInv.length+' invoice'+(enInv.length!==1?'s':''),'#CE2702')}
+    ${tile('&#x1F4B3;','Mentor Paid',fmt(totalPaid),enPay.length+' payment'+(enPay.length!==1?'s':''),'#059669')}
+    ${tile('&#x1F4C5;','Next Session',nextLabel,nextSub,'#D97706')}
+  </div>
+
+  <!-- ░░ TWO-COLUMN BODY ░░ -->
+  <div style="padding:18px 32px 48px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start">
+
+    <!-- LEFT: main content -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Sessions -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Session History',`<button class="btn btn-sm" onclick="openSessionModal('${id}')" style="font-size:11px">+ Log Session</button>`)}
+        ${sessHtml}
+      </div>
+
+      <!-- Invoices & Payments -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Invoices & Payments',`<button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="font-size:11px">+ New Invoice</button>`)}
+        ${invHtml}${payHtml}
+      </div>
+
+      <!-- Documents -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Documents & Files',`<label style="font-size:11px;padding:4px 10px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-weight:500;font-family:inherit">Upload<input type="file" style="display:none" onchange="handleEngFileUpload('${id}',this)"></label>`)}
+        ${filesHtml}
+      </div>
+
+      <!-- Comments -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Comments','')}
+        <div id="comments-${id}"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <input id="comment-input-${id}" type="text" placeholder="Add a comment… type @ to mention someone" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+          <button class="btn btn-sm btn-primary" onclick="if(document.getElementById('comment-input-${id}').value.trim()){postComment&&postComment('${id}',document.getElementById('comment-input-${id}').value);document.getElementById('comment-input-${id}').value=''}">Post</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: sidebar -->
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <!-- Engagement Info -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Engagement Info','')}
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Type</span><span style="font-size:12px;font-weight:600;text-transform:capitalize">${e.type} Mentoring</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Start Date</span><span style="font-size:12px;font-weight:500">${e.startDate}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:11px;color:var(--muted)">End Date</span><span style="font-size:12px;font-weight:500">${e.endDate}</span></div>
+      </div>
+
+      <!-- Financial Terms -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Financial Terms','')}
+        ${finHtml}
+      </div>
+
+      <!-- People -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('People','')}
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Client</div>
+          ${avatar(cl?.name,cl?.org||'Client','#CE2702')}
+          ${cl?.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${cl.email}</div>`:''}
+          ${cl?.phone?`<div style="font-size:11px;color:var(--muted);padding-left:50px">${cl.phone}</div>`:''}
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Mentor</div>
+          ${avatar(mn?.name,mn?.org||'Mentor','#059669')}
+          ${mn?.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${mn.email}</div>`:''}
+          ${mn?.phone?`<div style="font-size:11px;color:var(--muted);padding-left:50px">${mn.phone}</div>`:''}
+        </div>
+      </div>
+
+      <!-- Notes -->
+      ${e.notes?`<div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Notes','')}
+        <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:0;white-space:pre-wrap">${e.notes}</p>
+      </div>`:''}
+
+    </div>
+  </div>
+</div>`;
+
+  if(typeof renderComments==='function') setTimeout(()=>renderComments(id),50);
 }
 
 function saveMenteeInfo(engId){
