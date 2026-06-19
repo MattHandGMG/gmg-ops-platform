@@ -2470,32 +2470,110 @@ function rDashboardAdmin(c){
 
 /* ── ADMIN PANEL ─────────────────────────────── */
 async function rAdmin(c){
-  c.innerHTML=`<div class="phdr"><div><h2>&#9881; Admin</h2><p>User management and platform access</p></div></div>
-  <div class="card"><div style="padding:20px;text-align:center;color:var(--muted)">Loading users…</div></div>`;
-  // Read users from app storage
-  if(!DB.appUsers)DB.appUsers=[];
-  const profiles=DB.appUsers.map(u=>({id:u.id,data:{name:u.name,role:u.role,entity:u.entity||'GMG',partnerName:u.partnerName||''},updated_at:u.lastActive||''}));
-  const roleLabels={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
+  const users=DB.users||[];
+  const opts=DB.pricingOptions||[
+    {id:'opt1',name:'Option 1',minFee:0,description:''},
+    {id:'opt2',name:'Option 2',minFee:0,description:''},
+    {id:'opt3',name:'Option 3',minFee:0,description:''},
+    {id:'opt4',name:'Option 4',minFee:0,description:''}
+  ];
+  if(!DB.pricingOptions){DB.pricingOptions=opts;save();}
+  if(!DB.minimumPricing){DB.minimumPricing={executive:0,team:0};save();}
+  const minP=DB.minimumPricing||{executive:0,team:0};
+
+  const userRows=users.map(u=>`<tr>
+    <td style="padding:10px 12px;font-size:13px;font-weight:500">${u.username||u.email||'—'}</td>
+    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.role||'User'}</td>
+    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.entity||'GMG'}</td>
+    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.partnerName||'—'}</td>
+    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.lastActive?new Date(u.lastActive).toLocaleDateString('en-GB'):'—'}</td>
+    <td style="padding:10px 12px"><button class="btn btn-sm btn-outline" onclick="openUserModal('${u.id}')">Edit</button></td>
+  </tr>`).join('');
+
+  const pricingRows=opts.map((o,oi)=>`
+    <tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:12px 14px">
+        <input value="${o.name}" placeholder="Option name" onchange="(function(v){DB.pricingOptions[${oi}].name=v;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+      </td>
+      <td style="padding:12px 14px">
+        <input value="${o.description||''}" placeholder="Short description (e.g. 12 sessions / year)" onchange="(function(v){DB.pricingOptions[${oi}].description=v;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+      </td>
+      <td style="padding:12px 14px;width:130px">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-size:12px;color:var(--muted)">£</span>
+          <input type="number" value="${o.minFee||0}" min="0" step="100" onchange="(function(v){DB.pricingOptions[${oi}].minFee=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;width:80px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+      </td>
+    </tr>`).join('');
+
   c.innerHTML=`
-  <div class="phdr"><div><h2>&#9881; Admin</h2><p>${profiles.length} registered user${profiles.length!==1?'s':''}</p></div>
-    <button class="btn btn-primary" onclick="openCreateUserModal()">+ Create User</button></div>
-  <div class="card">
-    <table class="tbl"><thead><tr><th>Name</th><th>Role</th><th>Entity</th><th>Partner (for EAs)</th><th>Last Active</th><th>Actions</th></tr></thead>
-    <tbody>
-    ${profiles.length===0?`<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No users found. Users appear here after their first login.</td></tr>`:
-    profiles.map(p=>{const d=p.data||{};
-      return`<tr>
-        <td><div style="font-weight:600;font-size:12px">${d.name||'—'}</div></td>
-        <td><span class="badge b-grey">${roleLabels[d.role]||d.role||'—'}</span></td>
-        <td style="font-size:12px">${d.entity||'—'}</td>
-        <td style="font-size:12px;color:var(--muted)">${d.partnerName||'—'}</td>
-        <td style="font-size:11px;color:var(--muted)">${p.updated_at?new Date(p.updated_at).toLocaleDateString('en-GB'):'—'}</td>
-        <td><button class="btn btn-sm btn-outline" onclick="openAdminUserModal('${p.id}',${JSON.stringify(JSON.stringify(d)).replace(/'/g,'&#39;')})">Edit</button></td>
-      </tr>`;
-    }).join('')}
-    </tbody></table>
+  <div class="phdr"><div><h2>&#x2699; Admin</h2><p>${users.length} registered user${users.length!==1?'s':''}</p></div>
+    <button class="btn btn-primary" onclick="openUserModal(null)">+ Create User</button>
+  </div>
+
+  <div style="padding:0 28px 28px;display:flex;flex-direction:column;gap:24px">
+
+    <!-- USERS -->
+    <div class="card" style="overflow:auto">
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Name</th>
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Role</th>
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Entity</th>
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Partner (for EAs)</th>
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Last Active</th>
+          <th style="text-align:left;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Actions</th>
+        </tr></thead>
+        <tbody>${userRows||'<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No users yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <!-- PRICING STRUCTURE -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div>
+          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px">&#x1F4B0; Pricing Structure</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0">Configure minimum fees for chair pricing options and executive / team engagement types.</p>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:18px">
+
+        <!-- Chair options -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Chair Mentoring — Pricing Options</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+          <thead><tr style="background:var(--halfnarrow);border-radius:6px">
+            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Option Name</th>
+            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Description / Sessions</th>
+            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Minimum Fee (£)</th>
+          </tr></thead>
+          <tbody>${pricingRows}</tbody>
+        </table>
+
+        <!-- Executive & Team minimums -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Executive & Team — Minimum Fees</div>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px">Executive Minimum (£/year)</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:13px;color:var(--muted)">£</span>
+              <input type="number" id="exec-min-fee" value="${minP.executive||0}" min="0" step="500" onchange="(function(v){if(!DB.minimumPricing)DB.minimumPricing={};DB.minimumPricing.executive=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:120px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px">Team Minimum (£ total)</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-size:13px;color:var(--muted)">£</span>
+              <input type="number" id="team-min-fee" value="${minP.team||0}" min="0" step="500" onchange="(function(v){if(!DB.minimumPricing)DB.minimumPricing={};DB.minimumPricing.team=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:120px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
   </div>`;
 }
+
 
 function openAdminUserModal(userId, dataStr){
   const d=dataStr?JSON.parse(dataStr):{};
@@ -2947,6 +3025,12 @@ function rEngDetail(id){
   const execMentorAnnual=Math.round(execAnnualFee*0.4);
   const execMentorMonthly=Math.round(execMentorAnnual/engMonths);
 
+  // Pricing minimum
+  const pricingOpts=DB.pricingOptions||[];
+  const selOpt=e.type==='chair'?pricingOpts.find(o=>o.id===e.pricingOption):null;
+  const minFee=e.type==='chair'?(selOpt?selOpt.minFee||0:0):((DB.minimumPricing||{})[e.type]||0);
+  const pricingDiff=minFee>0?mainFee-minFee:null;
+
   const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'?';
 
   const avatar=(name,sub,bg)=>`<div style="display:flex;align-items:center;gap:12px">
@@ -3015,7 +3099,9 @@ function rEngDetail(id){
 
   let finHtml='';
   if(e.type==='chair'){
+    const optName=selOpt?selOpt.name:'Not set';
     finHtml=`
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Pricing Option</span><span style="font-size:12px;font-weight:600;color:${selOpt?'var(--nearblack)':'var(--muted)'}">${optName}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Annual Fee</span><span style="font-size:13px;font-weight:700;color:var(--cadmium)">${fmt(e.annualFee)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Rate / Session</span><span style="font-size:12px;font-weight:600">${fmt(e.sessionRate)}</span></div>
       <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Sessions Included</span><span style="font-size:12px;font-weight:600">${e.sessionsIncluded}</span></div>
@@ -3118,6 +3204,9 @@ function rEngDetail(id){
           <div style="font-size:10px;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.1em;margin-bottom:3px">${feeLabel}</div>
           <div style="font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.02em">${fmt(mainFee)}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">${e.type==='chair'?'per year':e.type==='executive'?'per year':'total programme'}</div>
+          ${pricingDiff!==null?`<div style="margin-top:7px;display:inline-flex;align-items:center;gap:4px;background:${pricingDiff>=0?'rgba(16,185,129,.22)':'rgba(220,38,38,.22)'};border:1px solid ${pricingDiff>=0?'rgba(16,185,129,.45)':'rgba(220,38,38,.45)'};border-radius:12px;padding:3px 10px">
+            <span style="font-size:11px;font-weight:600;color:${pricingDiff>=0?'#6EE7B7':'#FCA5A5'}">${pricingDiff>=0?'+':'−'}${fmt(Math.abs(pricingDiff))} ${pricingDiff>=0?'above':'below'} minimum</span>
+          </div>`:''}
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.15);flex-wrap:wrap;gap:10px">
@@ -3125,6 +3214,7 @@ function rEngDetail(id){
           <button class="btn btn-sm" onclick="openEngModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x270F; Edit</button>
           ${e.type==='chair'?`<button class="btn btn-sm" onclick="openSessionModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Log Session</button>`:''}
           <button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Invoice</button>
+          ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openSOWModal&&openSOWModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>`:''}
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Mentor Fee Schedule</button>`:''}
           ${e.type==='team'?`<button class="btn btn-sm" onclick="S.view='projects';S.projectEngId='${id}';renderView()" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
         </div>
@@ -3140,7 +3230,7 @@ function rEngDetail(id){
   ${tileRow}
 
   <!-- TWO-COLUMN BODY -->
-  <div style="padding:18px 32px 48px;display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start">
+  <div style="padding:18px 32px 48px;display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start">
 
     <!-- LEFT -->
     <div style="display:flex;flex-direction:column;gap:16px">
@@ -3183,6 +3273,7 @@ function rEngDetail(id){
       <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         ${sectionHeader('Engagement Info','')}
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Type</span><span style="font-size:12px;font-weight:600;text-transform:capitalize">${e.type} Mentoring</span></div>
+        ${e.type==='chair'?`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Pricing Option</span><span style="font-size:12px;font-weight:600;color:${selOpt?'var(--nearblack)':'var(--muted)'}">${selOpt?selOpt.name:'Not set'}</span></div>`:''}
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'—'}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'—'}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'—'}</span></div>
@@ -3229,6 +3320,53 @@ function rEngDetail(id){
 </div>`;
 
   if(typeof renderComments==='function') setTimeout(()=>renderComments(id),50);
+}
+
+function openSessionDetail(sessId,engId){
+  const s=DB.sessions.find(x=>x.id===sessId);
+  if(!s) return;
+  const sc={completed:'#059669',scheduled:'#D97706',cancelled:'#9CA3AF'}[s.status]||'#9CA3AF';
+  showModal(`<div class="mhdr"><h3>Session Details</h3><button class="mclose" onclick="closeModal()">✕</button></div>
+  <div class="mbody" style="max-width:460px">
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:${sc};background:${sc}15;padding:3px 10px;border-radius:20px;text-transform:capitalize">${s.status}</span>
+      <span style="font-size:12px;color:var(--muted)">${s.date} · ${s.duration} mins</span>
+    </div>
+    <div class="fstitle">Session Details</div>
+    <div class="ir"><span class="lbl">Date</span>
+      <input id="sd-date-${sessId}" type="date" value="${s.date}" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="ir"><span class="lbl">Duration (mins)</span>
+      <input id="sd-dur-${sessId}" type="number" value="${s.duration||90}" style="width:80px;border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div class="ir"><span class="lbl">Status</span>
+      <select id="sd-status-${sessId}" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;background:#fff">
+        <option value="scheduled" ${s.status==='scheduled'?'selected':''}>Scheduled</option>
+        <option value="completed" ${s.status==='completed'?'selected':''}>Completed</option>
+        <option value="cancelled" ${s.status==='cancelled'?'selected':''}>Cancelled</option>
+      </select>
+    </div>
+    <div class="ir"><span class="lbl">Added by</span>
+      <input id="sd-by-${sessId}" type="text" value="${s.createdBy||''}" placeholder="Assistant name" style="flex:1;border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:11px;font-weight:600;color:var(--nearblack);margin-bottom:6px">Notes</div>
+      <textarea id="sd-notes-${sessId}" placeholder="Session notes, topics covered…" style="width:100%;min-height:100px;border:1px solid var(--border);border-radius:7px;padding:9px 11px;font-size:12px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;line-height:1.5" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">${s.notes||''}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button class="btn btn-sm" onclick="closeModal()" style="background:var(--halfnarrow);border:1px solid var(--border);color:var(--nearblack)">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="(function(){
+        const s=DB.sessions.find(x=>x.id==='${sessId}');
+        if(!s) return;
+        s.date=document.getElementById('sd-date-${sessId}').value;
+        s.duration=parseInt(document.getElementById('sd-dur-${sessId}').value)||90;
+        s.status=document.getElementById('sd-status-${sessId}').value;
+        s.createdBy=document.getElementById('sd-by-${sessId}').value;
+        s.notes=document.getElementById('sd-notes-${sessId}').value;
+        save(); closeModal(); rEngDetail('${engId}');
+      })()">Save Changes</button>
+    </div>
+  </div>`);
 }
 
 function openSessionDetail(sessId,engId){
@@ -4490,18 +4628,94 @@ function pushAllXero(){
 function openInvoiceModal(){showToast('Invoice creation coming soon');}
 
 function runAutoBill(){
-  const pending=DB.mentorPayments.filter(p=>p.status==='pending'&&!p.autoBillId);
-  if(!pending.length){showToast('No pending payments to bill');return;}
-  const billId='ab-'+Date.now();
+  // Initialise pricingOptions if absent
+  if(!DB.pricingOptions) DB.pricingOptions=[
+    {id:'opt1',name:'Option 1',minFee:0},
+    {id:'opt2',name:'Option 2',minFee:0},
+    {id:'opt3',name:'Option 3',minFee:0},
+    {id:'opt4',name:'Option 4',minFee:0}
+  ];
+  if(!DB.minimumPricing) DB.minimumPricing={executive:0,team:0};
+
   const now=new Date();
-  const period=now.toLocaleString('en-AU',{month:'long',year:'numeric'});
-  const total=pending.reduce((s,p)=>s+p.amount,0);
-  const newBill={id:billId,period,payments:pending.map(p=>p.id),totalAmount:total,xeroSynced:false,createdAt:now.toISOString()};
-  pending.forEach(p=>{p.autoBillId=billId;p.status='billed';});
-  if(!DB.autoBills)DB.autoBills=[];
-  DB.autoBills.push(newBill);
-  save();addAct('finance','Auto-bill run — '+billId.toUpperCase()+' ('+fmt(total)+')');
-  showToast('Auto-bill created: '+billId.toUpperCase());renderView();
+  const period=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const activeEngs=DB.engagements.filter(e=>e.mentorId&&(e.status==='active'||e.status==='planning'));
+
+  // Group by mentor
+  const byMentor={};
+  activeEngs.forEach(eng=>{
+    const mentor=DB.contacts.find(c=>c.id===eng.mentorId);
+    if(!mentor) return;
+    // Skip if payment already exists for this eng+period
+    const exists=DB.mentorPayments.some(p=>p.engId===eng.id&&p.period===period&&p.consolidated);
+    if(exists) return;
+    let amount=0,type='';
+    if(eng.type==='executive'){
+      const annual=eng.annualFee||(eng.quarterlyFee*4)||0;
+      const months=Math.max(1,Math.round((new Date(eng.endDate)-new Date(eng.startDate))/(1000*60*60*24*30.44)));
+      amount=Math.round(annual*0.4/months);
+      type='exec-monthly';
+    } else if(eng.type==='team'){
+      amount=eng.mentorMonthlyFee||Math.round((eng.mentorFee||0)/6)||0;
+      type='team-monthly';
+    } else if(eng.type==='chair'){
+      amount=eng.mentorMonthlyFee||0;
+      type='chair-monthly';
+    }
+    if(amount<=0) return;
+    if(!byMentor[eng.mentorId]) byMentor[eng.mentorId]={mentor,items:[]};
+    byMentor[eng.mentorId].items.push({engId:eng.id,engName:eng.name,amount,type,period});
+  });
+
+  const groups=Object.values(byMentor).filter(g=>g.items.length>0);
+  if(groups.length===0){
+    alert('No new mentor payments to generate for '+period+'. All active engagements already have payments this month, or no monthly amounts are configured.');
+    return;
+  }
+
+  // Store groups for confirmAutoBill
+  window._autoBillGroups=groups;
+
+  const rows=groups.map(g=>{
+    const total=g.items.reduce((a,p)=>a+p.amount,0);
+    return `<div style="background:#F9FAFB;border-radius:8px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border)">
+      <div style="font-size:13px;font-weight:700;color:var(--nearblack);margin-bottom:8px">${g.mentor.name}</div>
+      ${g.items.map(p=>`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;color:var(--muted)">
+        <span>${p.engName} <span style="opacity:.6">(${p.type})</span></span>
+        <span style="font-weight:600;color:var(--nearblack)">${fmt(p.amount)}</span>
+      </div>`).join('')}
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-top:1px solid var(--border);margin-top:8px;padding-top:8px">
+        <span>Total for ${period}</span>
+        <span style="color:var(--cadmium)">${fmt(total)}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  showModal(`<div class="mhdr"><h3>&#x1F4B3; Auto-Bill Mentor Payments</h3><button class="mclose" onclick="closeModal()">&#x2715;</button></div>
+  <div class="mbody" style="max-width:520px">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:7px;padding:9px 12px">
+      <strong style="color:#059669">Period: ${period}</strong> &mdash; The following consolidated payments will be created, one per mentor.
+    </div>
+    ${rows}
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      <button class="btn btn-sm" onclick="closeModal()" style="background:var(--halfnarrow);border:1px solid var(--border);color:var(--nearblack)">Cancel</button>
+      <button class="btn btn-sm btn-primary" onclick="confirmAutoBill()">&#x2714; Create Payments</button>
+    </div>
+  </div>`);
+}
+
+function confirmAutoBill(){
+  const groups=window._autoBillGroups||[];
+  groups.forEach(g=>{
+    g.items.forEach(p=>{
+      const pid='mp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+      DB.mentorPayments.push({id:pid,engId:p.engId,period:p.period,type:p.type,amount:p.amount,status:'pending',mentorId:g.mentor.id,consolidated:true,createdAt:new Date().toISOString()});
+    });
+  });
+  save();
+  closeModal();
+  renderView();
+  window._autoBillGroups=null;
 }
 
 function showToast(msg,type){
@@ -5519,7 +5733,26 @@ function openEngModal(id){
         <div class="fg"><label>Retreat Fee (£)</label><input id="em-retreat-fee" type="number" value="${e?e.retreatFee||'':''}" placeholder="0"></div>
       </div>
     </div>
-    <div id="em-team-fields" style="${e&&e.type==='team'?'':'display:none'}">
+    <div id="em-chair-fields" style="${(!e||e.type==='chair')?'':'display:none'}">
+      <div class="fstitle" style="margin:8px 0 4px">Chair Engagement</div>
+      <div class="fgrow">
+        <div class="fg"><label>Pricing Option</label>
+          <select id="em-pricing-option" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;background:#fff;width:100%">
+            <option value="">— Select option —</option>
+            <option value="opt1"${e&&e.pricingOption==='opt1'?' selected':''}>Option 1</option>
+            <option value="opt2"${e&&e.pricingOption==='opt2'?' selected':''}>Option 2</option>
+            <option value="opt3"${e&&e.pricingOption==='opt3'?' selected':''}>Option 3</option>
+            <option value="opt4"${e&&e.pricingOption==='opt4'?' selected':''}>Option 4</option>
+          </select>
+        </div>
+        <div class="fg"><label>Annual Fee (£)</label><input id="em-annual-fee" type="number" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;width:100%" placeholder="0" value="${e?e.annualFee||'':''}"/></div>
+        <div class="fg"><label>Mentor Monthly Fee (£)</label><input id="em-mentor-monthly-fee" type="number" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;width:100%" placeholder="0" value="${e?e.mentorMonthlyFee||'':''}"/></div>
+        <div class="fg"><label>Sessions Included</label><input id="em-sessions" type="number" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;width:100%" placeholder="12" value="${e?e.sessionsIncluded||'':''}"/></div>
+        <div class="fg"><label>Session Rate (£)</label><input id="em-session-rate" type="number" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;width:100%" placeholder="0" value="${e?e.sessionRate||'':''}"/></div>
+      </div>
+    </div>
+    <div id="em-team-fields"
+ style="${e&&e.type==='team'?'':'display:none'}">
       <div class="fstitle" style="margin:8px 0 4px">Team Mentors</div>
       <div class="mc-list">
         ${mentors.map(m=>`<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:2px 0">
@@ -5544,6 +5777,14 @@ function updateSplitTotal(){
   const el=document.getElementById('em-gmg-pct');
   if(el)el.textContent=Math.max(0,100-used)+'%';
 }
+function toggleEngTypeFields(v){
+  const ef=document.getElementById('em-exec-fields');
+  const tf=document.getElementById('em-team-fields');
+  const cf=document.getElementById('em-chair-fields');
+  if(ef) ef.style.display=v==='executive'?'':'none';
+  if(tf) tf.style.display=v==='team'?'':'none';
+  if(cf) cf.style.display=v==='chair'?'':'none';
+}
 function saveEng(id){
   const n=v=>document.getElementById(v);
   const name=n('em-name').value.trim();
@@ -5566,6 +5807,8 @@ function saveEng(id){
     data.annualFee=+n('em-annual-fee').value||0;
     data.sessionsIncluded=+n('em-sessions').value||12;
     data.sessionRate=+n('em-session-rate').value||0;
+    data.mentorMonthlyFee=+(n('em-mentor-monthly-fee')||{}).value||0;
+    data.pricingOption=(n('em-pricing-option')||{}).value||'';
   } else if(type==='executive'){
     data.quarterlyFee=+n('em-qfee').value||0;
     data.annualFee=data.quarterlyFee*4;
