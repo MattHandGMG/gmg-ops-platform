@@ -5954,6 +5954,74 @@ function rOrgChart(container){
     container.innerHTML=html;
   })();
 }
+
+// ── Engagement Detail Override (v2) ───────────────────────────────────
+function openEngDetail(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  const mn=DB.contacts.find(m=>m.id===e.mentorId);
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
+  const sb={active:'b-green',planning:'b-amber',completed:'b-grey',ended:'b-grey'}[e.status]||'b-grey';
+  const enSess=DB.sessions.filter(s=>s.engId===id);
+  const enInv=DB.clientInvoices.filter(i=>i.engId===id);
+  const enPay=DB.mentorPayments.filter(p=>p.engId===id);
+  let typeInfo='';
+  if(e.type==='chair')typeInfo='<div class="ir"><span class="lbl">Annual Fee</span><span class="val" style="color:var(--cadmium);font-size:15px">'+fmt(e.annualFee)+'</span></div><div class="ir"><span class="lbl">Sessions Included</span><span class="val">'+e.sessionsIncluded+'</span></div><div class="ir"><span class="lbl">Sessions Used</span><span class="val">'+e.sessionsUsed+'/'+e.sessionsIncluded+'</span></div><div class="ir"><span class="lbl">Rate / Session</span><span class="val">'+fmt(e.sessionRate)+'</span></div>';
+  else if(e.type==='executive')typeInfo='<div class="ir"><span class="lbl">Quarterly Fee</span><span class="val" style="color:var(--cadmium);font-size:15px">'+fmt(e.quarterlyFee)+'</span></div><div class="ir"><span class="lbl">Annual Value</span><span class="val">'+fmt(e.annualFee)+'</span></div><div class="ir"><span class="lbl">Mentor Monthly</span><span class="val">'+fmt(Math.round(e.quarterlyFee/3*0.4))+'</span></div><div class="ir"><span class="lbl">Xero Push</span><span class="val">Monthly</span></div>';
+  else typeInfo='<div class="ir"><span class="lbl">Total Fee</span><span class="val" style="color:var(--cadmium);font-size:15px">'+fmt(e.totalFee)+'</span></div><div class="ir"><span class="lbl">Mentor Fee</span><span class="val">'+fmt(e.mentorFee)+'</span></div><div class="ir"><span class="lbl">Invoicing</span><span class="val">Ad-hoc</span></div>';
+  const isEnded=e.status==='ended'||e.status==='completed';
+  const sfBar=isEnded
+    ?'<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#F3F4F6;border-radius:7px;margin-bottom:14px"><span class="badge b-grey">'+(e.status==='ended'?'Ended':'Completed')+'</span><span style="font-size:12px;color:var(--muted)">This engagement is closed.</span></div>'
+    :'<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--halfnarrow);border-radius:7px;margin-bottom:14px;flex-wrap:wrap"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Sync to Salesforce:</span><button class="btn btn-sm" style="background:#fff;border:1px solid #FECACA;color:#DC2626;" onclick="markEngEnded(''+e.id+'')">&#x2715; Engagement Ended</button><button class="btn btn-sm" style="background:#059669;color:#fff;border:none;" onclick="renewEngagement(''+e.id+'')">&#x21BA; Renewed</button></div>';
+  const notesHtml=e.notes?'<div style="margin:12px 0;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px;color:var(--muted);line-height:1.5">'+e.notes+'</div>':'';
+  const sessBtn=e.type==='chair'?'<button class="btn btn-sm btn-outline" onclick="closeModal();openSessionModal(''+e.id+'')">+ Log Session</button>':'';
+  showModal('<div class="mhdr"><div><h3 style="margin-bottom:4px">'+e.name+'</h3><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><span class="badge '+tb+'">'+e.type+'</span><span class="badge '+sb+'">'+e.status+'</span><span style="font-size:11px;color:var(--muted)">'+e.startDate+' &rarr; '+e.endDate+'</span></div></div><button class="mclose" onclick="closeModal()">&#x2715;</button></div><div class="mbody">'+sfBar+'<div class="fstitle">Engagement Details</div><div class="ir"><span class="lbl">Client</span><span class="val">'+(cl?.name||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Mentor</span><span class="val">'+(mn?.name||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Coordinator</span><span class="val">'+e.coordinator+'</span></div><div class="ir"><span class="lbl">Partner</span><span class="val">'+(e.partner||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Country</span><span class="val">'+(e.country||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Dates</span><span class="val">'+e.startDate+' &rarr; '+e.endDate+'</span></div><div class="fstitle" style="margin-top:12px">Financial Terms</div>'+typeInfo+notesHtml+'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px"><div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center"><div style="font-family:Georgia,serif;font-size:18px;font-weight:700">'+enSess.length+'</div><div style="font-size:10px;color:var(--muted)">Sessions</div></div><div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center"><div style="font-family:Georgia,serif;font-size:18px;font-weight:700">'+enInv.length+'</div><div style="font-size:10px;color:var(--muted)">Invoices</div></div><div style="background:var(--halfnarrow);border-radius:6px;padding:12px;text-align:center"><div style="font-family:Georgia,serif;font-size:18px;font-weight:700">'+enPay.length+'</div><div style="font-size:10px;color:var(--muted)">Payments</div></div></div><div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="closeModal();openEngModal(''+e.id+'')">&#x270F; Edit</button>'+sessBtn+'<button class="btn btn-sm btn-outline" onclick="closeModal();openInvoiceModal(null,''+e.id+'')">+ Invoice</button><button class="btn btn-sm btn-outline" onclick="openSOW(''+e.id+'')">&#x1F4C4; SOW</button><button class="btn btn-sm btn-outline" onclick="openFeeSchedule(''+e.id+'')">&#x1F4B7; Fee Schedule</button></div></div>',true);
+}
+function markEngEnded(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  if(!confirm('Mark this engagement as ended? This will update Salesforce.'))return;
+  e.status='ended';e.endDate=new Date().toISOString().split('T')[0];
+  save();closeModal();renderView();
+}
+function renewEngagement(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const ny=parseInt(e.endDate.split('-')[0])+1;
+  const defFee=e.annualFee||(e.quarterlyFee*4)||e.totalFee||0;
+  showModal('<div class="mhdr"><h3>Renew Engagement</h3><button class="mclose" onclick="closeModal()">&#x2715;</button></div><div class="mbody"><p style="font-size:13px;color:var(--muted);margin-bottom:16px">Renewing <strong>'+e.name+'</strong>. The current period will be closed and a new record created in Salesforce.</p><div class="fstitle">New Period</div><div class="ir"><span class="lbl">Start Date</span><input type="date" id="rnw-start" value="'+ny+'-01-01" style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px"></div><div class="ir"><span class="lbl">End Date</span><input type="date" id="rnw-end" value="'+ny+'-12-31" style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px"></div><div class="ir"><span class="lbl">Renewal Fee (&pound;)</span><input type="number" id="rnw-fee" value="'+defFee+'" style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;width:130px"></div><div class="ir"><span class="lbl">Notes</span><input type="text" id="rnw-notes" placeholder="Changes to scope..." style="border:1px solid var(--border);border-radius:5px;padding:4px 8px;font-size:12px;width:200px"></div></div><div class="mfoot"><button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="confirmRenewal(''+e.id+'')">&#x21BA; Confirm Renewal</button></div>');
+}
+function confirmRenewal(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const s=document.getElementById('rnw-start').value;
+  const en=document.getElementById('rnw-end').value;
+  const fee=parseFloat(document.getElementById('rnw-fee').value)||0;
+  const notes=document.getElementById('rnw-notes').value;
+  const nr={...e,id:'e'+Date.now(),startDate:s,endDate:en,status:'active',createdAt:new Date().toISOString().split('T')[0]};
+  if(e.type==='chair'){nr.annualFee=fee;nr.sessionsUsed=0;}
+  else if(e.type==='executive'){nr.quarterlyFee=Math.round(fee/4);nr.annualFee=fee;}
+  else nr.totalFee=fee;
+  if(notes)nr.notes=notes;
+  e.status='ended';DB.engagements.push(nr);
+  save();closeModal();renderView();
+}
+function openSOW(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  const mn=DB.contacts.find(m=>m.id===e.mentorId);
+  const fee=e.type==='chair'?'Annual Fee: '+fmt(e.annualFee)+' &middot; '+e.sessionsIncluded+' sessions at '+fmt(e.sessionRate):e.type==='executive'?'Quarterly Fee: '+fmt(e.quarterlyFee)+' &middot; Annual Value: '+fmt(e.annualFee):'Total Programme Fee: '+fmt(e.totalFee)+' &middot; Mentor Fee: '+fmt(e.mentorFee);
+  const notesHtml=e.notes?'<div style="margin-top:12px;padding:10px;background:var(--halfnarrow);border-radius:6px;font-size:12px;color:var(--muted)"><strong>Notes:</strong> '+e.notes+'</div>':'';
+  showModal('<div class="mhdr"><h3>Statement of Work</h3><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-sm btn-outline" onclick="window.print()">Print</button><button class="mclose" onclick="closeModal()">&#x2715;</button></div></div><div class="mbody"><div style="text-align:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border)"><div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--venetian)">Global Mentors Group</div><div style="font-size:14px;font-weight:600;margin-top:4px">Statement of Work</div></div><div class="ir"><span class="lbl">Engagement</span><span class="val">'+e.name+'</span></div><div class="ir"><span class="lbl">Client</span><span class="val">'+(cl?.name||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Mentor</span><span class="val">'+(mn?.name||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Type</span><span class="val" style="text-transform:capitalize">'+e.type+' Mentoring</span></div><div class="ir"><span class="lbl">Period</span><span class="val">'+e.startDate+' &rarr; '+e.endDate+'</span></div><div class="ir"><span class="lbl">Country</span><span class="val">'+(e.country||'&mdash;')+'</span></div><div class="ir"><span class="lbl">Partner</span><span class="val">'+(e.partner||'&mdash;')+'</span></div><div style="margin-top:14px;padding:12px;background:var(--halfnarrow);border-radius:6px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Financial Terms</div><div style="font-size:13px">'+fee+'</div></div>'+notesHtml+'<div style="margin-top:20px;font-size:10px;color:var(--muted);text-align:center">Generated '+new Date().toLocaleDateString('en-GB')+' &middot; Global Mentors Group</div></div>');
+}
+function openFeeSchedule(id){
+  const e=DB.engagements.find(x=>x.id===id);if(!e)return;
+  const cl=DB.contacts.find(c=>c.id===e.clientId);
+  let rows='';const sy=new Date(e.startDate),ey=new Date(e.endDate);
+  const td='style="padding:8px 10px;border-bottom:1px solid var(--border)"';
+  const th='style="padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)"';
+  if(e.type==='chair'){rows='<tr><td '+td+'>Annual</td><td '+td+'>'+e.startDate+' &ndash; '+e.endDate+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;color:var(--cadmium)">'+fmt(e.annualFee)+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">Invoice at start of year</td></tr>';}
+  else if(e.type==='executive'){const qn=['Q1','Q2','Q3','Q4'];for(let q=0;q<4;q++){const qs=new Date(sy.getFullYear(),sy.getMonth()+q*3,1);const qe=new Date(sy.getFullYear(),sy.getMonth()+q*3+3,0);if(qs>ey)break;rows+='<tr><td '+td+'>'+qn[q]+'</td><td '+td+'>'+qs.toISOString().split('T')[0]+' &ndash; '+qe.toISOString().split('T')[0]+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;color:var(--cadmium)">'+fmt(e.quarterlyFee)+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">Invoice at start of quarter</td></tr>';}}
+  else{rows='<tr><td '+td+'>Programme</td><td '+td+'>'+e.startDate+' &ndash; '+e.endDate+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-weight:600;color:var(--cadmium)">'+fmt(e.totalFee)+'</td><td style="padding:8px 10px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted)">Ad-hoc invoicing</td></tr>';}
+  showModal('<div class="mhdr"><h3>Fee Schedule &mdash; '+(cl?.name||e.name)+'</h3><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-sm btn-outline" onclick="window.print()">Print</button><button class="mclose" onclick="closeModal()">&#x2715;</button></div></div><div class="mbody"><div style="margin-bottom:12px;font-size:12px;color:var(--muted)">'+e.name+' &middot; '+e.startDate+' &rarr; '+e.endDate+'</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--halfnarrow)"><th '+th+'>Period</th><th '+th+'>Dates</th><th '+th+'>Amount</th><th '+th+'>Notes</th></tr></thead><tbody>'+rows+'</tbody></table></div>');
+}
 </script>
 
 <!-- CLAUDE CHAT BAR -->
