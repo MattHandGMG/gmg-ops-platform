@@ -6641,8 +6641,8 @@ function rOrgChart(container){
   (async()=>{
     let profiles=[];
     try{const{data}=await sb.from('profiles').select('id,data').order('updated_at',{ascending:false});profiles=(data||[]).map(p=>p.data||{}).filter(d=>d.name&&d.role);}catch(e){}
-    const grouped={};profiles.forEach(p=>{const r=(p.role||'ea');(grouped[r]=grouped[r]||[]).push(p);});
     if(!profiles.length){const _lb=JSON.parse(localStorage.getItem('gmg_v2')||'{}');profiles=(_lb.appUsers||[]).map(u=>({name:u.name,role:u.role,email:u.email||'',title:u.title||'',phone:u.phone||''})).filter(u=>u.name&&u.role);}
+    const grouped={};profiles.forEach(p=>{const r=(p.role||'ea');(grouped[r]=grouped[r]||[]).push(p);});
     if(!profiles.length){
       container.innerHTML='<div class="card" style="text-align:center;padding:40px;color:var(--muted)"><div style="font-size:32px;margin-bottom:12px">👥</div><div style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--nearblack)">No team members yet</div><div style="font-size:13px">Users appear here once they have logged in or been created via Admin Settings.</div></div>';
       return;
