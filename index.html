@@ -6618,182 +6618,114 @@ function resetTrainingQuiz(modId,count){
 }
 
 function rOrgChart(container){
-  const ROLE_INFO={
-    admin:{label:'Admin',colour:'#c02b20',bg:'rgba(192,43,32,.06)',resp:['Manage user accounts & permissions','Configure platform settings','Oversee all data across entities','Support team on platform issues']},
-    partner:{label:'Partner',colour:'#7c3aed',bg:'rgba(124,58,237,.06)',resp:['Own and manage client pipeline','Lead engagement proposals & quoting','Oversee mentor relationships','Client retention and growth']},
-    rm:{label:'EA',colour:'#0369a1',bg:'rgba(3,105,161,.06)',resp:['Coordinate engagement logistics','Support partners with client management','Manage session scheduling','Track engagement milestones']},
-    finance:{label:'Finance',colour:'#1e8449',bg:'rgba(30,132,73,.06)',resp:['Manage invoicing & payments','Track financial performance','Process mentor payments','Financial reporting & compliance']}
-  };
-  const ROLE_ORDER=['admin','partner','rm','finance'];
-  const ROLE_LABELS={admin:'Leadership & Admin',partner:'Partners',rm:'EAs & Coordinators',finance:'Finance'};
+  const RC={admin:'#c02b20',partner:'#1a5c96',rm:'#0d7c59',finance:'#7b3fa6',mentor:'#e07b00',ops:'#2d6a8f'};
 
-  function getUsers(){
-    try{return JSON.parse(localStorage.getItem('gmg_v2')||'{}').appUsers||[];}catch(e){return[];}
-  }
-  function saveUsers(users){
-    try{const db=JSON.parse(localStorage.getItem('gmg_v2')||'{}');db.appUsers=users;localStorage.setItem('gmg_v2',JSON.stringify(db));}catch(e){}
-  }
-  function initials(name){
-    if(!name)return'?';
-    const parts=name.trim().split(/\s+/);
-    return parts.length>=2?(parts[0][0]+parts[parts.length-1][0]).toUpperCase():name.slice(0,2).toUpperCase();
-  }
-  function ri(role){return ROLE_INFO[role]||{label:role||'—',colour:'#64748b',bg:'rgba(100,116,139,.06)',resp:[]};}
+  function getDB(){return JSON.parse(localStorage.getItem('gmg_v2')||'{}');}
+  function getUsers(){return getDB().appUsers||[];}
+  function saveUsers(u){const d=getDB();d.appUsers=u;localStorage.setItem('gmg_v2',JSON.stringify(d));}
 
-  function renderCard(u,editable){
-    const r=ri(u.role);
-    return`<div class="oc-card" data-uid="${u.id}" style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;min-width:200px;max-width:260px;flex:0 0 auto">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <div style="width:42px;height:42px;border-radius:50%;background:${r.colour};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0">${initials(u.name)}</div>
-        <div style="min-width:0">
-          <div style="font-size:13px;font-weight:700;color:var(--nearblack);white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${u.name||'—'}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:1px;white-space:nowraw;overflow:hidden;text-overflow:ellipsis">${u.title||u.role||'—'}</div>
-        </div>
-      </div>
-      <span style="display:inline-block;background:${r.bg};color:${r.colour};font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:20px;margin-bottom:10px">${r.label}</span>
-      ${u.bio?`<div style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px;border-top:1px solid var(--border);padding-top:8px">${u.bio}</div>`:''}
-      <div style="font-size:11px;color:var(--muted)">
-        ${u.email?`<div style="margin-bottom:3px">✉ ${u.email}</div>`:''}
-        ${u.phone?`<div>📞 ${u.phone}</div>`:''}
-      </div>
-      ${editable!==false?`<button onclick="window._ocEdit('${u.id}')" style="position:absolute;top:10px;right:10px;background:transparent;border:1px solid var(--border);border-radius:5px;padding:3px 8px;font-size:10px;color:var(--muted);cursor:pointer">Edit</button>`:''}
-    </div>`;
+  function buildTree(users){
+    const m={};
+    users.forEach(u=>m[u.id]={...u,_ch:[]});
+    const roots=[];
+    users.forEach(u=>{
+      if(u.reportsTo&&m[u.reportsTo]) m[u.reportsTo]._ch.push(m[u.id]);
+      else roots.push(m[u.id]);
+    });
+    return roots;
+  }
+
+  function rNode(n){
+    const c=RC[n.role]||'#64748b';
+    const av=(n.name||'?')[0].toUpperCase();
+    const kids=n._ch.length?`<div class="oc3v"></div><ul class="oc3ul">${n._ch.map(rNode).join('')}</ul>`:'';
+    return `<li class="oc3li"><div class="oc3card" onclick="window._oc3e('${n.id}')" style="--c:${c}"><div class="oc3av" style="background:${c}">${av}</div><div class="oc3info"><b class="oc3name">${n.name}</b><span class="oc3sub">${n.title||n.role}</span></div></div>${kids}</li>`;
   }
 
   function render(){
     const users=getUsers();
-    const grouped={};
-    ROLE_ORDER.forEach(r=>{grouped[r]=[];});
-    users.forEach(u=>{
-      const r=u.role||'rm';
-      if(!grouped[r])grouped[r]=[];
-      grouped[r].push(u);
-    });
-
-    const sectionsHtml=ROLE_ORDER.map(role=>{
-      const members=grouped[role]||[];
-      if(!members.length&&!true)return'';
-      const r=ri(role);
-      return`<div class="oc-tier" style="margin-bottom:28px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid ${r.colour}22;display:flex;align-items:center;justify-content:space-between">
-          <span style="color:${r.colour}">${ROLE_LABELS[role]||role}</span>
-          <button onclick="window._ocAdd('${role}')" style="background:transparent;border:1px dashed ${r.colour};color:${r.colour};border-radius:5px;padding:3px 10px;font-size:10px;cursor:pointer">+ Add</button>
-        </div>
-        ${members.length===0
-          ?`<div style="font-size:12px;color:var(--muted);font-style:italic;padding:12px 0">No members yet — click + Add</div>`
-          :`<div style="display:flex;flex-wrap:wrap;gap:12px">${members.map(u=>renderCard(u)).join('')}</div>`
-        }
-      </div>`;
-    }).join('');
-
-    const rolesLegend=Object.entries(ROLE_INFO).map(([k,v])=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="width:10px;height:10px;border-radius:50%;background:${v.colour};display:inline-block"></span><span style="color:var(--nearblack);font-weight:600">${v.label}</span><span style="color:var(--muted)">${v.resp[0]}</span></div>`).join('');
-
-    container.innerHTML=`
-      <div style="padding:24px 0 8px;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-        <div>
-          <div style="font-family:Georgia,serif;font-size:18px;font-weight:700;color:var(--nearblack)">GMG Operations Team</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">Global Mentors Group</div>
-        </div>
-        <button onclick="window._ocAdd()" style="background:var(--venetian);color:#fff;border:none;border-radius:7px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer">+ Add Member</button>
-      </div>
-      <div style="background:#fafaf8;border:1px solid var(--border);border-radius:8px;padding:14px 18px;margin-bottom:24px">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">ROLE GUIDE</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px">${rolesLegend}</div>
-      </div>
-      ${sectionsHtml}
-      <div id="oc-modal-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center"></div>
-    `;
+    const roots=buildTree(users);
+    const content=roots.length
+      ?`<div class="oc3tree"><ul class="oc3root">${roots.map(rNode).join('')}</ul></div>`
+      :`<p style="text-align:center;color:#94a3b8;padding:60px 0;font-size:14px">No team members. Click + Add Person.</p>`;
+    container.innerHTML=`<style>
+.oc3wrap{padding:24px;overflow-x:auto}
+.oc3hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+.oc3hdr h2{margin:0;font-size:18px;font-weight:700;color:#1e293b}
+.oc3addbtn{background:#2563eb;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer}
+.oc3addbtn:hover{background:#1d4ed8}
+.oc3tree{display:flex;justify-content:center;overflow-x:auto;padding-bottom:20px}
+.oc3root,.oc3ul{list-style:none;padding:0;margin:0}
+.oc3root{display:flex;flex-direction:column;align-items:center;gap:0}
+.oc3ul{display:flex;flex-direction:row;position:relative;gap:0;flex-wrap:nowrap;align-items:flex-start}
+.oc3li{display:flex;flex-direction:column;align-items:center;padding:0 10px;position:relative}
+.oc3ul>.oc3li::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:#cbd5e1}
+.oc3ul>.oc3li:first-child::before{left:50%}
+.oc3ul>.oc3li:last-child::before{right:50%}
+.oc3ul>.oc3li:only-child::before{display:none}
+.oc3ul>.oc3li::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:2px;height:20px;background:#cbd5e1}
+.oc3v{width:2px;height:20px;background:#cbd5e1;margin:0 auto;flex-shrink:0}
+.oc3card{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #e2e8f0;border-top:3px solid var(--c,#64748b);border-radius:10px;padding:10px 14px;min-width:155px;max-width:195px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06);transition:box-shadow .15s,border-color .15s;margin-top:20px}
+.oc3root>.oc3li>.oc3card{margin-top:0}
+.oc3card:hover{box-shadow:0 4px 14px rgba(0,0,0,.12);border-color:#94a3b8}
+.oc3av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0}
+.oc3info{min-width:0;flex:1}
+.oc3name{display:block;font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:125px}
+.oc3sub{display:block;font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:125px}
+.oc3mbg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center}
+.oc3modal{background:#fff;border-radius:14px;padding:28px;width:420px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.oc3modal h3{margin:0 0 20px;font-size:17px;color:#1e293b}
+.oc3modal label{display:block;font-size:12px;font-weight:600;color:#475569;margin:14px 0 4px}
+.oc3modal input,.oc3modal select{width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;color:#1e293b;outline:none;background:#f8fafc;font-family:inherit}
+.oc3modal input:focus,.oc3modal select:focus{border-color:#2563eb;background:#fff}
+.oc3mbtns{display:flex;gap:8px;justify-content:flex-end;margin-top:24px}
+.oc3mbtns button{border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.oc3bsave{background:#2563eb;color:#fff}.oc3bsave:hover{background:#1d4ed8}
+.oc3bdel{background:#fee2e2;color:#dc2626}.oc3bdel:hover{background:#fecaca}
+.oc3bcancel{background:#f1f5f9;color:#475569}.oc3bcancel:hover{background:#e2e8f0}
+</style>
+<div class="oc3wrap">
+<div class="oc3hdr"><h2>Team Directory</h2><button class="oc3addbtn" onclick="window._oc3a()">+ Add Person</button></div>
+${content}
+</div>`;
   }
 
-  function openModal(userId){
+  function showModal(user){
+    const isNew=!user;
+    const u=user||{id:'u_'+Date.now(),name:'',email:'',role:'rm',title:'',phone:'',entity:'GMG',reportsTo:''};
     const users=getUsers();
-    const u=userId?users.find(x=>x.id===userId)||{}:{id:'u_'+Date.now(),name:'',title:'',role:'rm',email:'',phone:'',bio:'',entity:'GMG'};
-    const isNew=!userId||!users.find(x=>x.id===userId);
-    const r=ri(u.role||'rm');
-    const backdrop=container.querySelector('#oc-modal-backdrop');
-    backdrop.style.display='flex';
-    backdrop.innerHTML=`
-      <div style="background:#fff;border-radius:12px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative">
-        <button onclick="window._ocCloseModal()" style="position:absolute;top:14px;right:14px;background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--muted)">✕</button>
-        <div style="font-family:Georgia,serif;font-size:16px;font-weight:700;color:var(--nearblack);margin-bottom:20px">${isNew?'Add Team Member':'Edit Profile'}</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div style="grid-column:1/-1">
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Full Name *</label>
-            <input id="oc_name" value="${u.name||''}" placeholder="e.g. Sarah Mitchell" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Job Title</label>
-            <input id="oc_title" value="${u.title||''}" placeholder="e.g. Senior Partner" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Role</label>
-            <select id="oc_role" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;background:#fafaf8">
-              ${Object.entries(ROLE_INFO).map(([k,v])=>`<option value="${k}" ${(u.role||'rm')===k?'selected':''}>${v.label}</option>`).join('')}
-            </select>
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Email</label>
-            <input id="oc_email" value="${u.email||''}" placeholder="name@globalmentorsgroup.com" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-          </div>
-          <div>
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Phone</label>
-            <input id="oc_phone" value="${u.phone||''}" placeholder="+44 7700 000000" style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px">
-          </div>
-          <div style="grid-column:1/-1">
-            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:block;margin-bottom:4px">Bio / Responsibilities</label>
-            <textarea id="oc_bio" placeholder="Describe this person's key responsibilities and areas of expertise..." style="width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;height:90px;resize:vertical;font-family:inherit">${u.bio||''}</textarea>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
-          ${!isNew?`<button onclick="window._ocDelete('${u.id}')" style="background:transparent;border:1px solid #fee2e2;color:#dc2626;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer">Remove</button>`:'<div></div>'}
-          <div style="display:flex;gap:10px">
-            <button onclick="window._ocCloseModal()" style="background:#f5f3f0;border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer">Cancel</button>
-            <button onclick="window._ocSave('${u.id}',${isNew})" style="background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer">${isNew?'Add Member':'Save Changes'}</button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  window._ocEdit=function(uid){openModal(uid);};
-  window._ocAdd=function(role){
-    openModal(null);
-    if(role){setTimeout(()=>{const s=container.querySelector('#oc_role');if(s)s.value=role;},50);}
-  };
-  window._ocCloseModal=function(){
-    const b=container.querySelector('#oc-modal-backdrop');
-    if(b)b.style.display='none';
-  };
-  window._ocSave=function(uid,isNew){
-    const name=(container.querySelector('#oc_name')||{}).value||'';
-    if(!name.trim()){alert('Name is required.');return;}
-    const users=getUsers();
-    const updated={
-      id:uid,
-      name:name.trim(),
-      title:(container.querySelector('#oc_title')||{}).value||'',
-      role:(container.querySelector('#oc_role')||{}).value||'rm',
-      email:(container.querySelector('#oc_email')||{}).value||'',
-      phone:(container.querySelector('#oc_phone')||{}).value||'',
-      bio:(container.querySelector('#oc_bio')||{}).value||'',
-      entity:'GMG',
-      lastActive:new Date().toISOString()
+    const ropts=['admin','partner','rm','finance','mentor','ops'].map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r[0].toUpperCase()+r.slice(1)}</option>`).join('');
+    const rtopts=`<option value="">â None (top level) â</option>`+users.filter(x=>x.id!==u.id).map(x=>`<option value="${x.id}"${u.reportsTo===x.id?' selected':''}>${x.name}</option>`).join('');
+    const bg=document.createElement('div');
+    bg.className='oc3mbg';
+    bg.innerHTML=`<div class="oc3modal"><h3>${isNew?'Add Person':'Edit Person'}</h3><label>Full Name *</label><input id="oc3fn" value="${(u.name||'').replace(/"/g,'&quot;')}"><label>Email</label><input id="oc3fe" type="email" value="${(u.email||'').replace(/"/g,'&quot;')}"><label>Job Title</label><input id="oc3ft" value="${(u.title||'').replace(/"/g,'&quot;')}"><label>Role</label><select id="oc3fr">${ropts}</select><label>Reports To</label><select id="oc3frt">${rtopts}</select><label>Phone</label><input id="oc3fp" value="${(u.phone||'').replace(/"/g,'&quot;')}"><div class="oc3mbtns">${!isNew?'<button class="oc3bdel" id="oc3dbtn">Delete</button>':''}<button class="oc3bcancel" id="oc3cbtn">Cancel</button><button class="oc3bsave" id="oc3sbtn">${isNew?'Add':'Save'}</button></div></div>`;
+    document.body.appendChild(bg);
+    bg.addEventListener('click',e=>{if(e.target===bg)bg.remove();});
+    bg.querySelector('#oc3cbtn').onclick=()=>bg.remove();
+    if(!isNew){
+      bg.querySelector('#oc3dbtn').onclick=()=>{
+        if(!confirm('Delete '+u.name+'?'))return;
+        let us=getUsers().filter(x=>x.id!==u.id);
+        us=us.map(x=>x.reportsTo===u.id?{...x,reportsTo:''}:x);
+        saveUsers(us);bg.remove();render();
+      };
+    }
+    bg.querySelector('#oc3sbtn').onclick=()=>{
+      const name=document.getElementById('oc3fn').value.trim();
+      if(!name){alert('Name is required');return;}
+      const upd={...u,name,email:document.getElementById('oc3fe').value.trim(),title:document.getElementById('oc3ft').value.trim(),role:document.getElementById('oc3fr').value,reportsTo:document.getElementById('oc3frt').value,phone:document.getElementById('oc3fp').value.trim()};
+      let us=getUsers();
+      if(isNew)us.push(upd);
+      else us=us.map(x=>x.id===u.id?upd:x);
+      saveUsers(us);bg.remove();render();
     };
-    if(isNew){users.push(updated);}
-    else{const idx=users.findIndex(u=>u.id===uid);if(idx>=0)users[idx]=updated;}
-    saveUsers(users);
-    window._ocCloseModal();
-    render();
-  };
-  window._ocDelete=function(uid){
-    if(!confirm('Remove this team member?'))return;
-    const users=getUsers().filter(u=>u.id!==uid);
-    saveUsers(users);
-    window._ocCloseModal();
-    render();
-  };
+  }
 
+  window._oc3e=id=>{const u=getUsers().find(x=>x.id===id);if(u)showModal(u);};
+  window._oc3a=()=>showModal(null);
   render();
 }
+
 
 function openEngDetail(id){
   const e=DB.engagements.find(x=>x.id===id);if(!e)return;
