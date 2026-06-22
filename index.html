@@ -2199,263 +2199,509 @@ function renderView(){
 
 /* ── DASHBOARD (role-aware) ─────────────────────────────── */
 function rDashboard(c){
-  const role=S.user.role||'rm';
-  if(role==='partner') return rDashboardPartner(c, S.user.name);
-  if(role==='ea') return rDashboardEA(c);
-  if(role==='finance') return rDashboardFinance(c);
-  if(role==='admin') return rDashboardAdmin(c);
-  return rDashboardRM(c);
+  if(!S.dashType) S.dashType='personal';
+  if(!S.dashPeriod) S.dashPeriod='ytd';
+  var html = _dashSelector() + _dashContent();
+  c.innerHTML = html;
 }
 
-function _dashHeader(title, sub, customBtn){
-  const d=new Date(); const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const mons=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const dateStr=`${days[d.getDay()]} ${d.getDate()} ${mons[d.getMonth()]} ${d.getFullYear()}`;
-  return`<div class="phdr"><div><h2>${title}</h2><p>${sub}</p></div>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span style="font-size:11px;color:var(--muted)">${dateStr}</span>
-    ${customBtn||''}
-    <button class="btn btn-sm btn-outline" onclick="openDashSettings()" title="Customise dashboard" style="padding:5px 8px">&#9881;</button>
-  </div></div>`;
-}
+function _dashSelector(){
+  var t = S.dashType||'personal';
+  var ent = S.dashEntity||'GMG';
+  var svc = S.dashSvc||'all';
+  var tabs = [
+    {k:'personal',lbl:'Personal'},
+    {k:'group',lbl:'GMG Group'},
+    {k:'entity',lbl:'By Entity'},
+    {k:'service',lbl:'By Service Line'},
+    {k:'custom',lbl:'Custom'}
+  ];
+  var tabHtml = tabs.map(function(tab){
+    var active = t===tab.k ? 'background:var(--venetian);color:#fff;' : 'background:#f1f5f9;color:#475569;';
+    return '<button style="'+active+'border:none;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" onclick="S.dashType=\''+tab.k+'\';renderView()">'+tab.lbl+'</button>';
+  }).join('');
 
-function openDashSettings(){
-  const key='dash_cfg_'+S.user.role;
-  const cfg=JSON.parse(localStorage.getItem(key)||'{}');
-  const widgets={
-    rm:['kpis','tasks','engagements','finance','pipeline','activity'],
-    partner:['kpis','engagements','pipeline'],
-    ea:['partner_view','ea_tasks'],
-    finance:['kpis','invoice_queue','mentor_queue'],
-    admin:['kpis','users','tasks','engagements']
-  };
-  const labels={kpis:'KPI Cards',tasks:'Outstanding Tasks',engagements:'Active Engagements',finance:'Finance Actions',
-    pipeline:'Pipeline Activity',activity:'Recent Activity',partner_view:"Partner's Overview",ea_tasks:'My Actions',
-    invoice_queue:'Invoice Queue',mentor_queue:'Mentor Payments',users:'User Management'};
-  const role=S.user.role||'rm';
-  const ws=widgets[role]||widgets.rm;
-  showModal(`<div class="mhdr"><h3>&#9881; Customise Dashboard</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">Choose which widgets to show on your dashboard.</p>
-    ${ws.map(w=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">
-      <input type="checkbox" ${cfg[w]!==false?'checked':''} onchange="(function(w,v){const k='dash_cfg_'+S.user.role;const c=JSON.parse(localStorage.getItem(k)||'{}');c[w]=v;localStorage.setItem(k,JSON.stringify(c));}('${w}',this.checked))" style="width:15px;height:15px">
-      ${labels[w]||w}
-    </label>`).join('')}
-    <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="closeModal();renderView()">Apply</button>
-    </div>
-  </div>`);
-}
-
-function _dashCfg(widget){
-  const key='dash_cfg_'+S.user.role;
-  const cfg=JSON.parse(localStorage.getItem(key)||'{}');
-  return cfg[widget]!==false;
-}
-
-function rDashboardRM(c){
-  const activeEngs=DB.engagements.filter(e=>e.status==='active');
-  const pendingPay=DB.mentorPayments.filter(p=>p.status==='pending');
-  const pendingPayVal=pendingPay.reduce((s,p)=>s+p.amount,0);
-  const unsyncedInv=DB.clientInvoices.filter(i=>!i.xeroSynced);
-  const overdueT=DB.tasks.filter(t=>t.status!=='done'&&t.due<today());
-  const todoT=DB.tasks.filter(t=>t.status==='todo');
-  const ytdInv=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
-  const fyTarget=520000; const ytdPct=Math.round(ytdInv/fyTarget*100);
-  const pipelineVal=DB.opportunities.filter(p=>!['Closed Won','Closed Lost'].includes(p.stage)).reduce((s,p)=>s+p.value,0);
-  const wonVal=DB.opportunities.filter(p=>p.stage==='Closed Won').reduce((s,p)=>s+p.value,0);
-  const unsynced=unsyncedInv.length?`<span class="badge b-amber" style="cursor:pointer" onclick="nav(document.querySelector('[data-v=finance]'))">&#9888; ${unsyncedInv.length} unsynced to Xero</span>`:'';
-  c.innerHTML=`
-  ${_dashHeader(`Dashboard`,`Good morning, ${S.user.name.split(' ')[0]}. Here's your operational overview.`,unsynced)}
-  ${_dashCfg('kpis')?`<div class="kpi-grid">
-    <div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdInv)}</div>
-      <div class="kpi-bar"><div class="kpi-bar-fill" style="width:${ytdPct}%"></div></div>
-      <div class="kpi-sub">${ytdPct}% of ${fmt(fyTarget)} FY target</div></div>
-    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
-      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
-    <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
-      <div class="kpi-sub">${pendingPay.length} payments · next run end of month</div></div>
-    <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
-      <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
-  </div>`:''}
-  <div class="g2" style="margin-bottom:18px">
-    ${_dashCfg('tasks')?`<div class="card">
-      <div class="card-hdr"><h3>Outstanding Tasks <span class="badge b-red" style="margin-left:6px">${overdueT.length} overdue</span></h3>
-        <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=tasks]'))">View all</button></div>
-      <div class="card-body" style="padding:0"><table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>
-      ${todoT.concat(DB.tasks.filter(t=>t.status==='inprogress')).slice(0,6).map(t=>{
-        const ov=t.due<today()&&t.status!=='done';
-        return`<tr><td><span style="font-weight:600">${t.title}</span><div style="font-size:10px;color:var(--muted)">${t.assignee}</div></td>
-        <td><span class="badge b-grey">${t.type}</span></td>
-        <td style="color:${ov?'var(--venetian)':'inherit'};font-weight:${ov?700:400}">${t.due}${ov?' &#9888;':''}</td>
-        <td><span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span></td></tr>`;
-      }).join('')}
-      </tbody></table></div></div>`:''}
-    ${_dashCfg('engagements')?`<div class="card">
-      <div class="card-hdr"><h3>Active Engagements</h3></div>
-      <div class="card-body" style="padding:0">
-      ${activeEngs.map(e=>{const cl=DB.contacts.find(c=>c.id===e.clientId);const mn=DB.contacts.find(m=>m.id===e.mentorId);
-        const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
-        return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <span class="badge ${tb}" style="min-width:56px;justify-content:center">${e.type}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name.length>42?e.name.slice(0,42)+'…':e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${mn?.name||'—'} · ${e.coordinator}</div></div>
-          <button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button></div>`;
-      }).join('')}
-      </div></div>`:''}
-  </div>
-  <div class="g2">
-    ${_dashCfg('finance')?`<div class="card">
-      <div class="card-hdr"><h3>Finance — Pending Actions</h3></div>
-      <div class="card-body" style="padding:0 18px">
-        ${unsyncedInv.length===0&&pendingPay.length===0?'<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced &#10003;</p>':''}
-        ${unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
-          return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>Invoice · ${inv.type} · ${inv.status}</span></div>
-          <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
-          <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
-        }).join('')}
-        ${pendingPay.slice(0,3).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
-          return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]||''} · ${p.type}</span></div>
-          <div class="fin-amount" style="color:var(--cadmium)">${fmt(p.amount)}</div>
-          <span class="badge b-amber">pending</span></div>`;
-        }).join('')}
-      </div></div>`:''}
-    ${_dashCfg('activity')?`<div class="card">
-      <div class="card-hdr"><h3>Recent Activity</h3></div>
-      <div class="card-body" style="padding:0 18px">
-        ${(DB.activities||[]).slice(0,8).map(a=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start">
-          <div style="width:22px;height:22px;border-radius:50%;background:var(--halfnarrow);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0">${a.icon||'●'}</div>
-          <div><div style="font-size:12px">${a.text}</div><div style="font-size:10px;color:var(--muted)">${a.ts}</div></div>
-        </div>`).join('')}
-      </div></div>`:''}
-  </div>`;
-}
-
-function rDashboardPartner(c, forName){
-  const myEngs=DB.engagements.filter(e=>e.partner===forName);
-  const activeEngs=myEngs.filter(e=>e.status==='active');
-  const ytdInv=DB.clientInvoices.filter(i=>{const e=DB.engagements.find(x=>x.id===i.engId);return e&&e.partner===forName&&i.status==='paid';}).reduce((s,i)=>s+i.amount,0);
-  const pipelineVal=DB.opportunities.filter(p=>p.partner===forName&&!['Closed Won','Closed Lost'].includes(p.stage)).reduce((s,p)=>s+p.value,0);
-  const wonVal=DB.opportunities.filter(p=>p.partner===forName&&p.stage==='Closed Won').reduce((s,p)=>s+p.value,0);
-  const isEA=S.user.role==='ea';
-  c.innerHTML=`
-  ${_dashHeader(isEA?`${forName}'s Dashboard`:'Dashboard',
-    isEA?`Managing on behalf of ${forName}`:`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${forName.split(' ')[0]}. Here's your portfolio overview.`)}
-  <div class="kpi-grid">
-    <div class="kpi accent"><div class="kpi-label">YTD Revenue (My Portfolio)</div><div class="kpi-val">${fmt(ytdInv)}</div></div>
-    <div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">${activeEngs.length}</div>
-      <div class="kpi-sub">${activeEngs.filter(e=>e.type==='chair').length} Chair · ${activeEngs.filter(e=>e.type==='executive').length} Exec · ${activeEngs.filter(e=>e.type==='team').length} Team</div></div>
-    <div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">${fmt(pipelineVal)}</div>
-      <div class="kpi-sub">${fmt(wonVal)} closed won YTD</div></div>
-    <div class="kpi"><div class="kpi-label">Total Engagements</div><div class="kpi-val">${myEngs.length}</div>
-      <div class="kpi-sub">${myEngs.filter(e=>e.status==='completed').length} completed</div></div>
-  </div>
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-hdr"><h3>My Engagements</h3>
-      <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=engagements]'))">View all</button></div>
-    <div class="card-body" style="padding:0">
-      ${activeEngs.length===0?'<p style="padding:20px;text-align:center;color:var(--muted);font-size:12px">No active engagements</p>':
-      activeEngs.map(e=>{const cl=DB.contacts.find(x=>x.id===e.clientId);const mn=DB.contacts.find(x=>x.id===e.mentorId);
-        const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
-        const val=e.annualFee||e.totalFee||0;
-        return`<div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <span class="badge ${tb}">${e.type}</span>
-          <div style="flex:1"><div style="font-size:12px;font-weight:600">${e.name}</div>
-          <div style="font-size:10px;color:var(--muted)">${cl?.name||'—'} · ${mn?.name||'—'}</div></div>
-          <div style="font-size:13px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--cadmium)">${fmt(val)}</div>
-          <button class="btn btn-sm btn-outline" onclick="S.currentEngId='${e.id}';S.view='engagementDetail';renderView()">View</button></div>`;
-      }).join('')}
-    </div>
-  </div>`;
-}
-
-function rDashboardEA(c){
-  const partnerName=S.user.partnerName;
-  if(!partnerName){
-    c.innerHTML=`${_dashHeader('Dashboard',`Welcome, ${S.user.name.split(' ')[0]}.`)}
-    <div class="card" style="text-align:center;padding:40px">
-      <div style="font-size:32px;margin-bottom:12px">&#128101;</div>
-      <h3 style="margin-bottom:8px">Set your partner assignment</h3>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:20px">As an Executive Assistant, your dashboard shows your partner's portfolio. Ask your admin to set your partner name, or update your profile.</p>
-    </div>`;
-    return;
+  var entitySelect = '';
+  if(t==='entity'){
+    var entities = ['GMG','CMi','Merryck','Middle East','ANZ'];
+    var eopts = entities.map(function(e){ return '<option value="'+e+'"'+(ent===e?' selected':'')+'>'+e+'</option>'; }).join('');
+    entitySelect = '<select onchange="S.dashEntity=this.value;renderView()" style="margin-left:8px;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;cursor:pointer">'+eopts+'</select>';
   }
-  // Show partner's view
-  rDashboardPartner(c, partnerName);
-  // Append EA task layer
-  const myTasks=DB.tasks.filter(t=>t.assignee===S.user.name&&t.status!=='done');
-  const partnerTasks=DB.tasks.filter(t=>t.assignee===partnerName&&t.status!=='done');
-  const combined=[...myTasks,...partnerTasks].slice(0,8);
-  const existingContent=c.innerHTML;
-  c.innerHTML=existingContent+`
-  <div class="card" style="border-left:3px solid var(--cadmium)">
-    <div class="card-hdr"><h3>&#128101; EA Actions <span style="font-size:11px;font-weight:400;color:var(--muted)">for ${partnerName}</span></h3>
-      <button class="btn btn-sm btn-outline" onclick="nav(document.querySelector('[data-v=tasks]'))">All tasks</button></div>
-    <div class="card-body" style="padding:0">
-      ${combined.length===0?'<p style="padding:16px;color:var(--muted);font-size:12px;text-align:center">No outstanding tasks</p>':
-      combined.map(t=>{const ov=t.due<today();
-        return`<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
-          <div style="flex:1"><div style="font-size:12px;font-weight:600">${t.title}</div>
-          <div style="font-size:10px;color:var(--muted)">${t.assignee} · ${t.type}</div></div>
-          <span style="font-size:11px;color:${ov?'var(--venetian)':'var(--muted)'};font-weight:${ov?700:400}">${t.due}</span>
-          <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}">${t.priority}</span>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
+
+  var svcSelect = '';
+  if(t==='service'){
+    var svcs = [{k:'all',l:'All Services'},{k:'executive',l:'Executive Coaching'},{k:'leadership',l:'Leadership Development'},{k:'chair',l:'Chair Mentoring'},{k:'team',l:'Team Effectiveness'},{k:'group',l:'Group Mentoring'}];
+    var sopts = svcs.map(function(s){ return '<option value="'+s.k+'"'+(svc===s.k?' selected':'')+'>'+s.l+'</option>'; }).join('');
+    svcSelect = '<select onchange="S.dashSvc=this.value;renderView()" style="margin-left:8px;border:1.5px solid #e2e8f0;border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;cursor:pointer">'+sopts+'</select>';
+  }
+
+  var periodBar = '';
+  if(t==='group'||t==='entity'||t==='service'){
+    var periods = [{k:'mtd',l:'MTD'},{k:'qtd',l:'QTD'},{k:'ytd',l:'YTD'}];
+    var pHtml = periods.map(function(p){
+      var a = S.dashPeriod===p.k ? 'background:#1e293b;color:#fff;' : 'background:#f1f5f9;color:#475569;';
+      return '<button style="'+a+'border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer" onclick="S.dashPeriod=\''+p.k+'\';renderView()">'+p.l+'</button>';
+    }).join('');
+    periodBar = '<div style="display:flex;gap:4px;margin-left:auto">'+pHtml+'</div>';
+  }
+
+  return '<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 24px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:10">'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap">'+tabHtml+'</div>'
+    +entitySelect+svcSelect+periodBar
+    +'</div>';
 }
 
-function rDashboardFinance(c){
-  const unsyncedInv=DB.clientInvoices.filter(i=>!i.xeroSynced);
-  const pendingPay=DB.mentorPayments.filter(p=>p.status==='pending');
-  const pendingPayVal=pendingPay.reduce((s,p)=>s+p.amount,0);
-  const ytdInv=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
-  const totalOwed=DB.clientInvoices.filter(i=>i.status!=='paid').reduce((s,i)=>s+i.amount,0);
-  c.innerHTML=`
-  ${_dashHeader('Finance Dashboard',`Good ${new Date().getHours()<12?'morning':'afternoon'}, ${S.user.name.split(' ')[0]}. Finance overview.`,
-    unsyncedInv.length?`<span class="badge b-amber">&#9888; ${unsyncedInv.length} unsynced</span>`:'')}
-  <div class="kpi-grid">
-    <div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">${fmt(ytdInv)}</div></div>
-    <div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">${fmt(pendingPayVal)}</div>
-      <div class="kpi-sub">${pendingPay.length} payments pending</div></div>
-    <div class="kpi"><div class="kpi-label">Invoices Outstanding</div><div class="kpi-val">${fmt(totalOwed)}</div>
-      <div class="kpi-sub">${DB.clientInvoices.filter(i=>i.status!=='paid').length} invoices</div></div>
-    <div class="kpi"><div class="kpi-label">Unsynced to Xero</div><div class="kpi-val">${unsyncedInv.length}</div>
-      <div class="kpi-sub">${unsyncedInv.length===0?'All synced ✓':'Action required'}</div></div>
-  </div>
-  <div class="g2">
-    <div class="card">
-      <div class="card-hdr"><h3>Invoice Queue — Pending Xero Sync</h3></div>
-      <div class="card-body" style="padding:0 18px">
-        ${unsyncedInv.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All invoices synced &#10003;</p>':
-        unsyncedInv.map(inv=>{const cl=DB.contacts.find(c=>c.id===inv.clientId);
-          return`<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>
-          <div class="fin-info"><strong>${cl?.name||'Client'} — ${inv.period}</strong><span>${inv.type} · ${inv.status}</span></div>
-          <div class="fin-amount" style="color:var(--venetian)">${fmt(inv.amount)}</div>
-          <button class="btn btn-sm btn-xero" onclick="pushInvXero('${inv.id}')">&#8594; Xero</button></div>`;
-        }).join('')}
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-hdr"><h3>Mentor Payments — Pending</h3>
-        ${pendingPay.length?`<button class="btn btn-sm btn-primary" onclick="runAutoBill()">Run Auto-Bill &#8594;</button>`:''}
-      </div>
-      <div class="card-body" style="padding:0 18px">
-        ${pendingPay.length===0?'<p style="padding:20px 0;text-align:center;color:var(--muted);font-size:12px">All payments processed &#10003;</p>':
-        pendingPay.slice(0,8).map(p=>{const m=DB.contacts.find(x=>x.id===p.mentorId);const e=DB.engagements.find(x=>x.id===p.engId);
-          return`<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>
-          <div class="fin-info"><strong>${m?.name||'Mentor'} — ${p.period}</strong><span>${e?.name?.split('—')[0]?.trim()||''}</span></div>
-          <div class="fin-amount">${fmt(p.amount)}</div>
-          <span class="badge b-amber">pending</span></div>`;
-        }).join('')}
-      </div>
-    </div>
-  </div>`;
+function _dashContent(){
+  var db = getDB();
+  var engs = db.engagements||[];
+  var pipeline = db.pipeline||[];
+  var tasks = db.tasks||[];
+  var invoices = db.clientInvoices||[];
+  var users = db.appUsers||[];
+  var user = S.user||{};
+  var now = new Date();
+  var mtdStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var q = Math.floor(now.getMonth()/3);
+  var qtdStart = new Date(now.getFullYear(), q*3, 1);
+  var ytdStart = new Date(now.getFullYear(), 0, 1);
+  var ctx = {db:db,engs:engs,pipeline:pipeline,tasks:tasks,invoices:invoices,users:users,user:user,now:now,mtdStart:mtdStart,qtdStart:qtdStart,ytdStart:ytdStart};
+  var t = S.dashType||'personal';
+  if(t==='personal') return _dashPersonal(ctx);
+  if(t==='group') return _dashGroup(ctx, null);
+  if(t==='entity') return _dashGroup(ctx, S.dashEntity||'GMG');
+  if(t==='service') return _dashService(ctx, S.dashSvc||'all');
+  if(t==='custom') return _dashCustom(ctx);
+  return '';
 }
 
+function _revInPeriod(invoices, start, now){
+  return invoices.filter(function(inv){
+    var d = new Date(inv.issued||inv.due||'');
+    return d >= start && d <= now && inv.status !== 'draft';
+  }).reduce(function(s,inv){ return s+(inv.amount||0); }, 0);
+}
+
+function _kpiCard(label, value, sub, color){
+  return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;border-top:3px solid '+(color||'#2563eb')+';min-width:160px;flex:1">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px">'+label+'</div>'
+    +'<div style="font-size:26px;font-weight:800;color:#1e293b">'+value+'</div>'
+    +(sub?'<div style="font-size:11px;color:#64748b;margin-top:4px">'+sub+'</div>':'')
+    +'</div>';
+}
+
+function _progressBar(val, target, color){
+  var pct = target > 0 ? Math.min(100, Math.round((val/target)*100)) : 0;
+  return '<div style="margin-top:6px;background:#f1f5f9;border-radius:4px;height:6px;overflow:hidden">'
+    +'<div style="background:'+(color||'#2563eb')+';width:'+pct+'%;height:100%;border-radius:4px"></div>'
+    +'</div><div style="font-size:10px;color:#64748b;margin-top:3px">'+pct+'% of target</div>';
+}
+
+function _dashPersonal(ctx){
+  var user = ctx.user;
+  var engs = ctx.engs;
+  var pipeline = ctx.pipeline;
+  var tasks = ctx.tasks;
+  var invoices = ctx.invoices;
+  var now = ctx.now;
+  var users = ctx.users;
+  var name = user.name || user.email || 'there';
+  var hour = now.getHours();
+  var greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var dateStr = days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+
+  // My engagements (where I am partner or coordinator)
+  var myEngs = engs.filter(function(e){ return e.partner===name||e.coordinator===name; });
+  var activeEngs = myEngs.filter(function(e){ return e.status==='active'; });
+  var myRevenue = activeEngs.reduce(function(s,e){ return s+(e.annualFee||0); }, 0);
+
+  // My pipeline
+  var myPipe = pipeline.filter(function(p){ return p.owner===name||p.partner===name; });
+  var pipeVal = myPipe.filter(function(p){ return p.stage!=='Closed Won'; }).reduce(function(s,p){ return s+(p.value||0); }, 0);
+
+  // My tasks
+  var myTasks = tasks.filter(function(t){ return t.assignee===name; });
+  var overdue = myTasks.filter(function(t){ return t.status!=='done'&&t.due&&new Date(t.due)<now; }).length;
+  var todayStr = now.toISOString().slice(0,10);
+  var dueToday = myTasks.filter(function(t){ return t.status!=='done'&&t.due===todayStr; }).length;
+  var openTasks = myTasks.filter(function(t){ return t.status!=='done'; }).length;
+
+  var html = '<div style="padding:24px;max-width:1200px;margin:0 auto">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'
+    +'<div><h2 style="margin:0;font-size:20px;font-weight:700;color:#1e293b">'+greet+', '+name.split(' ')[0]+'. Here\'s your overview.</h2>'
+    +'<div style="font-size:13px;color:#64748b;margin-top:4px">'+dateStr+'</div></div>'
+    +'</div>';
+
+  // KPI row
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px">';
+  html += _kpiCard('My Active Engagements', activeEngs.length, myEngs.length+' total', '#0d7c59');
+  html += _kpiCard('My Revenue (ARR)', 'Â£'+myRevenue+'k', 'Annual recurring', '#2563eb');
+  html += _kpiCard('My Pipeline', 'Â£'+pipeVal+'k', myPipe.filter(function(p){return p.stage!=='Closed Won';}).length+' open deals', '#7c3aed');
+  html += _kpiCard('Open Tasks', openTasks, (overdue>0?overdue+' overdue':dueToday>0?dueToday+' due today':'all on track'), overdue>0?'#dc2626':'#e07b00');
+  html += '</div>';
+
+  // Two-column layout: engagements + tasks
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">';
+
+  // My Engagements
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">My Active Engagements</h3>';
+  if(activeEngs.length===0){
+    html += '<p style="color:#94a3b8;font-size:13px">No active engagements.</p>';
+  } else {
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse">';
+    activeEngs.slice(0,6).forEach(function(e){
+      html += '<tr style="border-bottom:1px solid #f1f5f9">'
+        +'<td style="padding:7px 0"><div style="font-weight:600;color:#1e293b">'+e.name+'</div>'
+        +'<div style="color:#64748b;font-size:11px">'+(e.entity||'')+'</div></td>'
+        +'<td style="text-align:right;color:#0d7c59;font-weight:700">Â£'+(e.annualFee||0)+'k</td>'
+        +'</tr>';
+    });
+    html += '</table>';
+  }
+  html += '</div>';
+
+  // My Tasks
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">My Tasks</h3>';
+  var openMyTasks = myTasks.filter(function(t){ return t.status!=='done'; }).slice(0,6);
+  if(openMyTasks.length===0){
+    html += '<p style="color:#94a3b8;font-size:13px">No outstanding tasks.</p>';
+  } else {
+    openMyTasks.forEach(function(t){
+      var isOverdue = t.due && new Date(t.due) < now;
+      var col = isOverdue ? '#dc2626' : '#475569';
+      var pBadge = t.priority==='high' ? '<span style="background:#fee2e2;color:#dc2626;font-size:10px;font-weight:600;padding:2px 6px;border-radius:4px;margin-left:6px">High</span>' : '';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f1f5f9">'
+        +'<div><div style="font-size:12px;font-weight:500;color:#1e293b">'+t.title+pBadge+'</div></div>'
+        +'<div style="font-size:11px;color:'+col+';white-space:nowrap;margin-left:8px">'+(t.due||'')+'</div>'
+        +'</div>';
+    });
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Pipeline section
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:20px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">My Pipeline</h3>';
+  var openPipe = myPipe.filter(function(p){ return p.stage!=='Closed Won'; });
+  if(openPipe.length===0){
+    html += '<p style="color:#94a3b8;font-size:13px">No open pipeline deals.</p>';
+  } else {
+    html += '<table style="width:100%;font-size:12px;border-collapse:collapse">';
+    html += '<tr style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase">'
+      +'<th style="text-align:left;padding-bottom:8px">Deal</th>'
+      +'<th style="text-align:left;padding-bottom:8px">Stage</th>'
+      +'<th style="text-align:right;padding-bottom:8px">Value</th>'
+      +'<th style="text-align:right;padding-bottom:8px">Prob</th>'
+      +'</tr>';
+    openPipe.forEach(function(p){
+      html += '<tr style="border-bottom:1px solid #f1f5f9">'
+        +'<td style="padding:7px 0;font-weight:500;color:#1e293b">'+p.name+'</td>'
+        +'<td style="color:#475569">'+p.stage+'</td>'
+        +'<td style="text-align:right;font-weight:700;color:#1e293b">Â£'+(p.value||0)+'k</td>'
+        +'<td style="text-align:right;color:#64748b">'+(p.prob||0)+'%</td>'
+        +'</tr>';
+    });
+    html += '</table>';
+  }
+  html += '</div>';
+
+  // Team summary for Partners
+  if(user.role==='partner'||user.role==='admin'){
+    html += _teamSummary(ctx, name);
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function _teamSummary(ctx, myName){
+  var engs = ctx.engs;
+  var users = ctx.users;
+  var partners = users.filter(function(u){ return u.role==='partner'||u.role==='rm'; });
+  var html = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:20px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">Team Performance</h3>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    +'<tr style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase">'
+    +'<th style="text-align:left;padding-bottom:8px">Name</th>'
+    +'<th style="text-align:left;padding-bottom:8px">Role</th>'
+    +'<th style="text-align:right;padding-bottom:8px">Engagements</th>'
+    +'<th style="text-align:right;padding-bottom:8px">ARR</th>'
+    +'</tr>';
+  partners.slice(0,8).forEach(function(u){
+    var uEngs = engs.filter(function(e){ return e.partner===u.name&&e.status==='active'; });
+    var uRev = uEngs.reduce(function(s,e){ return s+(e.annualFee||0); }, 0);
+    html += '<tr style="border-bottom:1px solid #f1f5f9">'
+      +'<td style="padding:7px 0;font-weight:500;color:#1e293b">'+u.name+'</td>'
+      +'<td style="color:#64748b;text-transform:capitalize">'+u.role+'</td>'
+      +'<td style="text-align:right;color:#0d7c59;font-weight:600">'+uEngs.length+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:#1e293b">Â£'+uRev+'k</td>'
+      +'</tr>';
+  });
+  html += '</table></div>';
+  return html;
+}
+
+function _dashGroup(ctx, entityFilter){
+  var engs = ctx.engs;
+  var invoices = ctx.invoices;
+  var pipeline = ctx.pipeline;
+  var tasks = ctx.tasks;
+  var now = ctx.now;
+  var mtdStart = ctx.mtdStart;
+  var qtdStart = ctx.qtdStart;
+  var ytdStart = ctx.ytdStart;
+  var period = S.dashPeriod||'ytd';
+  var periodStart = period==='mtd'?mtdStart:period==='qtd'?qtdStart:ytdStart;
+  var db = ctx.db;
+  var targets = db.dashTargets || {revenue:520, engagements:50, newBusiness:200};
+
+  var filtEngs = entityFilter ? engs.filter(function(e){ return e.entity===entityFilter; }) : engs;
+  var filtInv = entityFilter ? invoices.filter(function(inv){
+    var e = engs.find(function(x){ return x.id===inv.engId; });
+    return e&&e.entity===entityFilter;
+  }) : invoices;
+  var filtPipe = entityFilter ? pipeline.filter(function(p){ return p.entity===entityFilter||!p.entity; }) : pipeline;
+
+  var rev = _revInPeriod(filtInv, periodStart, now);
+  var activeEngs = filtEngs.filter(function(e){ return e.status==='active'; }).length;
+  var newEngs = filtEngs.filter(function(e){ var d=new Date(e.startDate||''); return d>=periodStart&&d<=now; }).length;
+  var openPipe = filtPipe.filter(function(p){ return p.stage!=='Closed Won'; }).reduce(function(s,p){ return s+(p.value||0); }, 0);
+  var wonPipe = filtPipe.filter(function(p){ var d=new Date(p.closeDate||''); return p.stage==='Closed Won'&&d>=periodStart&&d<=now; }).reduce(function(s,p){ return s+(p.value||0); }, 0);
+
+  var title = entityFilter ? entityFilter+' Dashboard' : 'GMG Group Dashboard';
+  var periodLabel = period==='mtd'?'Month to Date':period==='qtd'?'Quarter to Date':'Year to Date';
+
+  // Scale targets for period
+  var m = now.getMonth();
+  var d = now.getDate();
+  var daysInYear = 365;
+  var dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  var periodFraction = period==='mtd'?(d/30):period==='qtd'?((m%3)*30+d)/90:(dayOfYear/daysInYear);
+  var revTarget = Math.round(targets.revenue * periodFraction);
+  var engTarget = Math.round(targets.engagements * periodFraction);
+
+  var html = '<div style="padding:24px;max-width:1200px;margin:0 auto">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">'
+    +'<div><h2 style="margin:0;font-size:20px;font-weight:700;color:#1e293b">'+title+'</h2>'
+    +'<div style="font-size:13px;color:#64748b;margin-top:4px">'+periodLabel+' Performance</div></div>'
+    +'<button onclick="_dashSetTargets()" style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;color:#475569">Set Targets</button>'
+    +'</div>';
+
+  // KPI cards with progress bars
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px">';
+
+  // Revenue
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;border-top:3px solid #2563eb;flex:1;min-width:180px">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px">Revenue ('+periodLabel+')</div>'
+    +'<div style="font-size:26px;font-weight:800;color:#1e293b">Â£'+rev+'k</div>'
+    +_progressBar(rev, revTarget, '#2563eb')
+    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">Target Â£'+revTarget+'k (pro-rated)</div>'
+    +'</div>';
+
+  // Active Engagements
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;border-top:3px solid #0d7c59;flex:1;min-width:180px">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px">Active Engagements</div>'
+    +'<div style="font-size:26px;font-weight:800;color:#1e293b">'+activeEngs+'</div>'
+    +'<div style="font-size:11px;color:#64748b;margin-top:4px">'+newEngs+' started '+periodLabel.toLowerCase()+'</div>'
+    +'</div>';
+
+  // New Business Won
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 22px;border-top:3px solid #7c3aed;flex:1;min-width:180px">'
+    +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#64748b;margin-bottom:8px">New Business Won</div>'
+    +'<div style="font-size:26px;font-weight:800;color:#1e293b">Â£'+wonPipe+'k</div>'
+    +'<div style="font-size:11px;color:#64748b;margin-top:4px">Closed '+periodLabel.toLowerCase()+'</div>'
+    +'</div>';
+
+  // Open Pipeline
+  html += _kpiCard('Open Pipeline', 'Â£'+openPipe+'k', filtPipe.filter(function(p){return p.stage!=='Closed Won';}).length+' active deals', '#e07b00');
+  html += '</div>';
+
+  // Entity breakdown (only for group view)
+  if(!entityFilter){
+    html += _entityBreakdown(ctx);
+  }
+
+  // Engagements table
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:20px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">Active Engagements'+(entityFilter?' â '+entityFilter:'')+'</h3>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    +'<tr style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase">'
+    +'<th style="text-align:left;padding-bottom:8px">Name</th>'
+    +'<th style="text-align:left;padding-bottom:8px">Entity</th>'
+    +'<th style="text-align:left;padding-bottom:8px">Partner</th>'
+    +'<th style="text-align:right;padding-bottom:8px">ARR</th>'
+    +'</tr>';
+  filtEngs.filter(function(e){ return e.status==='active'; }).forEach(function(e){
+    html += '<tr style="border-bottom:1px solid #f1f5f9">'
+      +'<td style="padding:7px 0;font-weight:500;color:#1e293b">'+e.name+'</td>'
+      +'<td style="color:#475569">'+e.entity+'</td>'
+      +'<td style="color:#475569">'+(e.partner||'')+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:#0d7c59">Â£'+(e.annualFee||0)+'k</td>'
+      +'</tr>';
+  });
+  html += '</table></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function _entityBreakdown(ctx){
+  var engs = ctx.engs;
+  var invoices = ctx.invoices;
+  var entities = ['GMG','CMi','Merryck','Middle East','ANZ'];
+  var html = '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:20px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">Entity Breakdown</h3>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    +'<tr style="color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:2px solid #e2e8f0">'
+    +'<th style="text-align:left;padding-bottom:8px">Entity</th>'
+    +'<th style="text-align:right;padding-bottom:8px">Active</th>'
+    +'<th style="text-align:right;padding-bottom:8px">ARR</th>'
+    +'<th style="text-align:right;padding-bottom:8px">Invoiced YTD</th>'
+    +'</tr>';
+  var ytdStart = ctx.ytdStart;
+  var now = ctx.now;
+  entities.forEach(function(ent){
+    var eEngs = engs.filter(function(e){ return e.entity===ent&&e.status==='active'; });
+    var eRev = eEngs.reduce(function(s,e){ return s+(e.annualFee||0); }, 0);
+    var eInv = invoices.filter(function(inv){
+      var e = engs.find(function(x){ return x.id===inv.engId; });
+      var d = new Date(inv.issued||'');
+      return e&&e.entity===ent&&d>=ytdStart&&d<=now&&inv.status!=='draft';
+    }).reduce(function(s,inv){ return s+(inv.amount||0); }, 0);
+    if(eEngs.length===0&&eRev===0&&eInv===0) return;
+    html += '<tr style="border-bottom:1px solid #f1f5f9">'
+      +'<td style="padding:8px 0;font-weight:600;color:#1e293b">'+ent+'</td>'
+      +'<td style="text-align:right;color:#0d7c59;font-weight:600">'+eEngs.length+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:#1e293b">Â£'+eRev+'k</td>'
+      +'<td style="text-align:right;color:#2563eb;font-weight:600">Â£'+eInv+'k</td>'
+      +'</tr>';
+  });
+  html += '</table></div>';
+  return html;
+}
+
+function _dashService(ctx, svc){
+  var engs = ctx.engs;
+  var pipeline = ctx.pipeline;
+  var now = ctx.now;
+  var period = S.dashPeriod||'ytd';
+  var periodStart = period==='mtd'?ctx.mtdStart:period==='qtd'?ctx.qtdStart:ctx.ytdStart;
+  var periodLabel = period==='mtd'?'Month to Date':period==='qtd'?'Quarter to Date':'Year to Date';
+  var filtEngs = svc==='all' ? engs : engs.filter(function(e){ return (e.solution||e.type||'').indexOf(svc)>-1; });
+  var activeEngs = filtEngs.filter(function(e){ return e.status==='active'; });
+  var arr = activeEngs.reduce(function(s,e){ return s+(e.annualFee||0); }, 0);
+  var svcLabels = {executive:'Executive Coaching',leadership:'Leadership Development',chair:'Chair Mentoring',team:'Team Effectiveness',group:'Group Mentoring',all:'All Services'};
+  var title = svcLabels[svc]||svc;
+
+  var html = '<div style="padding:24px;max-width:1200px;margin:0 auto">';
+  html += '<h2 style="margin:0 0 6px;font-size:20px;font-weight:700;color:#1e293b">'+title+'</h2>'
+    +'<div style="font-size:13px;color:#64748b;margin-bottom:24px">'+periodLabel+' Performance</div>';
+  html += '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px">';
+  html += _kpiCard('Active Engagements', activeEngs.length, filtEngs.length+' total', '#0d7c59');
+  html += _kpiCard('Annual Revenue', 'Â£'+arr+'k', 'Active ARR', '#2563eb');
+  var newE = filtEngs.filter(function(e){ var d=new Date(e.startDate||''); return d>=periodStart&&d<=now; }).length;
+  html += _kpiCard('New '+periodLabel, newE, 'engagements started', '#7c3aed');
+  html += '</div>';
+
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#1e293b">Engagements</h3>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">';
+  filtEngs.forEach(function(e){
+    var statusCol = e.status==='active'?'#0d7c59':e.status==='planning'?'#e07b00':'#64748b';
+    html += '<tr style="border-bottom:1px solid #f1f5f9">'
+      +'<td style="padding:7px 0;font-weight:500;color:#1e293b">'+e.name+'</td>'
+      +'<td style="color:#475569">'+e.entity+'</td>'
+      +'<td style="color:'+statusCol+';font-weight:600;text-transform:capitalize">'+e.status+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:#0d7c59">Â£'+(e.annualFee||0)+'k</td>'
+      +'</tr>';
+  });
+  html += '</table></div></div>';
+  return html;
+}
+
+function _dashCustom(ctx){
+  var db = ctx.db;
+  var saved = db.customDash || {widgets:['personal_kpis','my_tasks','my_engs','pipeline']};
+  var allWidgets = [
+    {k:'personal_kpis',l:'My KPIs (engagements, revenue, pipeline, tasks)'},
+    {k:'my_tasks',l:'My Tasks'},
+    {k:'my_engs',l:'My Engagements'},
+    {k:'pipeline',l:'My Pipeline'},
+    {k:'group_kpis',l:'Group Revenue KPIs'},
+    {k:'entity_breakdown',l:'Entity Breakdown'},
+    {k:'team_summary',l:'Team Performance'}
+  ];
+  var enabled = saved.widgets||[];
+  var html = '<div style="padding:24px;max-width:1200px;margin:0 auto">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">'
+    +'<h2 style="margin:0;font-size:20px;font-weight:700;color:#1e293b">Custom Dashboard</h2>'
+    +'<button onclick="_saveCustomDash()" style="background:var(--venetian);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer">Save Layout</button>'
+    +'</div>';
+  html += '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:20px">'
+    +'<h3 style="margin:0 0 14px;font-size:14px;font-weight:600;color:#1e293b">Choose your widgets</h3>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:10px">';
+  allWidgets.forEach(function(w){
+    var checked = enabled.indexOf(w.k)>-1;
+    html += '<label style="display:flex;align-items:center;gap:8px;background:#f8fafc;border:1.5px solid '+(checked?'#2563eb':'#e2e8f0')+';border-radius:8px;padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;color:#1e293b">'
+      +'<input type="checkbox" id="cw_'+w.k+'" '+(checked?'checked':'')+' style="cursor:pointer"> '+w.l
+      +'</label>';
+  });
+  html += '</div></div>';
+  // Preview enabled widgets
+  if(enabled.indexOf('personal_kpis')>-1||enabled.indexOf('group_kpis')>-1){
+    html += '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;text-align:center;color:#64748b;font-size:13px">Save your layout to see widgets here. Current selection: '+enabled.length+' widget(s) selected.</div>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function _saveCustomDash(){
+  var allKeys = ['personal_kpis','my_tasks','my_engs','pipeline','group_kpis','entity_breakdown','team_summary'];
+  var selected = allKeys.filter(function(k){
+    var el = document.getElementById('cw_'+k);
+    return el && el.checked;
+  });
+  var db = getDB();
+  db.customDash = {widgets: selected};
+  localStorage.setItem('gmg_v2', JSON.stringify(db));
+  alert('Dashboard layout saved!');
+}
+
+function _dashSetTargets(){
+  var db = getDB();
+  var t = db.dashTargets || {revenue:520, engagements:50, newBusiness:200};
+  var bg = document.createElement('div');
+  bg.className = 'oc3mbg';
+  var html = '<div class="oc3modal"><h3 style="margin:0 0 18px;font-size:16px;font-weight:700;color:#1e293b">Set Annual Targets</h3>'
+    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:12px 0 4px">Annual Revenue Target (Â£k)</label>'
+    +'<input id="tgt-rev" class="oc3modal input" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px" value="'+t.revenue+'">'
+    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:12px 0 4px">Active Engagements Target</label>'
+    +'<input id="tgt-eng" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px" value="'+t.engagements+'">'
+    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:12px 0 4px">New Business Target (Â£k)</label>'
+    +'<input id="tgt-nb" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px" value="'+t.newBusiness+'">'
+    +'<div class="oc3mbtns" style="margin-top:20px">'
+    +'<button class="oc3bcancel" id="tgt-cancel">Cancel</button>'
+    +'<button class="oc3bsave" id="tgt-save">Save Targets</button>'
+    +'</div></div>';
+  bg.innerHTML = html;
+  document.body.appendChild(bg);
+  bg.addEventListener('click', function(e){ if(e.target===bg) bg.remove(); });
+  bg.querySelector('#tgt-cancel').onclick = function(){ bg.remove(); };
+  bg.querySelector('#tgt-save').onclick = function(){
+    var db2 = getDB();
+    db2.dashTargets = {
+      revenue: parseFloat(document.getElementById('tgt-rev').value)||520,
+      engagements: parseInt(document.getElementById('tgt-eng').value)||50,
+      newBusiness: parseFloat(document.getElementById('tgt-nb').value)||200
+    };
+    localStorage.setItem('gmg_v2', JSON.stringify(db2));
+    bg.remove();
+    renderView();
+  };
+}
 function rDashboardAdmin(c){
   rDashboardRM(c);
   // Append quick admin link
