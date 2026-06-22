@@ -3457,7 +3457,7 @@ function rEngDetail(id){
           <button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Invoice</button>
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openSOWModal&&openSOWModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>`:''}
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Mentor Fee Schedule</button>`:''}
-          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.tab=S.tab||{};S.tab.projDetail='${id}';S.tab.projDetailTab='overview';nav('projects')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
+          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.tab=S.tab||{};S.tab.projDetail='${id}';S.tab.projDetailTab='overview';S.view='projects';renderView()" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
         </div>
       </div>
     </div>
@@ -3688,7 +3688,7 @@ function saveNewSession(engId){
   const e=DB.engagements.find(function(x){return x.id===engId;});
   if(e&&s.status==='completed') e.sessionsUsed=(e.sessionsUsed||0)+1;
   addAct('◈','Session logged: '+(e?e.name:engId)+' — '+s.date);
-  save(); closeModal(); nav('projects');
+  save(); closeModal(); S.view='projects';renderView();
 }
 
 function openEditSessionModal(sessionId){
