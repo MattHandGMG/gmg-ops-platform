@@ -2198,6 +2198,7 @@ function renderView(){
 /* ── DASHBOARD ───────────────────────────────────────────────── */
 
 /* ── DASHBOARD (role-aware) ─────────────────────────────── */
+function getDB(){return JSON.parse(localStorage.getItem('gmg_v2')||'{}')};
 function rDashboard(c){
   if(!S.dashType) S.dashType='personal';
   if(!S.dashPeriod) S.dashPeriod='ytd';
