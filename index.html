@@ -2471,119 +2471,211 @@ function rDashboardAdmin(c){
 /* ── ADMIN PANEL ─────────────────────────────── */
 async function rAdmin(c){
   const users=DB.users||[];
-  const opts=DB.pricingOptions||[
-    {id:'opt1',name:'Option 1',minFee:0,description:''},
-    {id:'opt2',name:'Option 2',minFee:0,description:''},
-    {id:'opt3',name:'Option 3',minFee:0,description:''},
-    {id:'opt4',name:'Option 4',minFee:0,description:''}
+
+  // Chair client pricing - 3 options
+  const rawOpts=DB.pricingOptions||[];
+  const chairOpts=[
+    rawOpts[0]||{id:'opt1',name:'Option 1',description:'12 sessions / year',minFee:0},
+    rawOpts[1]||{id:'opt2',name:'Option 2',description:'8 sessions / year',minFee:0},
+    rawOpts[2]||{id:'opt3',name:'Option 3',description:'6 sessions / year',minFee:0}
   ];
-  if(!DB.pricingOptions){DB.pricingOptions=opts;save();}
-  if(!DB.minimumPricing){DB.minimumPricing={executive:0,team:0};save();}
-  const minP=DB.minimumPricing||{executive:0,team:0};
 
-  const userRows=users.map(u=>`<tr style="border-bottom:1px solid var(--border)">
-    <td style="padding:10px 12px;font-size:13px;font-weight:500">${u.username||u.email||'—'}</td>
-    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.role||'User'}</td>
-    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.entity||'GMG'}</td>
-    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.partnerName||'—'}</td>
-    <td style="padding:10px 12px;font-size:12px;color:var(--muted)">${u.lastActive?new Date(u.lastActive).toLocaleDateString('en-GB'):'—'}</td>
-    <td style="padding:10px 12px"><button class="btn btn-sm btn-outline" onclick="openUserModal('${u.id}')">Edit</button></td>
-  </tr>`).join('');
+  // Chair mentor fee options - 3 options (fee per session, one per client option)
+  const rawMentor=DB.mentorFeeOptions||[];
+  const mentorOpts=[
+    rawMentor[0]||{id:'mopt1',feePerSession:rawOpts[0]?.mentorFeePerSession||0},
+    rawMentor[1]||{id:'mopt2',feePerSession:rawOpts[1]?.mentorFeePerSession||0},
+    rawMentor[2]||{id:'mopt3',feePerSession:rawOpts[2]?.mentorFeePerSession||0}
+  ];
 
-  const pricingRows=opts.map((o,oi)=>`
-    <tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:12px 14px">
-        <input value="${o.name}" placeholder="Option name" onchange="(function(v){DB.pricingOptions[${oi}].name=v;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-      </td>
-      <td style="padding:12px 14px">
-        <input value="${o.description||''}" placeholder="Short description (e.g. 12 sessions / year)" onchange="(function(v){DB.pricingOptions[${oi}].description=v;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:100%" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-      </td>
-      <td style="padding:12px 14px;width:130px">
-        <div style="display:flex;align-items:center;gap:5px">
-          <span style="font-size:12px;color:var(--muted)">£</span>
-          <input type="number" value="${o.minFee||0}" min="0" step="100" onchange="(function(v){DB.pricingOptions[${oi}].minFee=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:5px;padding:5px 8px;font-size:12px;font-family:inherit;outline:none;width:80px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-        </div>
-      </td>
-    </tr>`).join('');
+  const minP=DB.minimumPricing||{};
 
-  c.innerHTML=`
-  <div class="phdr"><div><h2>&#x2699; Admin</h2><p>${users.length} registered user${users.length!==1?'s':''}</p></div></div>
+  const card=(content,extra='')=>`<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;${extra}">${content}</div>`;
 
-  <div style="padding:0 28px 28px;display:flex;flex-direction:column;gap:24px">
-
-    <!-- USERS -->
-    <div class="card" style="overflow:auto;padding:0">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:2px solid var(--border)">
-        <div>
-          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 2px;color:var(--nearblack)">Users</h3>
-          <p style="font-size:12px;color:var(--muted);margin:0">${users.length} registered user${users.length!==1?'s':''}</p>
-        </div>
-        <button class="btn btn-primary" onclick="openUserModal(null)">+ Create User</button>
+  const sectionHead=(icon,title,sub)=>`
+    <div style="padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px">
+      <div style="font-size:20px">${icon}</div>
+      <div>
+        <div style="font-family:Georgia,serif;font-size:15px;font-weight:700;color:var(--nearblack);letter-spacing:-.01em">${title}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>
       </div>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr style="background:var(--halfnarrow)">
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Name</th>
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Role</th>
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Entity</th>
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Partner (for EAs)</th>
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Last Active</th>
-          <th style="text-align:left;padding:9px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Actions</th>
+    </div>`;
+
+  const inputStyle='width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;font-family:inherit;color:var(--nearblack);background:#fafaf8;outline:none';
+  const labelStyle='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block';
+  const colHead='font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:0 0 10px;border-bottom:1px solid var(--border)';
+
+  // --- USERS TABLE ---
+  const usersHtml=card(`
+    ${sectionHead('👥','Users',users.length+' registered user'+(users.length!==1?'s':''))}
+    <div style="padding:20px 24px">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button onclick="openCreateUserModal()" style="background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:.02em">+ Create User</button>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>
+          <th style="text-align:left;${colHead}">Name</th>
+          <th style="text-align:left;${colHead}">Role</th>
+          <th style="text-align:left;${colHead}">Entity</th>
+          <th style="text-align:left;${colHead}">Partner (EAs)</th>
+          <th style="text-align:left;${colHead}">Last Active</th>
+          <th style="text-align:left;${colHead}">Actions</th>
         </tr></thead>
-        <tbody>${userRows||'<tr><td colspan="6" style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No users yet.</td></tr>'}</tbody>
+        <tbody>
+          ${users.length===0
+            ?`<tr><td colspan="6" style="text-align:center;padding:32px 0;color:var(--muted);font-style:italic;font-size:13px">No users yet.</td></tr>`
+            :users.map(u=>`<tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:10px 0">${u.name||'—'}</td>
+              <td style="padding:10px 0;color:var(--muted)">${u.role||'—'}</td>
+              <td style="padding:10px 0;color:var(--muted)">${u.entity||'—'}</td>
+              <td style="padding:10px 0;color:var(--muted)">${u.partner||'—'}</td>
+              <td style="padding:10px 0;color:var(--muted)">${u.lastActive||'—'}</td>
+              <td style="padding:10px 0"><a href="#" style="color:var(--venetian);font-size:11px;font-weight:600">Edit</a></td>
+            </tr>`).join('')}
+        </tbody>
       </table>
-    </div>
+    </div>`);
 
-    <!-- PRICING STRUCTURE -->
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+  // --- CHAIR MENTORING SECTION ---
+  const chairRows=chairOpts.map((o,i)=>`
+    <div style="display:grid;grid-template-columns:1fr 2fr 120px 120px;gap:12px;align-items:end;padding:14px 0;border-bottom:1px solid #f0ede8">
+      <div>
+        <label style="${labelStyle}">Option Name</label>
+        <input id="chairName${i}" value="${o.name||''}" style="${inputStyle}" placeholder="e.g. Premium Chair">
+      </div>
+      <div>
+        <label style="${labelStyle}">Description / Sessions</label>
+        <input id="chairDesc${i}" value="${o.description||''}" style="${inputStyle}" placeholder="e.g. 12 sessions / year">
+      </div>
+      <div>
+        <label style="${labelStyle}">Client Min Fee (£)</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+          <input id="chairFee${i}" type="number" min="0" value="${o.minFee||0}" style="${inputStyle};padding-left:22px">
+        </div>
+      </div>
+      <div>
+        <label style="${labelStyle}">Mentor Fee / Session (£)</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+          <input id="mentorFee${i}" type="number" min="0" value="${mentorOpts[i]?.feePerSession||0}" style="${inputStyle};padding-left:22px">
+        </div>
+      </div>
+    </div>`).join('');
+
+  const chairSection=card(`
+    ${sectionHead('🪑','Chair Mentoring','Client pricing options and mentor session fees')}
+    <div style="padding:4px 24px 4px">
+      <div style="display:grid;grid-template-columns:1fr 2fr 120px 120px;gap:12px;padding:12px 0 4px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Option</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Description</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Client Min Fee</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Mentor / Session</div>
+      </div>
+      ${chairRows}
+    </div>
+    <div style="padding:14px 24px;background:#fafaf8;border-top:1px solid var(--border)">
+      <p style="font-size:11px;color:var(--muted);margin:0">Mentor fees per session are paid upon session completion. Each option corresponds to a client pricing tier.</p>
+    </div>`);
+
+  // --- EXECUTIVE MENTORING SECTION ---
+  const execSection=card(`
+    ${sectionHead('💼','Executive Mentoring','Annual minimum fees for executive engagements')}
+    <div style="padding:20px 24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div>
-          <h3 style="font-family:Georgia,serif;font-size:15px;font-weight:700;margin:0 0 4px;color:var(--nearblack)">&#x1F4B0; Pricing Structure</h3>
-          <p style="font-size:12px;color:var(--muted);margin:0">Configure minimum fees for chair pricing options and executive / team engagement types.</p>
+          <label style="${labelStyle}">Client Minimum Annual Fee (£)</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+            <input id="execMin" type="number" min="0" value="${minP.executive||0}" style="${inputStyle};padding-left:22px" placeholder="0">
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0 0">Minimum total annual fee billed to client.</p>
+        </div>
+        <div>
+          <label style="${labelStyle}">Mentor Annual Fee (£)</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+            <input id="execMentorMin" type="number" min="0" value="${minP.executiveMentorFee||0}" style="${inputStyle};padding-left:22px" placeholder="0">
+          </div>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0 0">Annual fee paid to the executive mentor.</p>
         </div>
       </div>
-      <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:18px">
+    </div>`);
 
-        <!-- Chair options -->
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Chair Mentoring — Pricing Options</div>
-        <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
-          <thead><tr style="background:var(--halfnarrow);border-radius:6px">
-            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Option Name</th>
-            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Description / Sessions</th>
-            <th style="text-align:left;padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Minimum Fee (£)</th>
-          </tr></thead>
-          <tbody>${pricingRows}</tbody>
-        </table>
-
-        <div style="border-top:1px solid var(--border);margin:0 0 18px"></div>
-
-        <!-- Executive & Team minimums -->
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Executive &amp; Team — Minimum Fees</div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap">
-          <div style="flex:1;min-width:160px">
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px">Executive Minimum (£/year)</label>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-size:13px;color:var(--muted)">£</span>
-              <input type="number" id="exec-min-fee" value="${minP.executive||0}" min="0" step="500" onchange="(function(v){if(!DB.minimumPricing)DB.minimumPricing={};DB.minimumPricing.executive=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:120px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-            </div>
+  // --- TEAM MENTORING SECTION ---
+  const teamSection=card(`
+    ${sectionHead('🤝','Team Mentoring','Total programme fees for team engagements')}
+    <div style="padding:20px 24px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <label style="${labelStyle}">Client Minimum Programme Fee (£)</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+            <input id="teamMin" type="number" min="0" value="${minP.team||0}" style="${inputStyle};padding-left:22px" placeholder="0">
           </div>
-          <div style="flex:1;min-width:160px">
-            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:5px">Team Minimum (£ total)</label>
-            <div style="display:flex;align-items:center;gap:6px">
-              <span style="font-size:13px;color:var(--muted)">£</span>
-              <input type="number" id="team-min-fee" value="${minP.team||0}" min="0" step="500" onchange="(function(v){if(!DB.minimumPricing)DB.minimumPricing={};DB.minimumPricing.team=parseFloat(v)||0;save();})(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;font-family:inherit;outline:none;width:120px" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
-            </div>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0 0">Minimum total fee for the full team programme.</p>
+        </div>
+        <div>
+          <label style="${labelStyle}">Mentor Programme Fee (£)</label>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span>
+            <input id="teamMentorMin" type="number" min="0" value="${minP.teamMentorFee||0}" style="${inputStyle};padding-left:22px" placeholder="0">
           </div>
+          <p style="font-size:11px;color:var(--muted);margin:8px 0 0">Total fee paid to the mentor for the programme.</p>
         </div>
-
-        <div style="border-top:1px solid var(--border);margin:20px 0 0"></div>
-        <div style="padding-top:16px;display:flex;justify-content:flex-end">
-          <button onclick="save();const btn=this;btn.textContent='Saved ✓';btn.style.background='#059669';btn.style.borderColor='#059669';setTimeout(()=>{btn.textContent='Save Pricing';btn.style.background='';btn.style.borderColor='';},2000)" style="background:var(--venetian);color:#fff;border:1px solid var(--venetian);border-radius:6px;padding:9px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s">Save Pricing</button>
-        </div>
-
       </div>
+    </div>`);
+
+  // --- RENDER ---
+  document.getElementById('content').innerHTML=`
+<div style="padding:28px 32px;max-width:900px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+    <div>
+      <h1 style="font-family:Georgia,serif;font-size:24px;font-weight:700;color:var(--nearblack);margin:0 0 4px;letter-spacing:-.02em">⚙ Admin</h1>
+      <p style="font-size:13px;color:var(--muted);margin:0">${users.length} registered user${users.length!==1?'s':''}</p>
     </div>
+  </div>
+  ${usersHtml}
+  <div style="display:flex;align-items:center;gap:10px;margin:28px 0 18px">
+    <div style="height:1px;flex:1;background:var(--border)"></div>
+    <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:0 10px">Pricing Structure</span>
+    <div style="height:1px;flex:1;background:var(--border)"></div>
+  </div>
+  ${chairSection}
+  ${execSection}
+  ${teamSection}
+  <div style="display:flex;justify-content:flex-end;padding:8px 0 32px">
+    <button id="savePricingBtn" onclick="savePricing()" style="background:var(--venetian);color:#fff;border:none;border-radius:7px;padding:10px 28px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:opacity .15s">Save Pricing</button>
+  </div>
+</div>`;
 
-  </div>`;
+  window.savePricing=function(){
+    // Chair options
+    const newOpts=chairOpts.map((o,i)=>({
+      ...o,
+      name:document.getElementById('chairName'+i)?.value||o.name,
+      description:document.getElementById('chairDesc'+i)?.value||o.description,
+      minFee:parseFloat(document.getElementById('chairFee'+i)?.value)||0
+    }));
+    DB.pricingOptions=newOpts;
+
+    // Mentor fee options
+    DB.mentorFeeOptions=mentorOpts.map((m,i)=>({
+      ...m,
+      feePerSession:parseFloat(document.getElementById('mentorFee'+i)?.value)||0
+    }));
+
+    // Min pricing
+    DB.minimumPricing={
+      executive:parseFloat(document.getElementById('execMin')?.value)||0,
+      executiveMentorFee:parseFloat(document.getElementById('execMentorMin')?.value)||0,
+      team:parseFloat(document.getElementById('teamMin')?.value)||0,
+      teamMentorFee:parseFloat(document.getElementById('teamMentorMin')?.value)||0
+    };
+
+    const btn=document.getElementById('savePricingBtn');
+    if(btn){btn.textContent='✓ Saved';btn.style.background='#059669';setTimeout(()=>{btn.textContent='Save Pricing';btn.style.background='var(--venetian)';},2000);}
+  };
 }
 function openAdminUserModal(userId, dataStr){
   const d=dataStr?JSON.parse(dataStr):{};
