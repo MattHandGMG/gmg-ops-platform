@@ -2529,7 +2529,7 @@ async function rAdmin(c){
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead><tr>${['Name','Role','Entity','Partner (EAs)','Last Active',''].map(h=>`<th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
-          <tbody>${users.length===0?`<tr><td colspan="6" style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic">No users yet.</td></tr>`:users.map(u=>`<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:12px">${u.name||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.role||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.entity||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.partner||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.lastActive||'—'}</td><td style="padding:9px 0"><a href="#" style="color:var(--venetian);font-size:11px;font-weight:600">Edit</a></td></tr>`).join('')}</tbody>
+          <tbody>${users.length===0?`<tr><td colspan="6" style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic">No users yet.</td></tr>`:users.map(u=>`<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:12px">${u.name||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.role||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.entity||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.partner||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.lastActive||'—'}</td><td style="padding:9px 0"><a href="#" onclick="openEditUserModal('${u.id}')" style="color:var(--venetian);font-size:11px;font-weight:600">Edit</a></td></tr>`).join('')}</tbody>
         </table>
       </div>
     </div>
@@ -2874,6 +2874,35 @@ async function createUser(){
     await sb.from('profiles').upsert({id:data.user.id,data:{name,role,entity,partnerName},updated_at:new Date().toISOString()});
     if(!DB.appUsers)DB.appUsers=[];if(data.user)DB.appUsers.push({id:data.user.id,email:email,name:name,role:role,entity:'GMG',lastActive:new Date().toISOString()});save();closeModal();S.view='admin';renderView();
   }
+}
+function openEditUserModal(id){
+  var u=(DB.appUsers||[]).find(function(x){return x.id===id;});
+  if(!u){alert('User not found');return;}
+  var roles=['rm','ea','partner','finance','admin','ops'];
+  var rn={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
+  var entities=['GMG','CMi','Merrych'];
+  var ropts=roles.map(function(r){return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+rn[r]+'</option>';}).join('');
+  var eopts=entities.map(function(e){return '<option value="'+e+'"'+(u.entity===e?' selected':'')+'>'+e+'</option>';}).join('');
+  var html='<div class="mhdr"><h3>Edit User</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
+    +'<div class="mbody">'
+    +'<div class="fg"><label>Full Name</label><input id="au-name" class="fi" value="'+(u.name||'').replace(/"/g,'&quot;')+'"></div>'
+    +'<div class="fg"><label>Role</label><select id="au-role" class="fi">'+ropts+'</select></div>'
+    +'<div class="fg"><label>Entity</label><select id="au-entity" class="fi">'+eopts+'</select></div>'
+    +'<div class="fg"><label>Partner Name</label><input id="au-partner" class="fi" value="'+(u.partnerName||'').replace(/"/g,'&quot;')+'"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary" id="au-save-btn">Save</button>'
+    +'</div></div>';
+  showModal(html);
+  document.getElementById('au-save-btn').onclick=function(){saveLocalUser(id);};
+}
+function saveLocalUser(id){
+  var n=function(k){return document.getElementById(k);};
+  var nm=n('au-name').value.trim();
+  if(!nm){alert('Name required');return;}
+  if(!DB.appUsers)DB.appUsers=[];
+  DB.appUsers=DB.appUsers.map(function(u){return u.id===id?Object.assign({},u,{name:nm,role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?n('au-partner').value.trim():''}):u;});
+  save();closeModal();S.view='admin';renderView();
 }
 async function saveAdminUser(userId){
   if(!userId) return closeModal();
