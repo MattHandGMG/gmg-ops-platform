@@ -2425,8 +2425,7 @@ function _dashGroup(ctx,ent){
   var m=now.getMonth(),d=now.getDate(),y=now.getFullYear();
   var doy=Math.floor((now-new Date(y,0,0))/86400000);
   var aRev=tgt.revenue;
-  var tMTD=
-ath.round(aRev/12*(d/30)),tQTD=Math.round(aRev/4*(((m%3)*30+d)/90)),tYTD=Math.round(aRev*doy/365);
+  var tMTD=Math.round(aRev/12*(d/30)),tQTD=Math.round(aRev/4*(((m%3)*30+d)/90)),tYTD=Math.round(aRev*doy/365);
   var mtd=_revInPeriod(fInv,ctx.mtdStart,now),qtd=_revInPeriod(fInv,ctx.qtdStart,now),ytd=_revInPeriod(fInv,ctx.ytdStart,now);
   var active=fEngs.filter(function(e){return e.status==='active';});
   var openP=fPipe.filter(function(p){return p.stage!=='Closed Won';});
