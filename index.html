@@ -4296,7 +4296,7 @@ function rProjCalendar(body,e,stages,sessions,tasks){
   const addEv=(ds,color,label)=>{if(!ds||!ds.startsWith(monthStr))return;const d=parseInt(ds.split('-')[2]);if(!evByDay[d])evByDay[d]=[];evByDay[d].push({color,label});};
   sessions.forEach(s=>addEv(s.date,'var(--info)','Session'));
   tasks.forEach(t=>addEv(t.due,t.status==='done'?'var(--success)':'#f5a623',t.title));
-  stages.forEach(st=>{addEv(st.startDate,'var(--venetian)',st.name+' start');addEv(st.endDate,'var(--cadmium)',St.name+' end');});
+  stages.forEach(st=>{addEv(st.startDate,'var(--venetian)',st.name+' start');addEv(st.endDate,'var(--cadmium)',st.name+' end');});
   const todayD=new Date();const isToday=d=>todayD.getFullYear()===year&&todayD.getMonth()===month&&todayD.getDate()===d;
   let cells='';
   for(let i=0;i<adjDow;i++)cells+='<div></div>';
