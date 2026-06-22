@@ -2475,14 +2475,10 @@ async function rAdmin(c){
   const chairOpts=[
     rawOpts[0]||{id:'opt1',name:'Option 1',description:'12 sessions / year',minFee:0},
     rawOpts[1]||{id:'opt2',name:'Option 2',description:'8 sessions / year',minFee:0},
-    rawOpts[2]||{id:'opt3',name:'Option 3',description:'6 sessions / year',minFee:0}
+    rawOpts[2]||{id:'opt3',name:'Option 3',description:'6 sessions / year',minFee:0},
+    rawOpts[3]||{id:'opt4',name:'Option 4',description:'4 sessions / year',minFee:0}
   ];
-  const rawMentor=DB.mentorFeeOptions||[];
-  const mentorOpts=[
-    rawMentor[0]||{id:'mopt1',feePerSession:0},
-    rawMentor[1]||{id:'mopt2',feePerSession:0},
-    rawMentor[2]||{id:'mopt3',feePerSession:0}
-  ];
+  const myrFees=DB.mentorYearlyFees||{year1:0,year2:0,year3:0,year4plus:0};
   const minP=DB.minimumPricing||{};
   const xero=DB.xeroSettings||{chairCode:'',execCode:'',teamCode:'',paymentTerms:30,invoicePrefix:'GMG'};
   const sfMap=DB.salesforceMapping||{engName:'Name',clientName:'Account',mentorName:'Contact__c',annualFee:'Annual_Value__c',status:'Stage'};
@@ -2558,20 +2554,31 @@ async function rAdmin(c){
 
   // --- TAB: PRICING ---
   const chairRows=chairOpts.map((o,i)=>`
-    <div style="display:grid;grid-template-columns:1fr 2fr 130px 130px;gap:12px;align-items:end;padding:12px 0;border-bottom:1px solid #f5f3f0">
+    <div style="display:grid;grid-template-columns:1fr 2fr 140px;gap:12px;align-items:end;padding:12px 0;border-bottom:1px solid #f5f3f0">
       <div><label style="${labelStyle}">Option Name</label><input id="chairName${i}" value="${o.name||''}" style="${inputStyle}" placeholder="e.g. Premium Chair"></div>
       <div><label style="${labelStyle}">Description / Sessions</label><input id="chairDesc${i}" value="${o.description||''}" style="${inputStyle}" placeholder="e.g. 12 sessions / year"></div>
       <div><label style="${labelStyle}">Client Min Fee (£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span><input id="chairFee${i}" type="number" min="0" value="${o.minFee||0}" style="${inputStyle};padding-left:22px"></div></div>
-      <div><label style="${labelStyle}">Mentor / Session (£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span><input id="mentorFee${i}" type="number" min="0" value="${mentorOpts[i]?.feePerSession||0}" style="${inputStyle};padding-left:22px"></div></div>
     </div>`).join('');
   const tabPricing=`
     <div style="${cardStyle}">
-      ${sectionHead('🪑','Chair Mentoring','Client pricing options and mentor session fees')}
+      ${sectionHead('🪑','Chair Mentoring — Client Options','4 pricing tiers available to chair clients')}
       <div style="padding:4px 24px">
-        <div style="display:grid;grid-template-columns:1fr 2fr 130px 130px;gap:12px;padding:10px 0 0"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Option</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Description</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Client Min Fee</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Mentor / Session</div></div>
+        <div style="display:grid;grid-template-columns:1fr 2fr 140px;gap:12px;padding:10px 0 0"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Option Name</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Description</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Client Min Fee</div></div>
         ${chairRows}
       </div>
-      <div style="padding:10px 24px;background:#fafaf8;border-top:1px solid var(--border)"><p style="font-size:11px;color:var(--muted);margin:0">Mentor fees per session are paid upon session completion. Each option corresponds to a client pricing tier.</p></div>
+    </div>
+    <div style="${cardStyle}">
+      ${sectionHead('💰','Chair Mentoring — Mentor Session Fees','Fee paid to mentor per session, based on engagement year')}
+      <div style="padding:20px 24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
+          ${[['Year 1','year1'],['Year 2','year2'],['Year 3','year3'],['Year 4+','year4plus']].map(([label,key])=>`
+          <div>
+            <label style="${labelStyle}">${label}</label>
+            <div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span><input id="myr_${key}" type="number" min="0" value="${myrFees[key]||0}" style="${inputStyle};padding-left:22px"></div>
+          </div>`).join('')}
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin:14px 0 0">Fees are paid per session completed. The applicable rate is determined by the year of the engagement (e.g. a client in their second year of engagement pays the Year 2 rate).</p>
+      </div>
     </div>
     <div style="${cardStyle}">
       ${sectionHead('💼','Executive Mentoring','Annual minimum fees')}
@@ -2759,7 +2766,7 @@ async function rAdmin(c){
 
   window.savePricing=function(){
     DB.pricingOptions=chairOpts.map((o,i)=>({...o,name:document.getElementById('chairName'+i)?.value||o.name,description:document.getElementById('chairDesc'+i)?.value||o.description,minFee:parseFloat(document.getElementById('chairFee'+i)?.value)||0}));
-    DB.mentorFeeOptions=mentorOpts.map((m,i)=>({...m,feePerSession:parseFloat(document.getElementById('mentorFee'+i)?.value)||0}));
+    DB.mentorYearlyFees={year1:parseFloat(document.getElementById('myr_year1')?.value)||0,year2:parseFloat(document.getElementById('myr_year2')?.value)||0,year3:parseFloat(document.getElementById('myr_year3')?.value)||0,year4plus:parseFloat(document.getElementById('myr_year4plus')?.value)||0};
     DB.minimumPricing={executive:parseFloat(document.getElementById('execMin')?.value)||0,executiveMentorFee:parseFloat(document.getElementById('execMentorMin')?.value)||0,team:parseFloat(document.getElementById('teamMin')?.value)||0,teamMentorFee:parseFloat(document.getElementById('teamMentorMin')?.value)||0};
     flashBtn('savePricingBtn');
   };
