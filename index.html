@@ -6750,7 +6750,35 @@ ${content}
     };
   }
 
-  window._oc3e=id=>{const u=getUsers().find(x=>x.id===id);if(u)showModal(u);};
+  function showProfile(u){
+  const RC={admin:'#c02b20',partner:'#1a5c96',rm:'#0d7c59',finance:'#7b3fa6',mentor:'#e07b00',ops:'#2d6a8f'};
+  const c=RC[u.role]||'#64748b';
+  const av=(u.name||'?')[0].toUpperCase();
+  const users=getUsers();
+  const mgr=u.reportsTo?users.find(x=>x.id===u.reportsTo):null;
+  const bg=document.createElement('div');
+  bg.className='oc3mbg';
+  var html='<div class="oc3modal">'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:1.5px solid #e2e8f0">'
+    +'<div style="width:56px;height:56px;border-radius:50%;background:'+c+';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;flex-shrink:0">'+av+'</div>'
+    +'<div><b style="display:block;font-size:16px;font-weight:700;color:#1e293b">'+u.name+'</b>'
+    +'<span style="font-size:13px;color:#64748b">'+(u.title||u.role)+'</span>'
+    +'<span style="display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;background:'+c+'">'+(u.role||'')+'</span></div></div>'
+    +'<table style="width:100%;font-size:13px;border-collapse:collapse">'
+    +(u.email?'<tr><td style="padding:7px 0;color:#64748b;width:110px;font-weight:500">Email</td><td><a style="color:#2563eb" href="javascript:void(0)" onclick="navigator.clipboard.writeText('+JSON.stringify(u.email||'')+');">'+u.email+'</a></td></tr>':'')
+    +(u.phone?'<tr><td style="padding:7px 0;color:#64748b;font-weight:500">Phone</td><td style="color:#1e293b">'+u.phone+'</td></tr>':'')
+    +(mgr?'<tr><td style="padding:7px 0;color:#64748b;font-weight:500">Reports To</td><td style="color:#1e293b">'+mgr.name+'</td></tr>':'')
+    +(u.entity?'<tr><td style="padding:7px 0;color:#64748b;font-weight:500">Entity</td><td style="color:#1e293b">'+u.entity+'</td></tr>':'')
+    +'</table>'
+    +'<div class="oc3mbtns"><button class="oc3bcancel" id="oc3p-close">Close</button><button class="oc3bsave" id="oc3p-edit">Edit</button></div>'
+    +'</div>';
+  bg.innerHTML=html;
+  document.body.appendChild(bg);
+  bg.addEventListener('click',function(e){if(e.target===bg)bg.remove();});
+  bg.querySelector('#oc3p-close').onclick=function(){bg.remove();};
+  bg.querySelector('#oc3p-edit').onclick=function(){bg.remove();showModal(u);};
+}
+window._oc3e=id=>{const u=getUsers().find(x=>x.id===id);if(u)showProfile(u);};
   window._oc3a=()=>showModal(null);
   render();
 }
