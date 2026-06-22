@@ -2224,15 +2224,9 @@ function _dashSelector(){
     var sopts=svcs.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===sv?' selected':'')+'>'+s[1]+'</option>';}).join('');
     svcSel='<select onchange="window._gmgDash.svc=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+sopts+'</select>';
   }
-  var p=window._gmgDash.period||'ytd';
-  var pBtns=['mtd','qtd','ytd'].map(function(x){
-    return '<button onclick="window._gmgDash.period=\''+x+'\';renderView()" style="background:'+(x===p?'#2563eb':'#f1f5f9')+';color:'+(x===p?'#fff':'#475569')+';border:none;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em">'+x.toUpperCase()+'</button>';
-  }).join('');
   return '<div style="position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
     +'<div style="background:#f1f5f9;border-radius:9px;padding:3px;display:flex;gap:2px">'+tabHtml+'</div>'
     +(entitySel?entitySel:'')+(svcSel?svcSel:'')
-    +'<div style="margin-left:auto;display:flex;gap:4px;align-items:center">'
-    +'<span style="font-size:11px;color:#94a3b8;margin-right:4px">Period:</span>'+pBtns+'</div>'
     +'</div>';
 }
 
@@ -2447,7 +2441,7 @@ function _dashGroup(ctx,ent){
   html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">'
     +'<div><h2 style="margin:0;font-size:22px;font-weight:800;color:#0f172a">'+title+'</h2>'
     +'<p style="margin:4px 0 0;font-size:13px;color:#64748b">Revenue performance vs annual targets</p></div>'
-    +'<button onclick="_dashSetTargets()" style="background:#0f172a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">&#9881; Set Targets</button></div>';
+    +(S.user&&S.user.role==='admin'?'<button onclick="_dashSetTargets()" style="background:#0f172a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">&#9881; Set Targets</button>':'')+'</div>';
   html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px">';
   html+=_metricCard('MTD Sales',mtd,tMTD,'Month to Date','#2563eb','');
   html+=_metricCard('QTD Sales',qtd,tQTD,'Quarter to Date','#0d7c59','');
@@ -2580,7 +2574,7 @@ function _saveCustomDash(){
 
 function _dashSetTargets(){
   var db=getDB();var t=db.dashTargets||{revenue:2000,engagements:20,newBusiness:500};
-  var bg=document.createElement('div');bg.className='oc3mbg';
+  var bg=document.createElement('div');bg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
   bg.innerHTML='<div class="oc3modal">'
     +'<h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a">Set Annual Targets</h3>'
     +'<p style="margin:0 0 20px;font-size:12px;color:#64748b">Pro-rated automatically for MTD, QTD, and YTD.</p>'
