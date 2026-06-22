@@ -2691,7 +2691,7 @@ async function rAdmin(c){
             <p style="font-size:11px;color:var(--muted);margin:0"><strong style="color:var(--nearblack)">Available variables:</strong> {{clientName}}, {{mentorName}}, {{engName}}, {{amount}}, {{sessionDate}}, {{sessionTime}}, {{duration}}, {{paymentTerms}}</p>
           </div>
         </div>
-        ${saveBtn('saveTpl_'+key,`saveTemplate('${key}')`)  }
+        ${saveBtn('saveTpl_'+key,`saveTemplate('${key}')`)}
       </div>`).join('')}`;
 
   // --- TAB: SYSTEM ---
@@ -2714,12 +2714,12 @@ async function rAdmin(c){
         ${sectionHead('📤','Data Export','Download platform data as CSV or Excel')}
         <div style="padding:16px 24px;display:flex;flex-direction:column;gap:10px">
           ${[
-            ['Engagements','exportData('engagements')'],
-            ['Sessions','exportData('sessions')'],
-            ['Client Invoices','exportData('clientInvoices')'],
-            ['Mentor Payments','exportData('mentorPayments')'],
-            ['Pipeline','exportData('pipeline')'],
-            ['Contacts','exportData('contacts')']
+            ['Engagements','exportData(\'engagements\')'],
+            ['Sessions','exportData(\'sessions\')'],
+            ['Client Invoices','exportData(\'clientInvoices\')'],
+            ['Mentor Payments','exportData(\'mentorPayments\')'],
+            ['Pipeline','exportData(\'pipeline\')'],
+            ['Contacts','exportData(\'contacts\')']
           ].map(([label,fn])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#fafaf8;border:1px solid var(--border);border-radius:6px"><span style="font-size:13px;color:var(--nearblack)">${label}</span><button onclick="${fn}" style="background:var(--venetian);color:#fff;border:none;border-radius:5px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer">Export CSV</button></div>`).join('')}
         </div>
       </div>
@@ -3688,7 +3688,7 @@ function saveNewSession(engId){
   const e=DB.engagements.find(function(x){return x.id===engId;});
   if(e&&s.status==='completed') e.sessionsUsed=(e.sessionsUsed||0)+1;
   addAct('◈','Session logged: '+(e?e.name:engId)+' — '+s.date);
-  save(); closeModal(); renderView();
+  save(); closeModal(); nav('projects');
 }
 
 function openEditSessionModal(sessionId){
