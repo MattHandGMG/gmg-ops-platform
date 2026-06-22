@@ -3726,7 +3726,8 @@ function rProjects(c){
       if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
       S.projectEngId=null;
     },100);
-  
+  }
+}
 
 function rProjectDetail(c, engId){
   const e=DB.engagements.find(x=>x.id===engId);
