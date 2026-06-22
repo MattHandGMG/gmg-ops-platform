@@ -2478,7 +2478,7 @@ async function rAdmin(c){
     rawOpts[2]||{id:'opt3',name:'Option 3',description:'6 sessions / year',minFee:0},
     rawOpts[3]||{id:'opt4',name:'Option 4',description:'4 sessions / year',minFee:0}
   ];
-  const myrFees=DB.mentorYearlyFees||{year1:0,year2:0,year3:0,year4plus:0};
+  const myrFees=DB.mentorYearlyFees||{legacy:0,y2024:0,y2025:0,y2026:0};
   const minP=DB.minimumPricing||{};
   const xero=DB.xeroSettings||{chairCode:'',execCode:'',teamCode:'',paymentTerms:30,invoicePrefix:'GMG'};
   const sfMap=DB.salesforceMapping||{engName:'Name',clientName:'Account',mentorName:'Contact__c',annualFee:'Annual_Value__c',status:'Stage'};
@@ -2496,7 +2496,7 @@ async function rAdmin(c){
   const fyStart=DB.fiscalYearStart||4;
   const auditLog=DB.auditLog||[];
   const roles=DB.rolePermissions||{
-    rm:{label:'Relationship Manager',canViewFinance:false,canEditEngagements:true,canManageUsers:false,canAccessAdmin:false},
+    rm:{label:'EA',canViewFinance:false,canEditEngagements:true,canManageUsers:false,canAccessAdmin:false},
     partner:{label:'Partner',canViewFinance:true,canEditEngagements:true,canManageUsers:false,canAccessAdmin:false},
     finance:{label:'Finance',canViewFinance:true,canEditEngagements:false,canManageUsers:false,canAccessAdmin:false},
     admin:{label:'Admin',canViewFinance:true,canEditEngagements:true,canManageUsers:true,canAccessAdmin:true}
@@ -2571,7 +2571,7 @@ async function rAdmin(c){
       ${sectionHead('💰','Chair Mentoring — Mentor Session Fees','Fee paid to mentor per session, based on engagement year')}
       <div style="padding:20px 24px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
-          ${[['Year 1','year1'],['Year 2','year2'],['Year 3','year3'],['Year 4+','year4plus']].map(([label,key])=>`
+          ${[['Legacy','legacy'],['2024','y2024'],['2025','y2025'],['2026','y2026']].map(([label,key])=>`
           <div>
             <label style="${labelStyle}">${label}</label>
             <div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">£</span><input id="myr_${key}" type="number" min="0" value="${myrFees[key]||0}" style="${inputStyle};padding-left:22px"></div>
@@ -2691,7 +2691,7 @@ async function rAdmin(c){
             <p style="font-size:11px;color:var(--muted);margin:0"><strong style="color:var(--nearblack)">Available variables:</strong> {{clientName}}, {{mentorName}}, {{engName}}, {{amount}}, {{sessionDate}}, {{sessionTime}}, {{duration}}, {{paymentTerms}}</p>
           </div>
         </div>
-        ${saveBtn('saveTpl_'+key,`saveTemplate('${key}')`)}
+        ${saveBtn('saveTpl_'+key,`saveTemplate('${key}')`)  }
       </div>`).join('')}`;
 
   // --- TAB: SYSTEM ---
@@ -2714,12 +2714,12 @@ async function rAdmin(c){
         ${sectionHead('📤','Data Export','Download platform data as CSV or Excel')}
         <div style="padding:16px 24px;display:flex;flex-direction:column;gap:10px">
           ${[
-            ['Engagements','exportData(\'engagements\')'],
-            ['Sessions','exportData(\'sessions\')'],
-            ['Client Invoices','exportData(\'clientInvoices\')'],
-            ['Mentor Payments','exportData(\'mentorPayments\')'],
-            ['Pipeline','exportData(\'pipeline\')'],
-            ['Contacts','exportData(\'contacts\')']
+            ['Engagements','exportData('engagements')'],
+            ['Sessions','exportData('sessions')'],
+            ['Client Invoices','exportData('clientInvoices')'],
+            ['Mentor Payments','exportData('mentorPayments')'],
+            ['Pipeline','exportData('pipeline')'],
+            ['Contacts','exportData('contacts')']
           ].map(([label,fn])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#fafaf8;border:1px solid var(--border);border-radius:6px"><span style="font-size:13px;color:var(--nearblack)">${label}</span><button onclick="${fn}" style="background:var(--venetian);color:#fff;border:none;border-radius:5px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer">Export CSV</button></div>`).join('')}
         </div>
       </div>
@@ -2766,7 +2766,7 @@ async function rAdmin(c){
 
   window.savePricing=function(){
     DB.pricingOptions=chairOpts.map((o,i)=>({...o,name:document.getElementById('chairName'+i)?.value||o.name,description:document.getElementById('chairDesc'+i)?.value||o.description,minFee:parseFloat(document.getElementById('chairFee'+i)?.value)||0}));
-    DB.mentorYearlyFees={year1:parseFloat(document.getElementById('myr_year1')?.value)||0,year2:parseFloat(document.getElementById('myr_year2')?.value)||0,year3:parseFloat(document.getElementById('myr_year3')?.value)||0,year4plus:parseFloat(document.getElementById('myr_year4plus')?.value)||0};
+    DB.mentorYearlyFees={legacy:parseFloat(document.getElementById('myr_legacy')?.value)||0,y2024:parseFloat(document.getElementById('myr_y2024')?.value)||0,y2025:parseFloat(document.getElementById('myr_y2025')?.value)||0,y2026:parseFloat(document.getElementById('myr_y2026')?.value)||0};
     DB.minimumPricing={executive:parseFloat(document.getElementById('execMin')?.value)||0,executiveMentorFee:parseFloat(document.getElementById('execMentorMin')?.value)||0,team:parseFloat(document.getElementById('teamMin')?.value)||0,teamMentorFee:parseFloat(document.getElementById('teamMentorMin')?.value)||0};
     flashBtn('savePricingBtn');
   };
@@ -2829,29 +2829,6 @@ async function rAdmin(c){
     const btn=document.getElementById(id);
     if(btn){const orig=btn.textContent;btn.textContent='✓ Saved';btn.style.background='#059669';setTimeout(()=>{btn.textContent=orig;btn.style.background='var(--venetian)';},2000);}
   };
-}
-
-function openAdminUserModal(userId, dataStr){
-  const d=dataStr?JSON.parse(dataStr):{};
-  showModal(`<div class="mhdr"><h3>${userId?'Edit User':'User Slot'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
-  <div class="mbody">
-    <div class="fg"><label>Name</label><input id="au-name" type="text" value="${d.name||''}" placeholder="Full name"></div>
-    <div class="fgrow">
-      <div class="fg"><label>Role</label><select id="au-role" onchange="document.getElementById('au-partner-row').style.display=this.value==='ea'?'block':'none'">
-        ${['rm','ea','partner','finance','admin','ops'].map(r=>`<option value="${r}"${d.role===r?' selected':''}>${{rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'}[r]}</option>`).join('')}
-      </select></div>
-      <div class="fg"><label>Entity</label><select id="au-entity">
-        ${['GMG','CMi','Merryck'].map(e=>`<option value="${e}"${d.entity===e?' selected':''}>${e}</option>`).join('')}
-      </select></div>
-    </div>
-    <div class="fg" id="au-partner-row" style="display:${d.role==='ea'?'block':'none'}">
-      <label>Partner Name (EA only)</label><input id="au-partner" type="text" value="${d.partnerName||''}" placeholder="Name of partner they support">
-    </div>
-    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
-      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveAdminUser('${userId||''}')">Save</button>
-    </div>
-  </div>`);
 }
 
 async function openCreateUserModal(){
@@ -3480,7 +3457,7 @@ function rEngDetail(id){
           <button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Invoice</button>
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openSOWModal&&openSOWModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>`:''}
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Mentor Fee Schedule</button>`:''}
-          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.view='projects';S.projectEngId='${id}';renderView()" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
+          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.view='projects';S.projectEngId='${id}';nav('projects')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
         </div>
       </div>
     </div>
