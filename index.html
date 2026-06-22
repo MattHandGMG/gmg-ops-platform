@@ -2842,7 +2842,7 @@ async function openCreateUserModal(){
         ${['rm','ea','partner','finance','admin','ops'].map(r=>`<option value="${r}">${{rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'}[r]}</option>`).join('')}
       </select></div>
       <div class="fg"><label>Entity</label><select id="cu-entity" class="fi">
-        ${['GMG','CMi','Merryck'].map(e=>`<option>${e}</option>`).join('')}
+        ${['GMG','CMi','Merryck','Middle East','ANZ'].map(e=>`<option>${e}</option>`).join('')}
       </select></div>
     </div>
     <div class="fg" id="cu-partner-row" style="display:none">
@@ -2880,7 +2880,7 @@ function openEditUserModal(id){
   if(!u){alert('User not found');return;}
   var roles=['rm','ea','partner','finance','admin','ops'];
   var rn={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
-  var entities=['GMG','CMi','Merrych'];
+  var entities=['GMG','CMi','Merryck','Middle East','ANZ'];
   var ropts=roles.map(function(r){return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+rn[r]+'</option>';}).join('');
   var eopts=entities.map(function(e){return '<option value="'+e+'"'+(u.entity===e?' selected':'')+'>'+e+'</option>';}).join('');
   var html='<div class="mhdr"><h3>Edit User</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
