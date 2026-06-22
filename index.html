@@ -3015,6 +3015,7 @@ function rEngDetail(id){
   const enFiles=(DB.engagementFiles||[]).filter(f=>f.engId===id);
 
   const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?'Annual Value':'Total Fee';
+  const feeLabel=e.type==='chair'?'Annual Fee':e.type==='executive'?'Annual Value':'Total Fee';
   const totalBilled=enInv.reduce((a,i)=>a+(i.amount||0),0);
   const totalPaid=enPay.reduce((a,p)=>a+(p.amount||0),0);
 
