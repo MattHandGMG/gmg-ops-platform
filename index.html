@@ -3457,7 +3457,7 @@ function rEngDetail(id){
           <button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Invoice</button>
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openSOWModal&&openSOWModal('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4C4; SOW</button>`:''}
           ${e.type!=='chair'?`<button class="btn btn-sm" onclick="openFeeSchedule('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4B7; Mentor Fee Schedule</button>`:''}
-          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.view='projects';S.projectEngId='${id}';nav('projects')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
+          ${e.type==='team'?`<button class="btn btn-sm" onclick="S.tab=S.tab||{};S.tab.projDetail='${id}';S.tab.projDetailTab='overview';nav('projects')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">&#x1F4CB; Project Plan</button>`:''}
         </div>
       </div>
     </div>
