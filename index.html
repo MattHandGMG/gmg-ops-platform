@@ -2198,36 +2198,35 @@ function renderView(){
 /* ── DASHBOARD ───────────────────────────────────────────────── */
 
 /* ── DASHBOARD (role-aware) ─────────────────────────────── */
-function getDB(){return JSON.parse(localStorage.getItem('gmg_v2')||'{}')};
+function getDB(){return JSON.parse(localStorage.getItem('gmg_v2')||'{}');};
 function rDashboard(c){
-  if(!S.dashType) S.dashType='personal';
-  if(!S.dashPeriod) S.dashPeriod='ytd';
+  if(!window._gmgDash) window._gmgDash={type:'personal',period:'ytd',entity:'GMG',svc:'all'};
   c.innerHTML=_dashSelector()+_dashContent();
 }
 
 function _dashSelector(){
-  var t=S.dashType||'personal';
+  var t=window._gmgDash.type||'personal';
   var tabs=[{k:'personal',lbl:'Personal'},{k:'group',lbl:'GMG Group'},{k:'entity',lbl:'By Entity'},{k:'service',lbl:'By Service Line'},{k:'custom',lbl:'Custom'}];
   var tabHtml=tabs.map(function(tab){
     var on=t===tab.k;
-    return '<button style="background:'+(on?'#1e293b':'transparent')+';color:'+(on?'#fff':'#64748b')+';border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s" onclick="S.dashType=\''+tab.k+'\';renderView()">'+tab.lbl+'</button>';
+    return '<button style="background:'+(on?'#1e293b':'transparent')+';color:'+(on?'#fff':'#64748b')+';border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s" onclick="window._gmgDash.type=\''+tab.k+'\';renderView()">'+tab.lbl+'</button>';
   }).join('');
   var entitySel='';
   if(t==='entity'){
-    var ent=S.dashEntity||'GMG';
+    var ent=window._gmgDash.entity||'GMG';
     var eopts=['GMG','CMi','Merryck','Middle East','ANZ'].map(function(e){return '<option'+(e===ent?' selected':'')+'>'+e+'</option>';}).join('');
-    entitySel='<select onchange="S.dashEntity=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+eopts+'</select>';
+    entitySel='<select onchange="window._gmgDash.entity=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+eopts+'</select>';
   }
   var svcSel='';
   if(t==='service'){
-    var sv=S.dashSvc||'all';
+    var sv=window._gmgDash.svc||'all';
     var svcs=[['all','All Services'],['executive','Executive Coaching'],['leadership','Leadership Dev'],['chair','Chair Mentoring'],['team','Team Effectiveness'],['group','Group Mentoring']];
     var sopts=svcs.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===sv?' selected':'')+'>'+s[1]+'</option>';}).join('');
-    svcSel='<select onchange="S.dashSvc=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+sopts+'</select>';
+    svcSel='<select onchange="window._gmgDash.svc=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+sopts+'</select>';
   }
-  var p=S.dashPeriod||'ytd';
+  var p=window._gmgDash.period||'ytd';
   var pBtns=['mtd','qtd','ytd'].map(function(x){
-    return '<button onclick="S.dashPeriod=\''+x+'\';renderView()" style="background:'+(x===p?'#2563eb':'#f1f5f9')+';color:'+(x===p?'#fff':'#475569')+';border:none;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em">'+x.toUpperCase()+'</button>';
+    return '<button onclick="window._gmgDash.period=\''+x+'\';renderView()" style="background:'+(x===p?'#2563eb':'#f1f5f9')+';color:'+(x===p?'#fff':'#475569')+';border:none;border-radius:6px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;letter-spacing:.05em">'+x.toUpperCase()+'</button>';
   }).join('');
   return '<div style="position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #e2e8f0;padding:10px 24px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
     +'<div style="background:#f1f5f9;border-radius:9px;padding:3px;display:flex;gap:2px">'+tabHtml+'</div>'
@@ -2242,12 +2241,12 @@ function _dashContent(){
   if(!db.engagements||!db.engagements.length){db=_seedDemoData(db);localStorage.setItem('gmg_v2',JSON.stringify(db));}
   var now=new Date();var m=now.getMonth();var y=now.getFullYear();
   var ctx={db:db,user:S.user,engs:db.engagements||[],invoices:db.clientInvoices||[],pipeline:db.pipeline||[],tasks:db.tasks||[],now:now,mtdStart:new Date(y,m,1),qtdStart:new Date(y,Math.floor(m/3)*3,1),ytdStart:new Date(y,0,1)};
-  var t=S.dashType||'personal';
+  var t=window._gmgDash.type||'personal';
   if(t==='group') return _dashGroup(ctx,null);
-  if(t==='entity') return _dashGroup(ctx,S.dashEntity||'GMG');
-  if(t==='service') return _dashService(ctx,S.dashSvc||'all');
+  if(t==='entity') return _dashGroup(ctx,window._gmgDash.entity||'GMG');
+  if(t==='service') return _dashService(ctx,window._gmgDash.svc||'all');
   if(t==='custom') return _dashCustom(ctx);
-  return _dashPersonal(ctx);
+  return _dashPersonal();
 }
 
 function _seedDemoData(db){
@@ -2329,70 +2328,81 @@ function _progressBar(val,target,color){
   return '<div style="background:#f1f5f9;border-radius:4px;height:5px;margin-top:8px"><div style="background:'+color+';border-radius:4px;height:5px;width:'+pct+'%"></div></div>';
 }
 
-function _dashPersonal(ctx){
-  var me=ctx.user||{};var myName=(me.name||'').toLowerCase();
-  var engs=ctx.engs,tasks=ctx.tasks,pipeline=ctx.pipeline,invoices=ctx.invoices,now=ctx.now;
-  var myEngs=engs.filter(function(e){return (e.partner||'').toLowerCase()===myName;});
-  var myActive=myEngs.filter(function(e){return e.status==='active';});
-  var myARR=myActive.reduce(function(s,e){return s+(e.annualFee||0);},0);
-  var myTasks=(tasks||[]).filter(function(t){return (t.assignee||'').toLowerCase()===myName&&t.status!=='done';});
-  var myPipe=pipeline.filter(function(p){return (p.partner||'').toLowerCase()===myName&&p.stage!=='Closed Won';});
-  var myPipeVal=myPipe.reduce(function(s,p){return s+(p.value||0);},0);
-  var myInv=invoices.filter(function(i){var e=engs.find(function(x){return x.id===i.engId;});return e&&(e.partner||'').toLowerCase()===myName;});
-  var myYTD=_revInPeriod(myInv,ctx.ytdStart,now);
-  var myMTD=_revInPeriod(myInv,ctx.mtdStart,now);
-  var h=now.getHours();var greet=h<12?'Good morning':h<17?'Good afternoon':'Good evening';
-  var html='<div style="padding:28px 24px;max-width:1200px;margin:0 auto">';
-  html+='<div style="margin-bottom:28px"><h2 style="margin:0;font-size:24px;font-weight:800;color:#0f172a">'+greet+', '+(me.name||'there')+'</h2>'
-    +'<p style="margin:4px 0 0;font-size:13px;color:#64748b">Your personal performance dashboard</p></div>';
-  html+='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:28px">';
-  html+=_kpiCard('Active Engagements',myActive.length,myEngs.length+' total assigned','#2563eb');
-  html+=_kpiCard('My ARR',_fmt(myARR),'annual recurring revenue','#0d7c59');
-  html+=_kpiCard('YTD Revenue',_fmt(myYTD),'invoiced this year','#7c3aed');
-  html+=_kpiCard('MTD Revenue',_fmt(myMTD),'invoiced this month','#0891b2');
-  html+=_kpiCard('Open Pipeline',_fmt(myPipeVal),myPipe.length+' deals','#e07b00');
-  html+='</div>';
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">';
-  html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">My Engagements</h3>'
-    +'<span style="font-size:11px;color:#2563eb;cursor:pointer" onclick="S.view=\'eng\';renderView()">View all â</span></div>'
-    +'<table style="width:100%;font-size:12px;border-collapse:collapse">';
-  if(!myActive.length) html+='<tr><td style="color:#94a3b8;padding:10px 0;font-size:12px">No active engagements assigned to you.</td></tr>';
-  myActive.forEach(function(e){
-    html+='<tr style="border-bottom:1px solid #f8fafc;cursor:pointer" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'" onclick="S.view=\'engDetail\';S.selEng=\''+e.id+'\';renderView()">'
-      +'<td style="padding:8px 0"><div style="font-weight:600;color:#1e293b">'+e.name+'</div><div style="font-size:11px;color:#94a3b8;margin-top:1px">'+e.entity+' &bull; '+e.client+'</div></td>'
-      +'<td style="text-align:right;font-weight:700;color:#0d7c59;white-space:nowrap">'+_fmt(e.annualFee||0)+'</td></tr>';
+function _dashPersonal(){
+  var activeEngs=DB.engagements.filter(function(e){return e.status==='active';});
+  var pendingPay=DB.mentorPayments.filter(function(p){return p.status==='pending';});
+  var pendingPayVal=pendingPay.reduce(function(s,p){return s+p.amount;},0);
+  var unsyncedInv=DB.clientInvoices.filter(function(i){return !i.xeroSynced;});
+  var overdueT=DB.tasks.filter(function(t){return t.status!=='done'&&t.due<today();});
+  var todoT=DB.tasks.filter(function(t){return t.status==='todo';});
+  var ytdInv=DB.clientInvoices.filter(function(i){return i.status==='paid';}).reduce(function(s,i){return s+i.amount;},0);
+  var fyTarget=520000;
+  var pipelineVal=DB.pipeline.filter(function(p){return p.stage!=='Closed Won'&&p.stage!=='Closed Lost';}).reduce(function(s,p){return s+p.value;},0);
+  var wonVal=DB.pipeline.filter(function(p){return p.stage==='Closed Won';}).reduce(function(s,p){return s+p.value;},0);
+  var ytdPct=Math.round(ytdInv/fyTarget*100);
+  var html='<div class="phdr"><div><h2>Dashboard</h2><p>Good morning, '+S.user.name.split(' ')[0]+'. Here\'s your operational overview.</p></div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +(unsyncedInv.length?'<span class="badge b-amber">â  '+unsyncedInv.length+' unsynced to Xero</span>':'')
+    +'</div></div>';
+  html+='<div class="kpi-grid">'
+    +'<div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">'+fmt(ytdInv)+'</div>'
+    +'<div class="kpi-bar"><div class="kpi-bar-fill" style="width:'+ytdPct+'%"></div></div>'
+    +'<div class="kpi-sub">'+ytdPct+'% of '+fmt(fyTarget)+' FY target</div></div>'
+    +'<div class="kpi"><div class="kpi-label">Active Engagements</div><div class="kpi-val">'+activeEngs.length+'</div>'
+    +'<div class="kpi-sub">'+activeEngs.filter(function(e){return e.type==='chair';}).length+' Chair \xb7 '+activeEngs.filter(function(e){return e.type==='executive';}).length+' Exec \xb7 '+activeEngs.filter(function(e){return e.type==='team';}).length+' Team</div></div>'
+    +'<div class="kpi gold"><div class="kpi-label">Pending Mentor Payments</div><div class="kpi-val">'+fmt(pendingPayVal)+'</div>'
+    +'<div class="kpi-sub">'+pendingPay.length+' payments \xb7 next run end of month</div></div>'
+    +'<div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">'+fmt(pipelineVal)+'</div>'
+    +'<div class="kpi-sub">'+fmt(wonVal)+' closed won YTD</div></div>'
+    +'</div>';
+  html+='<div class="g2" style="margin-bottom:18px">'
+    +'<div class="card"><div class="card-hdr"><h3>Outstanding Tasks <span class="badge b-red" style="margin-left:6px">'+overdueT.length+' overdue</span></h3></div>'
+    +'<div class="card-body" style="padding:0"><table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>';
+  todoT.concat(DB.tasks.filter(function(t){return t.status==='inprogress';})).slice(0,6).forEach(function(t){
+    var ov=t.due<today()&&t.status!=='done';
+    html+='<tr><td><span style="font-weight:600">'+t.title+'</span><div style="font-size:10px;color:var(--muted)">'+t.assignee+'</div></td>'
+      +'<td><span class="badge b-grey">'+t.type+'</span></td>'
+      +'<td style="color:'+(ov?'var(--venetian)':'inherit')+';font-weight:'+(ov?700:400)+'">'+t.due+(ov?' â ':'')+'</td>'
+      +'<td><span class="badge '+(t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey')+'">'+t.priority+'</span></td></tr>';
   });
-  html+='</table></div>';
-  html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">Open Tasks <span style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:600;padding:1px 7px;border-radius:10px;margin-left:4px">'+myTasks.length+'</span></h3>'
-    +'<span style="font-size:11px;color:#2563eb;cursor:pointer" onclick="S.view=\'tasks\';renderView()">View all â</span></div>';
-  if(!myTasks.length) html+='<div style="color:#94a3b8;font-size:12px;padding:8px 0">No open tasks.</div>';
-  myTasks.slice(0,5).forEach(function(t){
-    var overdue=t.due&&new Date(t.due)<now;
-    html+='<div style="padding:8px 0;border-bottom:1px solid #f8fafc">'
-      +'<div style="font-size:12px;font-weight:500;color:#1e293b">'+t.title+'</div>'
-      +'<div style="font-size:11px;color:'+(overdue?'#ef4444':'#94a3b8')+';margin-top:2px">'+(overdue?'Overdue: ':'Due: ')+(t.due||'No date')+'</div></div>';
+  html+='</tbody></table></div></div>';
+  html+='<div class="card"><div class="card-hdr"><h3>Active Engagements</h3></div><div class="card-body" style="padding:0">';
+  activeEngs.forEach(function(e){
+    var mentor=DB.contacts.find(function(m){return m.id===e.mentorId;});
+    var tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+    html+='<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">'
+      +'<span class="badge '+tb+'" style="min-width:56px;justify-content:center">'+e.type+'</span>'
+      +'<div style="flex:1"><div style="font-size:12px;font-weight:600">'+(e.name.length>42?e.name.slice(0,42)+'â¦':e.name)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+(mentor?mentor.name:'â')+' \xb7 '+e.coordinator+'</div></div>'
+      +'<button class="btn btn-sm btn-outline" onclick="openEngDetail(\''+e.id+'\')">View</button></div>';
   });
+  html+='</div></div></div>';
+  html+='<div class="g2">'
+    +'<div class="card"><div class="card-hdr"><h3>Finance â Pending Actions</h3></div><div class="card-body" style="padding:0 18px">';
+  if(!unsyncedInv.length&&!pendingPay.length) html+='<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced â</p>';
+  unsyncedInv.forEach(function(inv){
+    var cl=DB.contacts.find(function(c){return c.id===inv.clientId;});
+    html+='<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>'
+      +'<div class="fin-info"><strong>'+(cl?cl.name:'Client')+' â '+inv.period+'</strong><span>Invoice \xb7 '+inv.type+' \xb7 '+inv.status+'</span></div>'
+      +'<div class="fin-amount" style="color:var(--venetian)">'+fmt(inv.amount)+'</div>'
+      +'<button class="btn btn-sm btn-outline" onclick="pushInvXero(\''+inv.id+'\')">&#8594; Xero</button></div>';
+  });
+  pendingPay.slice(0,3).forEach(function(p){
+    var m=DB.contacts.find(function(x){return x.id===p.mentorId;});
+    var e=DB.engagements.find(function(x){return x.id===p.engId;});
+    html+='<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>'
+      +'<div class="fin-info"><strong>'+(m?m.name:'Mentor')+' â '+p.period+'</strong><span>'+(e?e.name.split('â')[0]:'')+' \xb7 '+p.type+'</span></div>'
+      +'<div class="fin-amount" style="color:var(--cadmium)">'+fmt(p.amount)+'</div>'
+      +'<span class="badge b-amber">pending</span></div>';
+  });
+  if(pendingPay.length>3) html+='<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+'+(pendingPay.length-3)+' more pending</div>';
   html+='</div></div>';
-  html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;margin-bottom:20px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'
-    +'<h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">My Pipeline</h3>'
-    +'<span style="font-size:11px;color:#2563eb;cursor:pointer" onclick="S.view=\'pipeline\';renderView()">View all â</span></div>'
-    +'<table style="width:100%;font-size:12px;border-collapse:collapse">';
-  if(!myPipe.length) html+='<tr><td style="color:#94a3b8;padding:8px 0">No open pipeline deals.</td></tr>';
-  myPipe.forEach(function(p){
-    var stageCols={'Prospecting':'#94a3b8','Qualification':'#0891b2','Proposal':'#f59e0b','Negotiation':'#e07b00','Closed Won':'#22c55e'};
-    html+='<tr style="border-bottom:1px solid #f8fafc">'
-      +'<td style="padding:8px 0"><div style="font-weight:500;color:#1e293b">'+p.name+'</div><div style="font-size:11px;color:#94a3b8">'+p.entity+'</div></td>'
-      +'<td style="padding:8px 0"><span style="font-size:11px;font-weight:600;color:'+(stageCols[p.stage]||'#64748b')+'">'+p.stage+'</span></td>'
-      +'<td style="text-align:right;font-weight:700;color:#e07b00;white-space:nowrap">'+_fmt(p.value||0)+'</td></tr>';
+  html+='<div class="card"><div class="card-hdr"><h3>Recent Activity</h3></div><div class="card-body" style="padding:0 18px">';
+  DB.activities.slice(0,6).forEach(function(a){
+    html+='<div class="act-item"><div class="act-dot">'+a.icon+'</div>'
+      +'<div style="flex:1"><div style="font-size:12px">'+a.text+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+a.ts+'</div></div></div>';
   });
-  html+='</table></div>';
-  if(me.role==='Partner'||me.role==='Admin') html+=_teamSummary(ctx);
-  html+='</div>';
+  html+='</div></div></div>';
   return html;
 }
 
@@ -2458,7 +2468,7 @@ function _dashGroup(ctx,ent){
     +'<tr style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #f1f5f9">'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Engagement</th>'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Entity</th>'
-    +'<th style="text-align:left;padding-botton:8px;font-weight:700">Partner</th>'
+    +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Partner</th>'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Client</th>'
     +'<th style="text-align:right;padding-bottom:8px;font-weight:700">ARR</th></tr>';
   active.forEach(function(e){
@@ -2490,14 +2500,15 @@ function _entityBreakdown(ctx){
     var eMTD=_revInPeriod(inv.filter(function(i){var x=engs.find(function(y){return y.id===i.engId;});return x&&x.entity===e;}),mtd,now);
     var eOP=pipe.filter(function(p){return (p.entity||'')===e&&p.stage!=='Closed Won';});
     var eOPV=eOP.reduce(function(s,p){return s+(p.value||0);},0);
-    var col=cols[e]||'#64748b';
+    var col=cols[e]||'64748b';
     html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;cursor:pointer;transition:box-shadow .15s;border-top:4px solid '+col+'" '
-      +'onclick="S.dashType=\'entity\';S.dashEntity=\''+e+'\';renderView()" '
+      +'onclick="window._gmgDash.type=\'entity\';window._gmgDash.entity=\''+e+'\';renderView()" '
       +'onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.08)\'" onmouseleave="this.style.boxShadow=\'\'">'
       +'<div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:14px">'+e+'</div>'
       +'<div style="display:flex;flex-direction:column;gap:8px;font-size:12px">'
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Active engs</span><span style="font-weight:700;color:'+col+';font-size:16px">'+eA.length+'</span></div>'
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">ARR</span><span style="font-weight:700;color:#0f172a">'+_fmt(eARR)+'</span></div>'
+
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">MTD</span><span style="font-weight:600;color:#0891b2">'+_fmt(eMTD)+'</span></div>'
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">YTD Invoiced</span><span style="font-weight:600;color:#7c3aed">'+_fmt(eYTD)+'</span></div>'
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Open pipeline</span><span style="font-weight:600;color:#e07b00">'+_fmt(eOPV)+'</span></div>'
@@ -2509,8 +2520,8 @@ function _entityBreakdown(ctx){
 
 function _dashService(ctx,svc){
   var engs=ctx.engs,now=ctx.now;
-  var pStart=S.dashPeriod==='mtd'?ctx.mtdStart:S.dashPeriod==='qtd'?ctx.qtdStart:ctx.ytdStart;
-  var pLbl=S.dashPeriod==='mtd'?'Month to Date':S.dashPeriod==='qtd'?'Quarter to Date':'Year to Date';
+  var pStart=window._gmgDash.period==='mtd'?ctx.mtdStart:window._gmgDash.period==='qtd'?ctx.qtdStart:ctx.ytdStart;
+  var pLbl=window._gmgDash.period==='mtd'?'Month to Date':window._gmgDash.period==='qtd'?'Quarter to Date':'Year to Date';
   var fE=svc==='all'?engs:engs.filter(function(e){return (e.solution||e.type||'').indexOf(svc)>-1;});
   var aE=fE.filter(function(e){return e.status==='active';});
   var arr=aE.reduce(function(s,e){return s+(e.annualFee||0);},0);
@@ -2568,7 +2579,7 @@ function _saveCustomDash(){
 }
 
 function _dashSetTargets(){
-  var db=getDB();var t=db.dashTargets||{revenue:2000,engagements:20,newBusiness:500};
+  var db=getDB();var t=db.dashTargets||{revenue:2000,engagements:20,newBusiness;500};
   var bg=document.createElement('div');bg.className='oc3mbg';
   bg.innerHTML='<div class="oc3modal">'
     +'<h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a">Set Annual Targets</h3>'
@@ -2589,6 +2600,8 @@ function _dashSetTargets(){
     localStorage.setItem('gmg_v2',JSON.stringify(db2));bg.remove();renderView();
   };
 }
+
+
 
 
 function rDashboardAdmin(c){
