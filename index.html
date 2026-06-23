@@ -2475,7 +2475,7 @@ function _dashGroup(ctx,ent){
   });
   if(!active.length) html+='<tr><td colspan="5" style="padding:16px 0;color:#94a3b8;text-align:center">No active engagements</td></tr>';
   html+='</table></div></div>';
-  return html;
+  return html+_dashCommittedRevenue();
 }
 
 function _entityBreakdown(ctx){
@@ -2509,7 +2509,7 @@ function _entityBreakdown(ctx){
       +'</div></div>';
   });
   html+='</div></div>';
-  return html;
+  return html+_dashCommittedRevenue(engs,inv);
 }
 
 function _dashService(ctx,svc){
@@ -2598,6 +2598,99 @@ function _dashSetTargets(){
 
 
 
+function _dashCommittedRevenue(engIn,invIn){
+  var db=getDB();
+  var allEngs=engIn||db.engagements||[];
+  var allInvs=invIn||db.clientInvoices||[];
+  var today=new Date();
+  var yr=today.getFullYear();
+  var execRows=[];
+  allEngs.filter(function(e){return e.type==='executive'&&(e.status==='active'||e.status==='planning');}).forEach(function(eng){
+    var engInvs=allInvs.filter(function(i){return i.engId===eng.id;});
+    var engStart=new Date(eng.startDate);
+    var engEnd=new Date(eng.endDate);
+    var qFee=eng.quarterlyFee||Math.round((eng.annualFee||0)/4);
+    var qs=[{l:'Q1 '+yr,s:new Date(yr,0,1),e:new Date(yr,2,31),d:new Date(yr,0,31)},
+            {l:'Q2 '+yr,s:new Date(yr,3,1),e:new Date(yr,5,30),d:new Date(yr,3,30)},
+            {l:'Q3 '+yr,s:new Date(yr,6,1),e:new Date(yr,8,30),d:new Date(yr,6,31)},
+            {l:'Q4 '+yr,s:new Date(yr,9,1),e:new Date(yr,11,31),d:new Date(yr,9,31)}];
+    qs.forEach(function(q){
+      if(q.e<engStart||q.s>engEnd) return;
+      var inv=engInvs.find(function(i){return i.period===q.l;});
+      if(inv){
+        if(inv.status!=='paid') execRows.push({client:eng.name,entity:eng.entity,engId:eng.id,period:q.l,amount:inv.amount||qFee,due:inv.due,status:inv.status});
+      } else {
+        execRows.push({client:eng.name,entity:eng.entity,engId:eng.id,period:q.l,amount:qFee,due:q.d.toISOString().split('T')[0],status:'to-raise'});
+      }
+    });
+  });
+  var chairRows=[];
+  allEngs.filter(function(e){return e.type==='chair'&&e.status==='active';}).forEach(function(eng){
+    var ed=new Date(eng.endDate);
+    if(ed.getFullYear()===yr&&ed>=today){
+      var renewed=allInvs.some(function(i){return i.engId===eng.id&&i.type==='chair-annual'&&i.period&&i.period.indexOf(String(yr+1))!==-1;});
+      chairRows.push({client:eng.name,entity:eng.entity,engId:eng.id,annualFee:eng.annualFee,endDate:eng.endDate,renewed:renewed});
+    }
+  });
+  if(!execRows.length&&!chairRows.length) return '';
+  var fa=function(a){if(!a&&a!==0) return '—';return a>=1000?'£'+(a/1000|0)+'k':'£'+(a||0)+'k';};
+  var fd=function(d){if(!d) return '—';var dt=new Date(d);return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'});};
+  var bdg=function(s,lbl){var m={paid:'#16a34a',sent:'#0ea5e9',draft:'#f59e0b','to-raise':'#94a3b8',overdue:'#ef4444'};var c=m[s]||'#94a3b8';return '<span style="background:'+c+'22;color:'+c+';border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600">'+(lbl||s)+'</span>';};
+  var tot=execRows.reduce(function(s,r){return s+(r.amount||0);},0);
+  var h='<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:20px;margin-top:18px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<span style="font-size:14px;font-weight:700;color:#0f172a">Committed Revenue Pipeline</span>'
+    +'<span style="font-size:13px;color:#64748b">'+fa(tot)+' outstanding</span>'
+    +'</div>';
+  if(execRows.length){
+    h+='<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Executive — Quarterly Invoices</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<thead><tr style="border-bottom:2px solid #e2e8f0">'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Client</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Entity</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Quarter</th>'
+      +'<th style="text-align:right;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Fee</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Due</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Status</th>'
+      +'</tr></thead><tbody>';
+    execRows.forEach(function(r){
+      var od=r.due&&new Date(r.due)<today&&r.status!=='paid';
+      var sl=r.status==='to-raise'?'To raise':r.status==='sent'?'Sent':r.status==='draft'?'Draft':r.status;
+      h+='<tr style="border-bottom:1px solid #f1f5f9">'
+        +'<td style="padding:7px 8px;font-weight:500">'+r.client+'</td>'
+        +'<td style="padding:7px 8px;color:#64748b">'+r.entity+'</td>'
+        +'<td style="padding:7px 8px;font-weight:600">'+r.period+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;font-weight:700">'+fa(r.amount)+'</td>'
+        +'<td style="padding:7px 8px;color:'+(od?'#ef4444':'#64748b')+'">'+fd(r.due)+'</td>'
+        +'<td style="padding:7px 8px">'+bdg(od?'overdue':r.status,sl)+'</td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+  }
+  if(chairRows.length){
+    h+='<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.6px;margin:'+(execRows.length?'16px':'0')+'px 0 6px">Chair — Renewals This Year</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:13px">'
+      +'<thead><tr style="border-bottom:2px solid #e2e8f0">'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Client</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Entity</th>'
+      +'<th style="text-align:right;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Annual Fee</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Term Ends</th>'
+      +'<th style="text-align:left;padding:5px 8px;color:#94a3b8;font-size:11px;font-weight:600">Renewal</th>'
+      +'</tr></thead><tbody>';
+    chairRows.forEach(function(r){
+      h+='<tr style="border-bottom:1px solid #f1f5f9">'
+        +'<td style="padding:7px 8px;font-weight:500">'+r.client+'</td>'
+        +'<td style="padding:7px 8px;color:#64748b">'+r.entity+'</td>'
+        +'<td style="padding:7px 8px;text-align:right;font-weight:700">'+fa(r.annualFee)+'</td>'
+        +'<td style="padding:7px 8px;color:#64748b">'+fd(r.endDate)+'</td>'
+        +'<td style="padding:7px 8px">'+(r.renewed?bdg('paid','Renewed'):bdg('draft','Not renewed'))+'</td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  return h;
+}
 function rDashboardAdmin(c){
   rDashboardRM(c);
   // Append quick admin link
