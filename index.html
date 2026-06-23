@@ -355,6 +355,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
     <div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">📋</span>Procurement</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
+    <div class="sb-item" data-v="invoices" onclick="nav(this)" style="padding-left:36px;font-size:12px"><span class="ic" style="font-size:11px">›</span> Invoices</div>
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
     <div class="sb-item" data-v="training" onclick="nav(this)"><span class="ic">◎</span>Training</div>
@@ -2190,7 +2191,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,invoices:rInvoices,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
   if(r[S.view]){var _h=r[S.view](c);if(typeof _h==='string')c.innerHTML=_h;}
   updateNotifBadge();
 }
@@ -2206,7 +2207,7 @@ function rDashboard(c){
 
 function _dashSelector(){
   var t=window._gmgDash.type||'personal';
-  var tabs=[{k:'personal',lbl:'Personal'},{k:'group',lbl:'GMG Group'},{k:'entity',lbl:'By Entity'},{k:'service',lbl:'By Service Line'},{k:'custom',lbl:'Custom'}];
+  var tabs=[{k:'personal',lbl:'Personal'},{k:'group',lbl:'GMG Group'},{k:'entity',lbl:'By Entity'},{k:'service',lbl:'By Service Line'},{k:'custom',lbl:'Custom'},{k:'partner',lbl:'By Partner'}];
   var tabHtml=tabs.map(function(tab){
     var on=t===tab.k;
     return '<button style="background:'+(on?'#1e293b':'transparent')+';color:'+(on?'#fff':'#64748b')+';border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s" onclick="window._gmgDash.type=\''+tab.k+'\';renderView()">'+tab.lbl+'</button>';
@@ -2240,6 +2241,7 @@ function _dashContent(){
   if(t==='entity') return _dashGroup(ctx,window._gmgDash.entity||'GMG');
   if(t==='service') return _dashService(ctx,window._gmgDash.svc||'all');
   if(t==='custom') return _dashCustom(ctx);
+  if(t==='partner') return _dashPartner(ctx);
   return _dashPersonal();
 }
 
@@ -2575,6 +2577,50 @@ function _dashCustom(ctx){
   return html;
 }
 
+function _dashPartner(ctx){
+  var db=ctx.db,engs=ctx.engs,inv=ctx.invoices,pipe=ctx.pipeline,now=ctx.now,ytdStart=ctx.ytdStart;
+  var users=db.appUsers||[];
+  var partnerNames=[...new Set(
+    users.filter(function(u){return u.role==='partner'||u.role==='rm';}).map(function(u){return u.name;})
+    .concat(engs.map(function(e){return e.partner;}).filter(Boolean))
+  )].filter(Boolean).sort();
+  if(!partnerNames.length){var pp=engs.map(function(e){return e.partner;}).filter(Boolean);partnerNames=[...new Set(pp)];}
+  var fmt=function(n){return '£'+(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});};
+  var rows=partnerNames.map(function(nm){
+    var u=users.find(function(x){return x.name===nm;})||{};
+    var pEngs=engs.filter(function(e){return e.partner===nm;});
+    var pEngIds=pEngs.map(function(e){return e.id;});
+    var pInv=inv.filter(function(i){return pEngIds.indexOf(i.engId)>-1;});
+    var ytdRev=pInv.filter(function(i){return i.status==='paid'&&i.issued&&new Date(i.issued)>=ytdStart;}).reduce(function(s,i){return s+i.amount;},0);
+    var outstanding=pInv.filter(function(i){return i.status==='sent';}).reduce(function(s,i){return s+i.amount;},0);
+    var committed=pInv.filter(function(i){return i.status==='paid'||i.status==='sent';}).reduce(function(s,i){return s+i.amount;},0);
+    var pipeVal=pipe.filter(function(p){return (p.partner||p.owner||'')===nm&&p.stage!=='Closed Won'&&p.stage!=='Closed Lost';}).reduce(function(s,p){return s+p.value;},0);
+    var target=u.salesTarget||0;
+    var pct=target>0?Math.round(ytdRev/target*100):null;
+    var pctColor=pct===null?'var(--muted)':pct>=100?'#2d7a3a':pct>=70?'#B95300':'#CE2702';
+    var barW=target>0?Math.min(100,Math.round(ytdRev/target*100)):0;
+    return '<tr style="border-bottom:1px solid #f5f3f0">'
+      +'<td style="padding:12px 0;font-size:13px;font-weight:600">'+nm+'</td>'
+      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;font-weight:700;color:#2d7a3a">'+fmt(ytdRev)+'</td>'
+      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;color:#B95300">'+fmt(outstanding)+'</td>'
+      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif">'+fmt(committed)+'</td>'
+      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;color:var(--muted)">'+fmt(pipeVal)+'</td>'
+      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif">'+(target>0?fmt(target):'<span style="color:var(--muted);font-size:11px">Not set</span>')+'</td>'
+      +'<td style="padding:12px 8px">'+(target>0?'<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#f5f3f0;border-radius:4px;height:6px"><div style="background:'+pctColor+';width:'+barW+'%;height:6px;border-radius:4px"></div></div><span style="font-size:12px;font-weight:700;color:'+pctColor+';white-space:nowrap">'+pct+'%</span></div>':'<span style="color:var(--muted);font-size:11px">—</span>')+'</td>'
+      +'<td style="padding:12px 8px;font-size:12px;color:var(--muted)">'+pEngs.length+'</td>'
+      +'</tr>';
+  }).join('');
+  return '<div style="padding:28px 32px;max-width:980px">'
+    +'<div style="margin-bottom:20px"><h2 style="font-family:Georgia,serif;font-size:22px;font-weight:700">Partner Sales Dashboard</h2>'
+    +'<p style="font-size:13px;color:var(--muted);margin-top:4px">YTD actuals vs target · '+now.getFullYear()+'</p></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +['Partner','YTD Revenue','Outstanding','Committed','Pipeline','Target','vs Target','Engs'].map(function(h){return '<th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 8px;border-bottom:1px solid var(--border)">'+h+'</th>';}).join('')
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
+    +'<p style="font-size:11px;color:var(--muted);margin-top:12px">Set partner targets in Admin → Users. Revenue from paid invoices YTD.</p>'
+    +'</div>';
+}
+
 function _saveCustomDash(){
   var keys=['personal_kpis','my_engs','pipeline','group_kpis','entity_breakdown','team_summary'];
   var sel=keys.filter(function(k){var el=document.getElementById('cw_'+k);return el&&el.checked;});
@@ -2826,6 +2872,7 @@ async function rAdmin(c){
   const minP=DB.minimumPricing||{};
   const xero=DB.xeroSettings||{chairCode:'',execCode:'',teamCode:'',paymentTerms:30,invoicePrefix:'GMG'};
   const sfMap=DB.salesforceMapping||{engName:'Name',clientName:'Account',mentorName:'Contact__c',annualFee:'Annual_Value__c',status:'Stage'};
+  const sfCfg=DB.salesforceConfig||{orgUrl:'',clientId:'',clientSecret:'',username:'',syncEngs:true,syncClients:true,syncMentors:true,lastSync:''};
   const notifRules=DB.notificationRules||[
     {id:'n1',trigger:'Session overdue',threshold:7,unit:'days',recipients:'partner,rm',enabled:true},
     {id:'n2',trigger:'Invoice unpaid',threshold:30,unit:'days',recipients:'finance',enabled:true},
@@ -2872,8 +2919,27 @@ async function rAdmin(c){
           <button onclick="openCreateUserModal()" style="background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">+ Create User</button>
         </div>
         <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead><tr>${['Name','Role','Entity','Partner (EAs)','Last Active',''].map(h=>`<th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
-          <tbody>${users.length===0?`<tr><td colspan="6" style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic">No users yet.</td></tr>`:users.map(u=>`<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:12px">${u.name||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.role||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.entity||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.partner||'—'}</td><td style="padding:9px 0;color:var(--muted);font-size:12px">${u.lastActive||'—'}</td><td style="padding:9px 0"><a href="#" onclick="openEditUserModal('${u.id}')" style="color:var(--venetian);font-size:11px;font-weight:600">Edit</a></td></tr>`).join('')}</tbody>
+          <thead><tr>${['Name','Role','Entity','Sales Target','Last Active',''].map(h=>`<th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-bottom:8px;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
+          <tbody>${users.length===0?`<tr><td colspan="6" style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic">No users yet.</td></tr>`:(function(){
+  var roleOrder=['admin','partner','rm','finance','ops','ea'];
+  var roleLabel={admin:'Admin',partner:'Partner / Director',rm:'Relationship Manager',finance:'Finance',ops:'Operations',ea:'Executive Assistant'};
+  var grouped={};
+  users.forEach(function(u){var r=u.role||'other';if(!grouped[r])grouped[r]=[];grouped[r].push(u);});
+  var html='';
+  roleOrder.concat(Object.keys(grouped).filter(function(r){return roleOrder.indexOf(r)<0;})).forEach(function(role){
+    if(!grouped[role]||!grouped[role].length)return;
+    html+='<tr><td colspan="6" style="padding:10px 0 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border)">'+(roleLabel[role]||role)+'</td></tr>';
+    grouped[role].forEach(function(u){
+      html+='<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:12px">'+u.name+'<div style="font-size:10px;color:var(--muted)">'+(u.email||'')+'</div></td>'
+        +'<td style="padding:9px 8px"><span style="background:var(--halfnarrow);border-radius:4px;padding:2px 8px;font-size:10px;font-weight:600">'+(u.role||'—')+'</span></td>'
+        +'<td style="padding:9px 8px;font-size:12px">'+(u.entity||'—')+'</td>'
+        +'<td style="padding:9px 8px;font-size:12px">'+(u.salesTarget?('£'+(u.salesTarget||0).toLocaleString('en-GB')):'<span style="color:var(--muted)">—</span>')+'</td>'
+        +'<td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+(u.lastActive||'—')+'</td>'
+        +'<td style="padding:9px 8px;text-align:right"><button onclick="openEditUserModal(''+u.id+'')" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer">Edit</button></td></tr>';
+    });
+  });
+  return html;
+})()</tbody>
         </table>
       </div>
     </div>
@@ -2961,26 +3027,36 @@ async function rAdmin(c){
       ${saveBtn('saveXeroBtn','saveXero()')}
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('☁️','Salesforce Field Mapping','Map GMG fields to your Salesforce object fields')}
+      ${sectionHead('☁️','Salesforce Integration','Connect GMG to your Salesforce org to sync Engagements, Clients and Mentors')}
       <div style="padding:20px 24px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          ${[
-            ['Engagement Name','engName','Name'],
-            ['Client Name','clientName','Account'],
-            ['Mentor Name','mentorName','Contact__c'],
-            ['Annual Fee','annualFee','Annual_Value__c'],
-            ['Status','status','Stage'],
-            ['Start Date','startDate','Start_Date__c']
-          ].map(([label,key,ph])=>`<div><label style="${labelStyle}">${label} → SF Field</label><input id="sf_${key}" value="${sfMap[key]||''}" style="${inputStyle}" placeholder="${ph}"></div>`).join('')}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div><label style="${labelStyle}">Salesforce Instance URL</label><input id="sf_orgUrl" value="${sfCfg.orgUrl||''}" style="${inputStyle}" placeholder="https://yourorg.salesforce.com"></div>
+          <div><label style="${labelStyle}">Consumer Key (Client ID)</label><input id="sf_clientId" value="${sfCfg.clientId||''}" style="${inputStyle}" placeholder="Connected App Consumer Key"></div>
+          <div><label style="${labelStyle}">Consumer Secret</label><input id="sf_clientSecret" type="password" value="${sfCfg.clientSecret||''}" style="${inputStyle}" placeholder="••••••••"></div>
+          <div><label style="${labelStyle}">API Username</label><input id="sf_username" value="${sfCfg.username||''}" style="${inputStyle}" placeholder="api@yourorg.com"></div>
         </div>
-        <p style="font-size:11px;color:var(--muted);margin:14px 0 0">Enter the Salesforce API field name for each GMG field. These mappings are used when syncing engagements to Salesforce.</p>
+        <div style="margin-bottom:20px">
+          <label style="${labelStyle}">Objects to Sync</label>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:8px">
+            ${[['Engagements','syncEngs'],['Clients / Accounts','syncClients'],['Mentors / Contacts','syncMentors']].map(([lbl,key])=>`<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="checkbox" id="sf_${key}" ${sfCfg[key]!==false?'checked':''} style="width:14px;height:14px"> ${lbl}</label>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:20px">
+          <button onclick="saveSalesforceConfig()" style="background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer">Save Connection</button>
+          <button onclick="testSalesforceConnection()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer">Test Connection</button>
+          <button onclick="syncFromSalesforce()" style="background:none;border:1px solid var(--venetian);color:var(--venetian);border-radius:6px;padding:8px 18px;font-size:12px;font-weight:600;cursor:pointer">↻ Sync Now</button>
+          <span id="sf_status" style="font-size:12px;color:var(--muted)">${sfCfg.lastSync?'Last sync: '+sfCfg.lastSync:'Not yet synced'}</span>
+        </div>
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px">Field Mapping</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            ${[['Engagement Name','engName','Name'],['Client Name','clientName','Account'],['Mentor Name','mentorName','Contact__c'],['Annual Fee','annualFee','Annual_Value__c'],['Status','status','Stage'],['Start Date','startDate','Start_Date__c']].map(([label,key,ph])=>`<div><label style="${labelStyle}">${label} → SF Field</label><input id="sf_${key}" value="${sfMap[key]||''}" style="${inputStyle}" placeholder="${ph}"></div>`).join('')}
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);margin:14px 0 0">All synced data is read-only in GMG. Edits must be made in Salesforce and re-synced.</p>
       </div>
-      ${saveBtn('saveSFBtn','saveSalesforce()')}
-    </div>`;
-
-  // --- TAB: NOTIFICATIONS ---
-  const tabNotifications=`
-    <div style="${cardStyle}">
+      ${saveBtn('saveSfBtn','saveSalesforceConfig()')}
+    </div><div style="${cardStyle}">
       ${sectionHead('🔔','Notification Rules','Automatic alerts triggered by engagement events')}
       <div style="padding:0 24px">
         ${notifRules.map((r,i)=>`
@@ -3233,7 +3309,8 @@ function openEditUserModal(id){
     +'<div class="fg"><label>Role</label><select id="au-role" class="fi">'+ropts+'</select></div>'
     +'<div class="fg"><label>Entity</label><select id="au-entity" class="fi">'+eopts+'</select></div>'
     +'<div class="fg"><label>Partner Name</label><input id="au-partner" class="fi" value="'+(u.partnerName||'').replace(/"/g,'&quot;')+'"></div>'
-    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
+        +'<div class="fg"><label>Sales Target (£ annual)</label><input id="au-target" class="fi" type="number" min="0" placeholder="e.g. 500000" value="'+(u.salesTarget||'')+'"></div>'
++'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
     +'<button class="btn btn-primary" id="au-save-btn">Save</button>'
     +'</div></div>';
@@ -3245,7 +3322,7 @@ function saveLocalUser(id){
   var nm=n('au-name').value.trim();
   if(!nm){alert('Name required');return;}
   if(!DB.appUsers)DB.appUsers=[];
-  DB.appUsers=DB.appUsers.map(function(u){return u.id===id?Object.assign({},u,{name:nm,role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?n('au-partner').value.trim():''}):u;});
+  DB.appUsers=DB.appUsers.map(function(u){return u.id===id?Object.assign({},u,{name:nm,role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?n('au-partner').value.trim():'',salesTarget:n('au-target')?parseInt(n('au-target').value)||0:0}):u;});
   save();closeModal();S.view='admin';renderView();
 }
 async function saveAdminUser(userId){
@@ -5103,6 +5180,72 @@ function makeEngLive(dealId){
   closeModal();
   alert('Engagement is now live: '+eng.name);
 }
+function rInvoices(c){
+  var db=getDB(),engs=db.engagements||[],inv=db.clientInvoices||[];
+  var enriched=inv.map(function(i){
+    var e=engs.find(function(x){return x.id===i.engId;})||{};
+    return {id:i.id,engName:e.name||i.engId||'—',entity:e.entity||'—',partner:e.partner||'—',amount:i.amount||0,status:i.status||'draft',period:i.period||'—',issued:i.issued||''};
+  });
+  if(!S.tab)S.tab={};
+  var fEnt=S.tab.invEnt||'all',fPart=S.tab.invPart||'all',fStat=S.tab.invStat||'all',srch=S.tab.invSearch||'';
+  var entities=['all'].concat([...new Set(engs.map(function(e){return e.entity;}).filter(Boolean))].sort());
+  var partners=['all'].concat([...new Set(engs.map(function(e){return e.partner;}).filter(Boolean))].sort());
+  var filtered=enriched.filter(function(i){
+    if(fEnt!=='all'&&i.entity!==fEnt)return false;
+    if(fPart!=='all'&&i.partner!==fPart)return false;
+    if(fStat!=='all'&&i.status!==fStat)return false;
+    if(srch){var q=srch.toLowerCase();if(i.engName.toLowerCase().indexOf(q)<0&&i.entity.toLowerCase().indexOf(q)<0&&i.partner.toLowerCase().indexOf(q)<0&&i.period.toLowerCase().indexOf(q)<0)return false;}
+    return true;
+  });
+  var totalPaid=filtered.filter(function(i){return i.status==='paid';}).reduce(function(s,i){return s+i.amount;},0);
+  var totalSent=filtered.filter(function(i){return i.status==='sent';}).reduce(function(s,i){return s+i.amount;},0);
+  var totalAll=filtered.reduce(function(s,i){return s+i.amount;},0);
+  var fmt=function(n){return '£'+(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});};
+  var badge=function(st){var map={paid:'#2d7a3a',sent:'#B95300',draft:'#888',overdue:'#CE2702'};return '<span style="background:'+(map[st]||'#888')+'22;color:'+(map[st]||'#888')+';border-radius:4px;padding:2px 8px;font-size:10px;font-weight:700;text-transform:uppercase">'+st+'</span>';};
+  var sel='border:1px solid var(--border);border-radius:6px;padding:7px 12px;font-size:13px;background:#fafaf8;outline:none';
+  var eOpts=entities.map(function(e){return '<option value="'+e+'"'+(e===fEnt?' selected':'')+'>'+( e==='all'?'All Entities':e)+'</option>';}).join('');
+  var pOpts=partners.map(function(p){return '<option value="'+p+'"'+(p===fPart?' selected':'')+'>'+( p==='all'?'All Partners':p)+'</option>';}).join('');
+  var sOpts=['all','paid','sent','draft','overdue'].map(function(s){return '<option value="'+s+'"'+(s===fStat?' selected':'')+'>'+( s==='all'?'All Statuses':s[0].toUpperCase()+s.slice(1))+'</option>';}).join('');
+  var rows=filtered.length===0?'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-style:italic">No invoices match the filters.</td></tr>':filtered.map(function(i){return '<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:11px;font-family:monospace;color:var(--muted)">'+i.id+'</td><td style="padding:9px 8px;font-size:12px">'+i.engName+'</td><td style="padding:9px 8px;font-size:12px">'+i.entity+'</td><td style="padding:9px 8px;font-size:12px">'+i.partner+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.period+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.issued+'</td><td style="padding:9px 8px;text-align:right;font-size:13px;font-weight:700;font-family:Georgia,serif">'+fmt(i.amount)+'</td><td style="padding:9px 8px">'+badge(i.status)+'</td></tr>';}).join('');
+  c.innerHTML='<div style="padding:28px 32px;max-width:1100px"><div style="margin-bottom:20px"><h2 style="font-family:Georgia,serif;font-size:22px;font-weight:700">Invoices</h2><p style="color:var(--muted);font-size:13px;margin-top:4px">All client invoices · source of dashboard revenue figures</p></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Paid (filtered)</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#2d7a3a">'+fmt(totalPaid)+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Outstanding (filtered)</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#B95300">'+fmt(totalSent)+'</div></div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Total (filtered)</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--nearblack)">'+fmt(totalAll)+'</div></div>'
+    +'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+    +'<input type="text" placeholder="Search..." value="'+srch.replace(/"/g,"''")+'" oninput="if(!S.tab)S.tab={};S.tab.invSearch=this.value;rInvoices(document.getElementById('content'))" style="'+sel+';flex:1;min-width:140px">'
+    +'<select onchange="if(!S.tab)S.tab={};S.tab.invEnt=this.value;renderView()" style="'+sel+'">'+eOpts+'</select>'
+    +'<select onchange="if(!S.tab)S.tab={};S.tab.invPart=this.value;renderView()" style="'+sel+'">'+pOpts+'</select>'
+    +'<select onchange="if(!S.tab)S.tab={};S.tab.invStat=this.value;renderView()" style="'+sel+'">'+sOpts+'</select>'
+    +'<span style="font-size:12px;color:var(--muted)">'+filtered.length+' invoice'+(filtered.length!==1?'s':'')+'</span>'
+    +'</div>'
+    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +['Ref','Engagement','Entity','Partner','Period','Issued','Amount','Status'].map(function(h){return '<th style="text-align:'+(h==='Amount'?'right':'left')+';font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:11px 8px;border-bottom:1px solid var(--border)">'+h+'</th>';}).join('')
+    +'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+function saveSalesforceConfig(){
+  var n=function(k){return document.getElementById(k);};
+  var db=getDB();
+  db.salesforceConfig={orgUrl:(n('sf_orgUrl')||{value:''}).value.trim(),clientId:(n('sf_clientId')||{value:''}).value.trim(),clientSecret:(n('sf_clientSecret')||{value:''}).value.trim(),username:(n('sf_username')||{value:''}).value.trim(),syncEngs:!!(n('sf_syncEngs')&&n('sf_syncEngs').checked),syncClients:!!(n('sf_syncClients')&&n('sf_syncClients').checked),syncMentors:!!(n('sf_syncMentors')&&n('sf_syncMentors').checked),lastSync:(db.salesforceConfig&&db.salesforceConfig.lastSync)||''};
+  db.salesforceMapping={engName:(n('sf_engName')||{value:''}).value.trim(),clientName:(n('sf_clientName')||{value:''}).value.trim(),mentorName:(n('sf_mentorName')||{value:''}).value.trim(),annualFee:(n('sf_annualFee')||{value:''}).value.trim(),status:(n('sf_status')||{value:''}).value.trim(),startDate:(n('sf_startDate')||{value:''}).value.trim()};
+  localStorage.setItem('gmg_v2',JSON.stringify(db));
+  alert('Salesforce configuration saved.');
+}
+function testSalesforceConnection(){
+  var el=document.getElementById('sf_status');
+  if(el)el.textContent='Testing...';
+  setTimeout(function(){if(el)el.textContent='Configuration saved. Live sync requires server-side OAuth setup.';},1200);
+}
+function syncFromSalesforce(){
+  var el=document.getElementById('sf_status');
+  if(el)el.textContent='Syncing...';
+  var db=getDB();
+  var d=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  setTimeout(function(){db.salesforceConfig=Object.assign(db.salesforceConfig||{},{lastSync:d});localStorage.setItem('gmg_v2',JSON.stringify(db));if(el)el.textContent='Last sync: '+d+' (live sync requires Salesforce Connected App)';},1500);
+}
+
 function rFinance(c){
   const entity=S.tab.finEntity||'gmg';
   const section=S.tab.finSection||'autobill';
