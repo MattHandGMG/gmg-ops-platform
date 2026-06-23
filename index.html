@@ -350,14 +350,14 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
-    <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div>
+    <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div><div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">📋</span>Procurement</div>
     <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
-    <div class="sb-item" data-v="chat" onclick="nav(this)"><span class="ic">💬</span>Team Chat</div><div class="sb-item" data-v="training" onclick="nav(this)"><span class="ic">◎</span>Training</div>
+    <div class="sb-item" data-v="training" onclick="nav(this)"><span class="ic">◎</span>Training</div>
   </div>
   <div class="sb-admin" id="sb-admin-section">
   <button class="sb-admin-btn" onclick="navAdmin()">
@@ -2190,7 +2190,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
   if(r[S.view]) r[S.view](c);
   updateNotifBadge();
 }
@@ -2584,30 +2584,58 @@ function _saveCustomDash(){
 }
 
 function _dashSetTargets(){
-  var db=getDB();var t=db.dashTargets||{revenue:2000,engagements:20,newBusiness:500};
-  var bg=document.createElement('div');bg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center';
-  bg.innerHTML='<div class="oc3modal">'
-    +'<h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a">Set Annual Targets</h3>'
-    +'<p style="margin:0 0 20px;font-size:12px;color:#64748b">Pro-rated automatically for MTD, QTD, and YTD.</p>'
-    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Annual Revenue Target (\xA3k)</label>'
-    +'<input id="tgt-rev" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;margin-bottom:14px" value="'+t.revenue+'">'
-    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">Active Engagements Target</label>'
-    +'<input id="tgt-eng" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;margin-bottom:14px" value="'+t.engagements+'">'
-    +'<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">New Business Target (\xA3k)</label>'
-    +'<input id="tgt-nb" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:14px;margin-bottom:20px" value="'+t.newBusiness+'">'
-    +'<div class="oc3mbtns"><button class="oc3bcancel" id="tgt-cancel">Cancel</button><button class="oc3bsave" id="tgt-save">Save Targets</button></div></div>';
-  document.body.appendChild(bg);
-  bg.addEventListener('click',function(e){if(e.target===bg)bg.remove();});
-  bg.querySelector('#tgt-cancel').onclick=function(){bg.remove();};
-  bg.querySelector('#tgt-save').onclick=function(){
-    var db2=getDB();
-    db2.dashTargets={revenue:parseFloat(document.getElementById('tgt-rev').value)||2000,engagements:parseInt(document.getElementById('tgt-eng').value)||20,newBusiness:parseFloat(document.getElementById('tgt-nb').value)||500};
-    localStorage.setItem('gmg_v2',JSON.stringify(db2));bg.remove();renderView();
+  var db=getDB();
+  var t=db.dashTargets||{};
+  if(!t.entities)t.entities={};
+  if(!t.serviceLines)t.serviceLines={};
+  var ents=['GMG','CMi','Merryck','Middle East','ANZ'];
+  window._tgtEnt=ents[0];
+  window._tgtData=t;
+  var bg=document.createElement('div');
+  bg.id='tgt-bg';
+  bg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center';
+  function saveCurrent(){
+    var e=window._tgtEnt;var t2=window._tgtData;
+    t2.entities[e]=parseFloat((document.getElementById('tgt-total')||{value:'0'}).value)||0;
+    t2.serviceLines[e]={chair:parseFloat((document.getElementById('tgt-chair')||{value:'0'}).value)||0,executive:parseFloat((document.getElementById('tgt-exec')||{value:'0'}).value)||0,team:parseFloat((document.getElementById('tgt-team')||{value:'0'}).value)||0};
+  }
+  window._tgtSwitch=function(e){saveCurrent();window._tgtEnt=e;drawTgt();};
+  window._tgtClose=function(){document.getElementById('tgt-bg').remove();};
+  window._tgtSave=function(){
+    saveCurrent();
+    var db2=getDB();db2.dashTargets=window._tgtData;
+    localStorage.setItem('gmg_v2',JSON.stringify(db2));
+    document.getElementById('tgt-bg').remove();renderView();
   };
+  function drawTgt(){
+    var e=window._tgtEnt;var t2=window._tgtData;
+    var sl=t2.serviceLines[e]||{};var tot=t2.entities[e]||0;
+    var tabsHtml=ents.map(function(n){var active=n===e;return '<button onclick="_tgtSwitch(\''+ n +'\')" style="padding:8px 14px;border:none;border-bottom:3px solid '+(active?'#0f172a':'transparent')+';background:transparent;cursor:pointer;font-size:13px;font-weight:'+(active?700:400)+';color:'+(active?'#0f172a':'#64748b')+'">'+n+'</button>';}).join('');
+    bg.innerHTML='<div style="background:#fff;border-radius:12px;width:520px;max-width:94vw;box-shadow:0 24px 64px rgba(0,0,0,.35);overflow:hidden">'+
+      '<div style="padding:18px 24px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between">'+
+      '<div><h3 style="margin:0;font-size:15px;font-weight:700;color:#0f172a">Set Revenue Targets</h3>'+
+      '<p style="margin:2px 0 0;font-size:12px;color:#94a3b8">Annual targets by entity &amp; service line</p></div>'+
+      '<button onclick="_tgtClose()" style="border:none;background:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:0 4px">&#215;</button></div>'+
+      '<div style="border-bottom:1px solid #e2e8f0;padding:0 20px;display:flex;gap:0;overflow-x:auto">'+ tabsHtml +'</div>'+
+      '<div style="padding:20px 24px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'+
+      '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:5px;letter-spacing:.05em">CHAIR MENTORING (£)</label>'+
+      '<input id="tgt-chair" type="number" min="0" value='+(sl.chair||0)+' style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;outline:none;box-sizing:border-box"></div>'+
+      '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:5px;letter-spacing:.05em">EXECUTIVE COACHING (£)</label>'+
+      '<input id="tgt-exec" type="number" min="0" value='+(sl.executive||0)+' style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;outline:none;box-sizing:border-box"></div>'+
+      '<div><label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:5px;letter-spacing:.05em">TEAM MENTORING (£)</label>'+
+      '<input id="tgt-team" type="number" min="0" value='+(sl.team||0)+' style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:14px;outline:none;box-sizing:border-box"></div>'+
+      '<div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">'+
+      '<label style="font-size:11px;font-weight:700;color:#0f172a;display:block;margin-bottom:5px;letter-spacing:.05em">TOTAL REVENUE (£)</label>'+
+      '<input id="tgt-total" type="number" min="0" value='+ tot +' style="width:100%;padding:8px 10px;border:1px solid #0f172a;border-radius:6px;font-size:14px;font-weight:600;outline:none;box-sizing:border-box"></div></div>'+
+      '<p style="font-size:11px;color:#94a3b8;margin:0">Total Revenue is used for the above/under target indicator on dashboards.</p></div>'+
+      '<div style="padding:14px 24px;border-top:1px solid #e2e8f0;display:flex;justify-content:flex-end;gap:8px;background:#f8fafc">'+
+      '<button onclick="_tgtClose()" style="padding:8px 16px;border:1px solid #e2e8f0;background:#fff;border-radius:6px;cursor:pointer;font-size:13px">Cancel</button>'+
+      '<button onclick="_tgtSave()" style="padding:8px 16px;background:#0f172a;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Targets</button></div></div>';
+  }
+  drawTgt();
+  document.body.appendChild(bg);
 }
-
-
-
 
 function _openEngReport(entity,partner,country){
   var flts=[{f:'entity',op:'equals',v:entity}];
@@ -3485,43 +3513,110 @@ function generateMFS(engId){
   w.document.write(html);
   w.document.close();
 }
-function rClients(c){
-  if(!S) return;
-  var clients=DB.contacts.filter(function(x){return x.type==='client';});
-  var engs=DB.engagements||[];
-  c.innerHTML=
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
-    +'<h2 style="margin:0;font-size:20px">Clients</h2>'
-    +'<div style="font-size:13px;color:var(--muted)">'+clients.length+' client'+(clients.length===1?'':'s')+'</div>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">'
-    +clients.map(function(cl){
-      var cEngs=engs.filter(function(e){return e.clientId===cl.id;});
-      var activeEngs=cEngs.filter(function(e){return e.status==='active';});
-      var totalFee=cEngs.reduce(function(s,e){return s+(e.annualFee||0);},0);
-      var scol=cl.status==='active'||!cl.status?'#27ae60':'#7f8c8d';
-      return '<div class="card" style="cursor:pointer;transition:.15s" onmouseover="this.style.borderColor=\'var(--venetian)\'" onmouseout="this.style.borderColor=\'\'" onclick="S.currentClientId=\''+cl.id+'\';S.view=\'clientDetail\';renderView()">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'
-        +'<div><div style="font-size:16px;font-weight:700;margin-bottom:3px">'+cl.name+'</div>'
-        +'<div style="font-size:12px;color:var(--muted)">'+cl.org+'</div></div>'
-        +'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+(cl.status||'Active')+'</span>'
-        +'</div>'
-        +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">'
-        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
-        +'<div style="font-size:20px;font-weight:700;color:var(--venetian)">'+cEngs.length+'</div>'
-        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Engs</div></div>'
-        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
-        +'<div style="font-size:20px;font-weight:700;color:#27ae60">'+activeEngs.length+'</div>'
-        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Active</div></div>'
-        +'<div style="text-align:center;padding:8px;background:rgba(255,255,255,.03);border-radius:6px">'
-        +'<div style="font-size:14px;font-weight:700;color:var(--venetian)">'+(totalFee?'£'+Math.round(totalFee/1000)+'k':'—')+'</div>'
-        +'<div style="font-size:10px;color:var(--muted);text-transform:uppercase">Annual</div></div>'
-        +'</div>'
-        +(cl.email?'<div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:10px">'+cl.email+'</div>':'')
-        +'</div>';
-    }).join('')
-    +'</div>';
+function rClients(){
+  var db=getDB();
+  var contacts=db.contacts||[];
+  var engs=db.engagements||[];
+  var clients=contacts.filter(function(c){return c.type==='client';});
+  var search=S.tab.clientSearch||'';
+  var filtered=clients.filter(function(c){
+    if(!search)return true;
+    var n=(c.name||c.company||''). toLowerCase();
+    var co=(c.company||''). toLowerCase();
+    return n.indexOf(search.toLowerCase())>-1||co.indexOf(search.toLowerCase())>-1;
+  });
+  function getStats(cId,cName){
+    var chair=0,exec=0,team=0;
+    engs.forEach(function(e){
+      if(e.clientId===cId||e.client===cName||(e.clientName&&e.clientName===cName)){
+        var s=(e.solution||e.serviceType||e.type||''). toLowerCase();
+        if(s.indexOf('chair')>-1)chair++;
+        else if(s.indexOf('exec')>-1||s.indexOf('coach')>-1)exec++;
+        else if(s.indexOf('team')>-1)team++;
+        else exec++;
+      }
+    });
+    return {chair:chair,exec:exec,team:team,total:chair+exec+team};
+  }
+  var cards=filtered.length?filtered.map(function(c){
+    var stats=getStats(c.id,c.name);
+    return '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px;display:flex;flex-direction:column;gap:10px">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between">'+
+      '<div><div style="font-size:15px;font-weight:700;color:#0f172a">'+(c.company||c.name||'—')+'</div>'+
+      (c.company&&c.name?'<div style="font-size:12px;color:#64748b;margin-top:2px">'+c.name+'</div>':'')+'</div>'+
+      '<span style="background:#f0f9ff;color:#0369a1;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px">Client</span></div>'+
+      ((c.address||c.companyNumber)?'<div style="font-size:12px;color:#64748b;border-top:1px solid #f1f5f9;padding-top:8px;display:flex;flex-direction:column;gap:3px">'+
+        (c.address?'<div>📍 '+c.address+'</div>':'')+
+        (c.companyNumber?'<div>🏢 Co. No. '+c.companyNumber+'</div>':'')+
+      '</div>':'')+
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border-top:1px solid #f1f5f9;padding-top:10px">'+
+      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.chair+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Chair</div></div>'+
+      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.exec+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Executive</div></div>'+
+      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.team+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Team</div></div>'+
+      '<div style="text-align:center;background:#eef2ff;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#4f46e5">'+stats.total+'</div><div style="font-size:10px;color:#6366f1;font-weight:500">Total</div></div>'+
+      '</div>'+
+      '<div style="border-top:1px solid #f1f5f9;padding-top:8px;display:flex;align-items:center;justify-content:space-between">'+
+      '<span style="font-size:11px;color:#94a3b8">BoardEx integration coming soon</span>'+
+      '<button onclick="alert(&#39;BoardEx integration is not yet configured.&#39;)" style="font-size:11px;background:none;border:1px solid #e2e8f0;color:#0f172a;border-radius:5px;padding:4px 10px;cursor:pointer">View Board →</button></div></div>';
+  }).join(''):
+  '<div style="text-align:center;padding:48px 20px;color:#94a3b8"><div style="font-size:13px;font-weight:500">No clients found</div></div>';
+  return '<div class="lc-hdr"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'+
+    '<div><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--txt)">Clients</h2>'+
+    '<p style="margin:4px 0 0;font-size:12px;color:var(--muted)">'+filtered.length+' client'+(filtered.length!==1?'s':'')+'</p></div>'+
+    '<input type="text" placeholder="Search clients..." value="'+(search||'')+'" oninput="S.tab.clientSearch=this.value;renderView()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;outline:none;width:200px"></div></div>'+
+  '<div style="padding:16px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+cards+'</div></div>';
 }
+function rProcurement(){
+  var tab=S.tab.procEnt||'GMG';
+  var ents=['GMG','CMi','Merryck','CMME','ANZ'];
+  var info={
+    GMG:{full:'Global Mentors Group',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'The parent entity and primary contracting vehicle for Group-wide engagements and supplier relationships.'},
+    CMi:{full:'CMi Mentoring',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'Chair Mentoring Institute — specialist provider of Chair and senior non-executive mentoring programmes.'},
+    Merryck:{full:'Merryck & Co',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'Executive coaching and leadership development for C-suite and senior leaders globally.'},
+    CMME:{full:'CMi Middle East',reg:'UAE',num:'TBC',addr:'Dubai, UAE',desc:'Regional entity covering Middle East and Africa engagements and supplier contracts.'},
+    ANZ:{full:'GMG Australia & New Zealand',reg:'Australia',num:'TBC',addr:'Sydney, Australia',desc:'Regional entity covering Asia-Pacific engagements and local supplier relationships.'}
+  };
+  var ei=info[tab]||info.GMG;
+  var tabs=ents.map(function(e){
+    var a=e===tab;
+    return '<button onclick="S.tab.procEnt=\''+ e +'\';renderView()" style="padding:9px 16px;border:none;border-bottom:3px solid '+(a?'#0f172a':'transparent')+';background:transparent;cursor:pointer;font-size:13px;font-weight:'+(a?700:500)+';color:'+(a?'#0f172a':'#64748b')+';white-space:nowrap">'+ e +'</button>';
+  }).join('');
+  function pdoc(title,icon,desc,fname){
+    return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;display:flex;align-items:flex-start;gap:10px">'+
+      '<div style="font-size:22px;line-height:1.2">'+ icon +'</div><div style="flex:1;min-width:0">'+
+      '<div style="font-size:13px;font-weight:600;color:#0f172a;margin-bottom:2px">'+ title +'</div>'+
+      '<div style="font-size:11px;color:#94a3b8;margin-bottom:8px">'+ desc +'</div>'+
+      '<button onclick="alert(&#39;'+ fname +' will be available once uploaded to the platform.&#39;)" style="font-size:11px;background:#0f172a;color:#fff;border:none;border-radius:5px;padding:5px 10px;cursor:pointer">Download PDF</button></div></div>';
+  }
+  var yr=new Date().getFullYear();
+  return '<div class="lc-hdr"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--txt)">Procurement</h2>'+
+  '<p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Entity information, supplier terms, rate cards and onboarding documents</p></div>'+
+  '<div style="padding:0 20px 24px">'+
+  '<div style="border-bottom:1px solid #e2e8f0;margin-bottom:20px;display:flex;overflow-x:auto">'+ tabs +'</div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'+
+  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
+  '<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#0f172a">Company Information</h3>'+
+  '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+  '<tr><td style="color:#64748b;padding:4px 0;width:45%">Legal Name</td><td style="color:#0f172a;font-weight:500">'+ei.full+'</td></tr>'+
+  '<tr><td style="color:#64748b;padding:4px 0">Registered In</td><td style="color:#0f172a;font-weight:500">'+ei.reg+'</td></tr>'+
+  '<tr><td style="color:#64748b;padding:4px 0">Company No.</td><td style="color:#0f172a;font-weight:500">'+ei.num+'</td></tr>'+
+  '<tr><td style="color:#64748b;padding:4px 0">Address</td><td style="color:#0f172a;font-weight:500">'+ei.addr+'</td></tr>'+
+  '</table></div>'+
+  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
+  '<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#0f172a">About '+tab+'</h3>'+
+  '<p style="font-size:13px;color:#475569;line-height:1.6;margin:0">'+ ei.desc +'</p></div></div>'+
+  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
+  '<h3 style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0f172a">Document Library — '+tab+'</h3>'+
+  '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">'+
+  pdoc('Supplier Terms & Conditions','📄','Standard supplier engagement terms and conditions',tab+'-supplier-terms.pdf')+
+  pdoc('Rate Card '+yr,'💰','Current '+yr+' service line rate card',tab+'-rate-card-'+yr+'.pdf')+
+  pdoc('Client Onboarding Pack','📋','Client onboarding documentation and welcome materials',tab+'-onboarding.pdf')+
+  pdoc('Code of Conduct','✅','Supplier code of conduct and ethics policy','code-of-conduct.pdf')+
+  pdoc('Data Processing Agreement','🔒','GDPR data processing agreement',tab+'-dpa.pdf')+
+  pdoc('Insurance Certificates','🛡','Current professional indemnity and liability insurance',tab+'-insurance.pdf')+
+  '</div></div></div>';
+}
+
 function rClientDetail(c){
   var cl=DB.contacts.find(function(x){return x.id===S.currentClientId;});
   if(!cl){c.innerHTML='<p style="padding:32px;color:var(--muted)">Client not found.</p>';return;}
@@ -4784,10 +4879,16 @@ function rPipeline(c){
   const partnerF=S.tab.plPartner||'';
   const countryF=S.tab.plCountry||'';
   const solutionF=S.tab.plSolution||'';
-  let opps=DB.opportunities.filter(o=>{
+
+  const yearF=S.tab.plYear||'';
+  const monthF=S.tab.plMonth||'';
+  const quarterF=S.tab.plQuarter||'';  let opps=DB.opportunities.filter(o=>{
     if(partnerF&&o.partner!==partnerF) return false;
     if(countryF&&o.country!==countryF) return false;
     if(solutionF&&o.solution!==solutionF) return false;
+    if(yearF&&o.closeDate&&o.closeDate.substring(0,4)!==yearF) return false;
+    if(monthF&&o.closeDate&&o.closeDate.substring(5,7)!==monthF) return false;
+    if(quarterF&&o.closeDate){var qm=parseInt(o.closeDate.substring(5,7));if('Q'+Math.ceil(qm/3)!==quarterF) return false;}
     return true;
   });
   const allPartners=[...new Set(DB.opportunities.map(o=>o.partner).filter(Boolean))];
@@ -4825,7 +4926,19 @@ function rPipeline(c){
     </select>
     <button id="pl-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.pipelineFilters={partner:S.tab.plPartner||'',country:S.tab.plCountry||'',solution:S.tab.plSolution||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button>
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.plPartner='';S.tab.plCountry='';S.tab.plSolution='';renderView()">&#10005; Clear</button>`:''}
-  </div>
+  
+    <select onchange="S.tab.plYear=this.value;renderView()">
+      <option value="">All Years</option>
+      ${['2024','2025','2026','2027','2028'].map(y=>`<option value="${y}"${yearF===y?' selected':''}}>${y}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.plQuarter=this.value;renderView()">
+      <option value="">All Quarters</option>
+      ${['Q1','Q2','Q3','Q4'].map(q=>`<option value="${q}"${quarterF===q?' selected':''}}>${q}</option>`).join('')}
+    </select>
+    <select onchange="S.tab.plMonth=this.value;renderView()">
+      <option value="">All Months</option>
+      ${[['01','Jan'],['02','Feb'],['03','Mar'],['04','Apr'],['05','May'],['06','Jun'],['07','Jul'],['08','Aug'],['09','Sep'],['10','Oct'],['11','Nov'],['12','Dec']].map(([mv,ml])=>`<option value="${mv}"${monthF===mv?' selected':''}}>${ml}</option>`).join('')}
+    </select></div>
   <div class="lc-board">
     ${LC_STAGES.map((stage,i)=>{
       const stageOpps=opps.filter(o=>o.stage===stage);
