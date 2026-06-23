@@ -2455,6 +2455,8 @@ function _dashGroup(ctx,ent){
   var activeIds=active.map(function(e){return e.id;});
   var crTotal=fInv.filter(function(i){return activeIds.indexOf(i.engId)!==-1&&i.status!=='paid';}).reduce(function(s,i){return s+(i.amount||0);},0);
   html+=_kpiCard('Committed Revenue',_fmt(crTotal),'invoiced & to raise','#059669',"_showDashReport('committed')");;
+  var grpAbove=aRev-(ytd+openPV+crTotal);
+  html+=_kpiCard('Above/Under Target','<span style="color:'+(grpAbove>=0?'#0d7c59':'#dc2626')+'">'+(grpAbove>=0?'+':'')+_fmt(Math.abs(grpAbove))+'</span>','vs annual target',grpAbove>=0?'#0d7c59':'#dc2626',null);
   html+='</div>';
   if(!ent) html+=_entityBreakdown(ctx);
   html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:20px">'
@@ -2500,6 +2502,8 @@ function _entityBreakdown(ctx){
     var eOPV=eOP.reduce(function(s,p){return s+(p.value||0);},0);
     var eCR=inv.filter(function(i){return eA.some(function(a){return a.id===i.engId;})&&i.status!=='cancelled';}).reduce(function(s,i){return s+(+i.amount||0);},0);
     var col=cols[e]||'64748b';
+    var eTgt=(ctx.db&&ctx.db.dashTargets&&ctx.db.dashTargets.entities&&ctx.db.dashTargets.entities[e])||0;
+    var eAbove=eTgt-(eYTD+eOPV+eCR);
     html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px;cursor:pointer;transition:box-shadow .15s;border-top:4px solid '+col+'" '
       +'onclick="window._gmgDash.type=\'entity\';window._gmgDash.entity=\''+e+'\';renderView()" '
       +'onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,.08)\'" onmouseleave="this.style.boxShadow=\'\'">'
@@ -2512,6 +2516,7 @@ function _entityBreakdown(ctx){
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">YTD Invoiced</span><span style="font-weight:600;color:#7c3aed">'+_fmt(eYTD)+'</span></div>'
       +'<div style="display:flex;justify-content:space-between"><span style="color:#64748b">Open pipeline</span><span style="font-weight:600;color:#e07b00">'+_fmt(eOPV)+'</span></div>'
             +'<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#64748b;font-size:12px">Committed Revenue</span><span style="color:#0d7c59;font-size:13px;font-weight:600">'+_fmt(eCR)+'</span></div>'
+      +'<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:#64748b;font-size:12px">Above/Under Target</span><span style="color:'+(eTgt?(eAbove>=0?'#0d7c59':'#dc2626'):'#94a3b8')+';font-size:13px;font-weight:600">'+(eTgt?_fmt(Math.abs(eAbove))+(eAbove>=0?' above':' under'):'—')+'</span></div>'
 +'</div></div>';
   });
   html+='</div></div>';
@@ -2604,6 +2609,22 @@ function _dashSetTargets(){
 
 
 
+function _openEngReport(entity,partner,country){
+  var flts=[{f:'entity',op:'equals',v:entity}];
+  if(partner) flts.push({f:'partner',op:'equals',v:partner});
+  if(country) flts.push({f:'country',op:'equals',v:country});
+  S.tab.rpt={view:'list',listTab:'all',search:'',src:'engagements',fields:[],filters:flts,sort:{f:'',d:'asc'},dateF:'',dateFrom:'',dateTo:'',results:[]};
+  var all=document.querySelectorAll('[onclick]');
+  for(var i=0;i<all.length;i++){
+    var t=all[i].textContent.trim();
+    var oc=all[i].getAttribute('onclick')||'';
+    if((t==='Reports')&&oc.indexOf('nav')!==-1){
+      all[i].dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true}));
+      return;
+    }
+  }
+  if(typeof renderView==='function') renderView('rReports');
+}
 function _dashCommittedRevenue(engIn,invIn){
   var db=getDB();
   var allEngs=engIn||db.engagements||[];
@@ -2662,7 +2683,7 @@ function _dashCommittedRevenue(engIn,invIn){
     execRows.forEach(function(r){
       var od=r.due&&new Date(r.due)<today&&r.status!=='paid';
       var sl=r.status==='to-raise'?'To raise':r.status==='sent'?'Sent':r.status==='draft'?'Draft':r.status;
-      h+='<tr style="border-bottom:1px solid #f1f5f9">'
+      h+='<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer" onclick="_openEngReport(\''+eng.entity+'\',\''+(eng.partner||'')+'\',\''+(eng.country||'')+'\')">'
         +'<td style="padding:7px 8px;font-weight:500">'+r.client+'</td>'
         +'<td style="padding:7px 8px;color:#64748b">'+r.entity+'</td>'
         +'<td style="padding:7px 8px;font-weight:600">'+r.period+'</td>'
