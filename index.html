@@ -2053,7 +2053,7 @@ const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'F
 const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',engagementDetail:'Engagement',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',training:'Training & Onboarding'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
-const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
+const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'4 · Proposal Sent','Proposal Accepted':'5 · Proposal Accepted','Client Intro':'6 · Client Intro','Contracting':'7 · Contracting','Closed Won':'8 · Closed Won'};
 const PARTNERS=['Matt Hand','Sarah Chen','James Okafor','Will Chidlow','Emma Richards','Tom Ashworth'];
 const COUNTRIES=['United Kingdom','United States','Germany','France','Australia','Singapore','UAE','Canada','Switzerland','Netherlands','Sweden','Hong Kong','Japan','South Africa','India','Brazil','Spain','Italy','Belgium','Ireland'];
 
@@ -3846,7 +3846,21 @@ function rEngDetail(id){
         ${finHtml}
       </div>
 
-      <!-- Commission Allocation -->
+      <!-- Client Billing -->
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Client Billing','')}
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px">
+          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Billing Contact</span><span style="font-size:13px">${e.billingContact||'N/A'}</span></div>
+          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Billing Email</span><span style="font-size:13px">${e.billingEmail||'N/A'}</span></div>
+          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Payment Terms</span><span style="font-size:13px">${e.paymentTerms||'N/A'}</span></div>
+          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Invoice Frequency</span><span style="font-size:13px">${e.invoiceFrequency||'N/A'}</span></div>
+          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Currency</span><span style="font-size:13px">${e.currency||'GBP'}</span></div>
+          ${e.purchaseOrder?'<div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">PO Number</span><span style="font-size:13px">'+e.purchaseOrder+'</span></div>':''}
+          ${e.vatNumber?'<div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">VAT Number</span><span style="font-size:13px">'+e.vatNumber+'</span></div>':''}
+        </div>
+        ${e.billingAddress?'<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Billing Address</span><div style="font-size:13px;margin-top:4px;white-space:pre-wrap">'+e.billingAddress+'</div></div>':''}
+      </div>
+<!-- Commission Allocation -->
       <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         ${sectionHeader('Commission Allocation','')}
         <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Allocate commission % to partners or mentors for this engagement.</div>
@@ -4851,6 +4865,7 @@ function openDealModal(id,defaultStage){
     <div class="fg"><label>Notes</label><textarea id="dm-notes" rows="3">${o?o.notes:''}<\/textarea></div>
     ${renderComments('pipeline',id)}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      ${o&&o.stage==='Closed Won'?'<button class="btn btn-primary" style="background:#059669;color:#fff;border-color:#059669;margin-right:auto" onclick="makeEngLive(\''+id+'\')">Make Engagement Live</button>':''}
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveDeal('${id||''}')">Save Deal</button>
     </div>
@@ -4867,6 +4882,27 @@ function saveDeal(id){
 }
 
 /* ── FINANCE ─────────────────────────────────────────────────── */
+function makeEngLive(dealId){
+  var db=getDB();
+  var deal=(db.pipeline||[]).find(function(x){return x.id===dealId;});
+  if(!deal){alert('Deal not found.');return;}
+  var eng=(db.engagements||[]).find(function(e){return e.pipelineId===dealId||(e.name&&deal.name&&e.name.toLowerCase()===deal.name.toLowerCase());});
+  if(!eng){alert('No linked engagement found for this deal. Please create the engagement first.');return;}
+  var missing=[];
+  if(!eng.billingContact)missing.push('Billing Contact');
+  if(!eng.billingEmail)missing.push('Billing Email');
+  if(!eng.paymentTerms)missing.push('Payment Terms');
+  if(!eng.invoiceFrequency)missing.push('Invoice Frequency');
+  if(!eng.currency)missing.push('Currency');
+  if(missing.length){alert('Please complete the Client Billing section on the engagement before making it live.\n\nMissing: '+missing.join(', '));return;}
+  if(!confirm('Make engagement live?\n\n'+eng.name+'\n\nThis will activate the engagement and initiate invoicing.'))return;
+  eng.status='active';
+  eng.liveDate=new Date().toISOString().split('T')[0];
+  deal.closedDate=deal.closedDate||eng.liveDate;
+  localStorage.setItem('gmg_v2',JSON.stringify(db));
+  closeModal();
+  alert('Engagement is now live: '+eng.name);
+}
 function rFinance(c){
   const entity=S.tab.finEntity||'gmg';
   const section=S.tab.finSection||'autobill';
@@ -6276,6 +6312,16 @@ function openEngModal(id){
     </div>
     <div class="fgrow">
       <div class="fg"><label>Billing Entity</label><input id="em-billing" type="text" value="${e?e.billingEntity||'':''}" placeholder="Legal entity for invoices"></div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin:4px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--primary)">Client Billing</div>
+      <div class="fg"><label>Billing Contact</label><input id="em-billing-contact" type="text" value="${e?e.billingContact||'':''}"></div>
+      <div class="fg"><label>Billing Email</label><input id="em-billing-email" type="email" value="${e?e.billingEmail||'':''}"></div>
+      <div class="fg"><label>Payment Terms</label><select id="em-payment-terms"><option value="">-- Select --</option>${['Net 14','Net 30','Net 45','Net 60','On Receipt'].map(function(x){return '<option value="'+x+'"'+( e&&e.paymentTerms===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
+      <div class="fg"><label>Invoice Frequency</label><select id="em-invoice-freq"><option value="">-- Select --</option>${['Monthly','Quarterly','Bi-Annual','Annual','On Completion','Milestone-Based'].map(function(x){return '<option value="'+x+'"'+( e&&e.invoiceFrequency===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
+      <div class="fg"><label>Currency</label><select id="em-currency"><option value="">-- Select --</option>${['GBP','USD','EUR','AED','SGD','AUD','CAD'].map(function(x){return '<option value="'+x+'"'+((e?e.currency||'GBP':'GBP')===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
+      <div class="fg"><label>PO Number</label><input id="em-po-number" type="text" value="${e?e.purchaseOrder||'':''}"></div>
+      <div class="fg"><label>VAT Number</label><input id="em-vat-number" type="text" value="${e?e.vatNumber||'':''}"></div>
+      <div class="fg" style="grid-column:1/-1"><label>Billing Address</label><textarea id="em-billing-address" rows="3" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical">${e?e.billingAddress||'':'' }</textarea></div>
+      <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin:4px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--primary)">Financial Terms</div>
       <div class="fg"><label>Annual Fee (£)</label><input id="em-fee" type="number" value="${e?e.annualFee||e.totalFee||'':''}" placeholder="0"></div>
     </div>
     <div id="em-exec-fields" style="${(!e||e.type==='executive')?'':'display:none'}">
@@ -6348,6 +6394,14 @@ function saveEng(id){
     country:n('em-country').value.trim(),
     entity:n('em-entity')?.value||'GMG',
     billingEntity:n('em-billing')?.value.trim()||'',
+    billingContact:n('em-billing-contact')?n('em-billing-contact').value.trim():'',
+    billingEmail:n('em-billing-email')?n('em-billing-email').value.trim():'',
+    billingAddress:n('em-billing-address')?n('em-billing-address').value.trim():'',
+    paymentTerms:n('em-payment-terms')?n('em-payment-terms').value:'',
+    invoiceFrequency:n('em-invoice-freq')?n('em-invoice-freq').value:'',
+    purchaseOrder:n('em-po-number')?n('em-po-number').value.trim():'',
+    vatNumber:n('em-vat-number')?n('em-vat-number').value.trim():'',
+    currency:n('em-currency')?n('em-currency').value||'GBP':'GBP',
     startDate:n('em-start').value,endDate:n('em-end').value,
     notes:n('em-notes').value.trim(),
     stages:(DB.engagements.find(x=>x.id===id)||{}).stages||[],
