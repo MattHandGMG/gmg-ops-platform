@@ -5214,7 +5214,7 @@ function rInvoices(c){
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Total (filtered)</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--nearblack)">'+fmt(totalAll)+'</div></div>'
     +'</div>'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
-    +'<input type="text" placeholder="Search..." value="'+srch.replace(/"/g,"''")+'" oninput="if(!S.tab)S.tab={};S.tab.invSearch=this.value;rInvoices(document.getElementById('content'))" style="'+sel+';flex:1;min-width:140px">'
+    +'<input type="text" placeholder="Search..." value="'+srch.replace(/"/g,"''")+'" oninput="if(!S.tab)S.tab={};S.tab.invSearch=this.value;rInvoices(document.getElementById(\'content\'))" style="'+sel+';flex:1;min-width:140px">'
     +'<select onchange="if(!S.tab)S.tab={};S.tab.invEnt=this.value;renderView()" style="'+sel+'">'+eOpts+'</select>'
     +'<select onchange="if(!S.tab)S.tab={};S.tab.invPart=this.value;renderView()" style="'+sel+'">'+pOpts+'</select>'
     +'<select onchange="if(!S.tab)S.tab={};S.tab.invStat=this.value;renderView()" style="'+sel+'">'+sOpts+'</select>'
@@ -5234,12 +5234,12 @@ function saveSalesforceConfig(){
   alert('Salesforce configuration saved.');
 }
 function testSalesforceConnection(){
-  var el=document.getElementById('sf_status');
+  var el=document.getElementById(\'sf_status\');
   if(el)el.textContent='Testing...';
   setTimeout(function(){if(el)el.textContent='Configuration saved. Live sync requires server-side OAuth setup.';},1200);
 }
 function syncFromSalesforce(){
-  var el=document.getElementById('sf_status');
+  var el=document.getElementById(\'sf_status\');
   if(el)el.textContent='Syncing...';
   var db=getDB();
   var d=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
