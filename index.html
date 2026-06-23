@@ -3569,54 +3569,86 @@ function rClients(){
 function rProcurement(){
   var tab=S.tab.procEnt||'GMG';
   var ents=['GMG','CMi','Merryck','CMME','ANZ'];
-  var info={
-    GMG:{full:'Global Mentors Group',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'The parent entity and primary contracting vehicle for Group-wide engagements and supplier relationships.'},
-    CMi:{full:'CMi Mentoring',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'Chair Mentoring Institute — specialist provider of Chair and senior non-executive mentoring programmes.'},
-    Merryck:{full:'Merryck & Co',reg:'England & Wales',num:'TBC',addr:'London, UK',desc:'Executive coaching and leadership development for C-suite and senior leaders globally.'},
-    CMME:{full:'CMi Middle East',reg:'UAE',num:'TBC',addr:'Dubai, UAE',desc:'Regional entity covering Middle East and Africa engagements and supplier contracts.'},
-    ANZ:{full:'GMG Australia & New Zealand',reg:'Australia',num:'TBC',addr:'Sydney, Australia',desc:'Regional entity covering Asia-Pacific engagements and local supplier relationships.'}
+  var labels={GMG:'GMG',CMi:'CMi',Merryck:'Merryck',CMME:'Middle East',ANZ:'ANZ'};
+  var defaults={
+    GMG:[{label:'Legal Name',value:'Global Mentors Group'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Global mentoring and leadership development network providing mentoring, coaching, and development services worldwide.'}],
+    CMi:[{label:'Legal Name',value:'CMi Mentoring'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Specialist mentoring and coaching provider for senior leaders.'}],
+    Merryck:[{label:'Legal Name',value:'Merryck & Co. Management Limited'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Executive coaching and leadership development for C-suite and senior leaders globally.'}],
+    CMME:[{label:'Legal Name',value:'CMi Middle East'},{label:'Registered In',value:'UAE'},{label:'Company No.',value:'TBC'},{label:'Address',value:'Dubai, UAE'},{label:'Description',value:'Regional entity covering Middle East and Africa engagements.'}],
+    ANZ:[{label:'Legal Name',value:'CMi ANZ'},{label:'Registered In',value:'Australia'},{label:'Company No.',value:'TBC'},{label:'Address',value:'Sydney, Australia'},{label:'Description',value:'Regional entity covering Asia-Pacific engagements.'}]
   };
-  var ei=info[tab]||info.GMG;
-  var tabs=ents.map(function(e){
-    var a=e===tab;
-    return '<button onclick="S.tab.procEnt=\''+ e +'\';renderView()" style="padding:9px 16px;border:none;border-bottom:3px solid '+(a?'#0f172a':'transparent')+';background:transparent;cursor:pointer;font-size:13px;font-weight:'+(a?700:500)+';color:'+(a?'#0f172a':'#64748b')+';white-space:nowrap">'+ e +'</button>';
-  }).join('');
-  function pdoc(title,icon,desc,fname){
-    return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:14px;display:flex;align-items:flex-start;gap:10px">'+
-      '<div style="font-size:22px;line-height:1.2">'+ icon +'</div><div style="flex:1;min-width:0">'+
-      '<div style="font-size:13px;font-weight:600;color:#0f172a;margin-bottom:2px">'+ title +'</div>'+
-      '<div style="font-size:11px;color:#94a3b8;margin-bottom:8px">'+ desc +'</div>'+
-      '<button onclick="alert(&#39;'+ fname +' will be available once uploaded to the platform.&#39;)" style="font-size:11px;background:#0f172a;color:#fff;border:none;border-radius:5px;padding:5px 10px;cursor:pointer">Download PDF</button></div></div>';
-  }
-  var yr=new Date().getFullYear();
-  return '<div class="lc-hdr"><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--txt)">Procurement</h2>'+
-  '<p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Entity information, supplier terms, rate cards and onboarding documents</p></div>'+
-  '<div style="padding:0 20px 24px">'+
-  '<div style="border-bottom:1px solid #e2e8f0;margin-bottom:20px;display:flex;overflow-x:auto">'+ tabs +'</div>'+
-  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">'+
-  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
-  '<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#0f172a">Company Information</h3>'+
-  '<table style="width:100%;border-collapse:collapse;font-size:12px">'+
-  '<tr><td style="color:#64748b;padding:4px 0;width:45%">Legal Name</td><td style="color:#0f172a;font-weight:500">'+ei.full+'</td></tr>'+
-  '<tr><td style="color:#64748b;padding:4px 0">Registered In</td><td style="color:#0f172a;font-weight:500">'+ei.reg+'</td></tr>'+
-  '<tr><td style="color:#64748b;padding:4px 0">Company No.</td><td style="color:#0f172a;font-weight:500">'+ei.num+'</td></tr>'+
-  '<tr><td style="color:#64748b;padding:4px 0">Address</td><td style="color:#0f172a;font-weight:500">'+ei.addr+'</td></tr>'+
-  '</table></div>'+
-  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
-  '<h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:#0f172a">About '+tab+'</h3>'+
-  '<p style="font-size:13px;color:#475569;line-height:1.6;margin:0">'+ ei.desc +'</p></div></div>'+
-  '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px">'+
-  '<h3 style="margin:0 0 16px;font-size:14px;font-weight:700;color:#0f172a">Document Library — '+tab+'</h3>'+
-  '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">'+
-  pdoc('Supplier Terms & Conditions','📄','Standard supplier engagement terms and conditions',tab+'-supplier-terms.pdf')+
-  pdoc('Rate Card '+yr,'💰','Current '+yr+' service line rate card',tab+'-rate-card-'+yr+'.pdf')+
-  pdoc('Client Onboarding Pack','📋','Client onboarding documentation and welcome materials',tab+'-onboarding.pdf')+
-  pdoc('Code of Conduct','✅','Supplier code of conduct and ethics policy','code-of-conduct.pdf')+
-  pdoc('Data Processing Agreement','🔒','GDPR data processing agreement',tab+'-dpa.pdf')+
-  pdoc('Insurance Certificates','🛡','Current professional indemnity and liability insurance',tab+'-insurance.pdf')+
-  '</div></div></div>';
+  var db=getDB();
+  var isAdmin=!db.appUsers||db.appUsers.some(function(u){return u.role==='Admin';});
+  var fields=(db.procInfo&&db.procInfo[tab])||defaults[tab];
+  var tabs=ents.map(function(e){var a=e===tab;return '<button onclick="S.tab.procEnt=\''+e+'\';renderView()" style="padding:9px 16px;border:none;border-bottom:3px solid '+(a?'#0f172a':'transparent')+';background:transparent;font-weight:'+(a?'600':'400')+';cursor:pointer;font-size:14px;color:'+(a?'#0f172a':'#64748b')+'">'+labels[e]+'</button>';}).join('');
+  var rows=fields.map(function(f){return '<tr><td style="font-weight:500;color:#64748b;padding:10px 16px;width:38%;font-size:14px;border-bottom:1px solid #f1f5f9">'+f.label+'</td><td style="padding:10px 16px;font-size:14px;border-bottom:1px solid #f1f5f9">'+f.value+'</td></tr>';}).join('');
+  var editBtn=isAdmin?'<button onclick="openProcEditModal(\''+tab+'\')" style="padding:6px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">Edit</button>':'';
+  var docs=[{name:'Supplier Terms & Conditions'},{name:'Rate Card'},{name:'Onboarding Pack'},{name:'NDA Template'},{name:'Master Services Agreement'},{name:'Data Processing Agreement'}];
+  var docBtns=docs.map(function(d){return '<button onclick="alert(\''+d.name+' will be available once uploaded to the document library.\')" style="padding:10px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:13px;color:#374151;text-align:left;width:100%"><span style="display:block;font-weight:500">'+d.name+'</span><span style="font-size:11px;color:#94a3b8">PDF — Coming soon</span></button>';}).join('');
+  return '<div style="padding:24px;max-width:900px">'+
+    '<h2 style="margin:0 0 4px;font-size:20px;color:var(--txt)">Procurement</h2>'+
+    '<p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Entity management and supplier documentation.</p>'+
+    '<div style="display:flex;gap:0;border-bottom:1px solid #e2e8f0;margin:20px 0 24px">'+tabs+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+    '<h3 style="margin:0;font-size:15px;color:#0f172a">Company Information</h3>'+editBtn+
+    '</div>'+
+    '<table style="width:100%;border-collapse:collapse"><tbody>'+rows+'</tbody></table>'+
+    '</div>'+
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
+    '<h3 style="margin:0 0 14px;font-size:15px;color:#0f172a">Document Library</h3>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+docBtns+'</div>'+
+    '</div>'+
+    '</div>'+
+    '</div>';
 }
-
+function openProcEditModal(ent){
+  var db=getDB();
+  var defaults={
+    GMG:[{label:'Legal Name',value:'Global Mentors Group'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Global mentoring and leadership development network.'}],
+    CMi:[{label:'Legal Name',value:'CMi Mentoring'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Specialist mentoring and coaching provider.'}],
+    Merryck:[{label:'Legal Name',value:'Merryck & Co. Management Limited'},{label:'Registered In',value:'England & Wales'},{label:'Company No.',value:'TBC'},{label:'Address',value:'London, UK'},{label:'Description',value:'Executive coaching and leadership development.'}],
+    CMME:[{label:'Legal Name',value:'CMi Middle East'},{label:'Registered In',value:'UAE'},{label:'Company No.',value:'TBC'},{label:'Address',value:'Dubai, UAE'},{label:'Description',value:'Regional entity covering Middle East and Africa.'}],
+    ANZ:[{label:'Legal Name',value:'CMi ANZ'},{label:'Registered In',value:'Australia'},{label:'Company No.',value:'TBC'},{label:'Address',value:'Sydney, Australia'},{label:'Description',value:'Regional entity covering Asia-Pacific engagements.'}]
+  };
+  var fields=(db.procInfo&&db.procInfo[ent])||defaults[ent]||[];
+  var ov=document.createElement('div');
+  ov.id='proc-edit-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  var fieldRows=fields.map(function(f){return '<div class="pf-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:center"><input value="'+f.label+'" placeholder="Field name" style="width:40%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px"><input value="'+f.value+'" placeholder="Value" style="flex:1;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px"><button onclick="this.closest(\'.pf-row\').remove()" style="padding:6px 10px;background:#fee2e2;border:none;border-radius:6px;cursor:pointer;color:#dc2626">X</button></div>';}).join('');
+  ov.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'+
+    '<h3 style="margin:0 0 18px;font-size:16px;color:#0f172a">Edit Company Info — '+ent+'</h3>'+
+    '<div id="pfc">'+fieldRows+'</div>'+
+    '<button onclick="_procAddField()" style="padding:7px 14px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;cursor:pointer;font-size:13px;color:#0369a1;margin-bottom:18px">+ Add Field</button>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end">'+
+    '<button onclick="document.getElementById(\'proc-edit-ov\').remove()" style="padding:8px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px">Cancel</button>'+
+    '<button onclick="saveProcInfo(\''+ent+'\')" style="padding:8px 16px;background:#0f172a;border:none;border-radius:6px;cursor:pointer;font-size:13px;color:#fff">Save Changes</button>'+
+    '</div></div>';
+  document.body.appendChild(ov);
+}
+function _procAddField(){
+  var c=document.getElementById('pfc');
+  var d=document.createElement('div');
+  d.className='pf-row';
+  d.style.cssText='display:flex;gap:8px;margin-bottom:8px;align-items:center';
+  d.innerHTML='<input placeholder="Field name" style="width:40%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px"><input placeholder="Value" style="flex:1;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px"><button onclick="this.closest(\'.pf-row\').remove()" style="padding:6px 10px;background:#fee2e2;border:none;border-radius:6px;cursor:pointer;color:#dc2626">X</button>';
+  c.appendChild(d);
+}
+function saveProcInfo(ent){
+  var rows=document.querySelectorAll('#pfc .pf-row');
+  var fields=[];
+  rows.forEach(function(row){
+    var inputs=row.querySelectorAll('input');
+    if(inputs.length>=2&&inputs[0].value.trim())fields.push({label:inputs[0].value.trim(),value:inputs[1].value.trim()});
+  });
+  var db=getDB();
+  if(!db.procInfo)db.procInfo={};
+  db.procInfo[ent]=fields;
+  localStorage.setItem('gmg_v2',JSON.stringify(db));
+  document.getElementById('proc-edit-ov').remove();
+  renderView();
+}
 function rClientDetail(c){
   var cl=DB.contacts.find(function(x){return x.id===S.currentClientId;});
   if(!cl){c.innerHTML='<p style="padding:32px;color:var(--muted)">Client not found.</p>';return;}
@@ -4886,7 +4918,7 @@ function rPipeline(c){
     if(partnerF&&o.partner!==partnerF) return false;
     if(countryF&&o.country!==countryF) return false;
     if(solutionF&&o.solution!==solutionF) return false;
-    var _cd=(o.closeDate||(o.created?o.created.substring(0,10):''));
+    var _cd=o.closeDate||'';
     if(yearF&&_cd&&_cd.substring(0,4)!==yearF) return false;
     if(monthF&&_cd&&_cd.substring(5,7)!==monthF) return false;
     if(quarterF&&_cd){var qm=parseInt(_cd.substring(5,7));if('Q'+Math.ceil(qm/3)!==quarterF) return false;}
@@ -4956,7 +4988,7 @@ function rPipeline(c){
             return`<div class="lc-card" onclick="openDealModal('${o.id}')">
               <div class="lc-card-name">${o.name}</div>
               <div class="lc-card-meta">${o.client||'—'}<br>${o.partner||'—'} · ${o.country||'—'}</div>
-              <div class="lc-card-val">${fmt(o.value)}</div>
+              <div class="lc-card-val">${fmt(o.value)}</div>${o.closeDate?'\n              <div style="font-size:11px;color:#94a3b8;margin-top:3px">Close: '+o.closeDate+'</div>':''}
               <div class="lc-card-tags"><span class="badge ${tb}" style="font-size:9px">${o.solution}</span></div>
             </div>`;
           }).join('')}
@@ -4989,7 +5021,7 @@ function openDealModal(id,defaultStage){
       <div class="fg"><label>Stage</label><select id="dm-stage">
         ${LC_STAGES.map(s=>`<option value="${s}"${(o?o.stage:defaultStage)===s?' selected':''}>${s}</option>`).join('')}
       </select></div>
-      <div class="fg"><label>Close Date</label><input id="dm-close" type="date" value="${o?o.closeDate:''}"></div>
+      <div class="fg"><label>Expected Close Date</label><input id="dm-close" type="date" value="${o?o.closeDate:''}"></div>
     </div>
     <div class="fgrow">
       <div class="fg"><label>Partner</label><select id="dm-partner">
