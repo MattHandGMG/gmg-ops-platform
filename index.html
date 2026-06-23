@@ -350,10 +350,10 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
-    <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div><div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">📋</span>Procurement</div>
-    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
+    <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div>    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">◎</span>Quoting</div>
+    <div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">📋</span>Procurement</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">◐</span>Finance</div>
     <div class="sb-item" data-v="tasks" onclick="nav(this)"><span class="ic">◻</span>Tasks</div>
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">◈</span>Reports</div>
@@ -2191,7 +2191,7 @@ function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
   const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
-  if(r[S.view]) r[S.view](c);
+  if(r[S.view]){var _h=r[S.view](c);if(typeof _h==='string')c.innerHTML=_h;}
   updateNotifBadge();
 }
 
@@ -2428,7 +2428,7 @@ function _dashGroup(ctx,ent){
   var fPipe=ent?pipe.filter(function(p){return (p.entity||'')===ent;}):pipe;
   var m=now.getMonth(),d=now.getDate(),y=now.getFullYear();
   var doy=Math.floor((now-new Date(y,0,0))/86400000);
-  var aRev=tgt.revenue;
+  var aRev=ent?(tgt.entities&&tgt.entities[ent])||tgt.revenue||0:tgt.entities?Object.keys(tgt.entities).reduce(function(s,k){return s+(tgt.entities[k]||0);},0):tgt.revenue||0;
   var tMTD=Math.round(aRev/12*(d/30)),tQTD=Math.round(aRev/4*(((m%3)*30+d)/90)),tYTD=Math.round(aRev*doy/365);
   var mtd=_revInPeriod(fInv,ctx.mtdStart,now),qtd=_revInPeriod(fInv,ctx.qtdStart,now),ytd=_revInPeriod(fInv,ctx.ytdStart,now);
   var active=fEngs.filter(function(e){return e.status==='active';});
@@ -4886,9 +4886,10 @@ function rPipeline(c){
     if(partnerF&&o.partner!==partnerF) return false;
     if(countryF&&o.country!==countryF) return false;
     if(solutionF&&o.solution!==solutionF) return false;
-    if(yearF&&o.closeDate&&o.closeDate.substring(0,4)!==yearF) return false;
-    if(monthF&&o.closeDate&&o.closeDate.substring(5,7)!==monthF) return false;
-    if(quarterF&&o.closeDate){var qm=parseInt(o.closeDate.substring(5,7));if('Q'+Math.ceil(qm/3)!==quarterF) return false;}
+    var _cd=(o.closeDate||(o.created?o.created.substring(0,10):''));
+    if(yearF&&_cd&&_cd.substring(0,4)!==yearF) return false;
+    if(monthF&&_cd&&_cd.substring(5,7)!==monthF) return false;
+    if(quarterF&&_cd){var qm=parseInt(_cd.substring(5,7));if('Q'+Math.ceil(qm/3)!==quarterF) return false;}
     return true;
   });
   const allPartners=[...new Set(DB.opportunities.map(o=>o.partner).filter(Boolean))];
@@ -4924,7 +4925,7 @@ function rPipeline(c){
       <option value="executive"${solutionF==='executive'?' selected':''}>Executive</option>
       <option value="team"${solutionF==='team'?' selected':''}>Team</option>
     </select>
-    <button id="pl-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.pipelineFilters={partner:S.tab.plPartner||'',country:S.tab.plCountry||'',solution:S.tab.plSolution||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button>
+    
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.plPartner='';S.tab.plCountry='';S.tab.plSolution='';renderView()">&#10005; Clear</button>`:''}
   
     <select onchange="S.tab.plYear=this.value;renderView()">
@@ -4938,7 +4939,7 @@ function rPipeline(c){
     <select onchange="S.tab.plMonth=this.value;renderView()">
       <option value="">All Months</option>
       ${[['01','Jan'],['02','Feb'],['03','Mar'],['04','Apr'],['05','May'],['06','Jun'],['07','Jul'],['08','Aug'],['09','Sep'],['10','Oct'],['11','Nov'],['12','Dec']].map(([mv,ml])=>`<option value="${mv}"${monthF===mv?' selected':''}}>${ml}</option>`).join('')}
-    </select></div>
+    </select><button id="pl-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.pipelineFilters={partner:S.tab.plPartner||'',country:S.tab.plCountry||'',solution:S.tab.plSolution||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button></div>
   <div class="lc-board">
     ${LC_STAGES.map((stage,i)=>{
       const stageOpps=opps.filter(o=>o.stage===stage);
