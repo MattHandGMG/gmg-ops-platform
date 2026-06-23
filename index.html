@@ -3540,7 +3540,7 @@ function rClients(){
   }
   var cards=filtered.length?filtered.map(function(c){
     var stats=getStats(c.id,c.name);
-    return '<div style="background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px;display:flex;flex-direction:column;gap:10px">'+
+    return '<div onclick="S.currentClientId=\''+c.id+'\';S.view=\'clientDetail\';renderView()" style="cursor:pointer;background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px;display:flex;flex-direction:column;gap:10px">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between">'+
       '<div><div style="font-size:15px;font-weight:700;color:#0f172a">'+(c.company||c.name||'—')+'</div>'+
       (c.company&&c.name?'<div style="font-size:12px;color:#64748b;margin-top:2px">'+c.name+'</div>':'')+'</div>'+
@@ -3589,8 +3589,7 @@ function rProcurement(){
     '<h2 style="margin:0 0 4px;font-size:20px;color:var(--txt)">Procurement</h2>'+
     '<p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Entity management and supplier documentation.</p>'+
     '<div style="display:flex;gap:0;border-bottom:1px solid #e2e8f0;margin:20px 0 24px">'+tabs+'</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+
-    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
+    '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
     '<h3 style="margin:0;font-size:15px;color:#0f172a">Company Information</h3>'+editBtn+
     '</div>'+
@@ -3599,7 +3598,6 @@ function rProcurement(){
     '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
     '<h3 style="margin:0 0 14px;font-size:15px;color:#0f172a">Document Library</h3>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+docBtns+'</div>'+
-    '</div>'+
     '</div>'+
     '</div>';
 }
@@ -3650,57 +3648,91 @@ function saveProcInfo(ent){
   renderView();
 }
 function rClientDetail(c){
-  var cl=DB.contacts.find(function(x){return x.id===S.currentClientId;});
-  if(!cl){c.innerHTML='<p style="padding:32px;color:var(--muted)">Client not found.</p>';return;}
-  var engs=(DB.engagements||[]).filter(function(e){return e.clientId===cl.id;});
-  var totalFee=engs.reduce(function(s,e){return s+(e.annualFee||0);},0);
-  var activeCount=engs.filter(function(e){return e.status==='active';}).length;
-  var sessCount=(DB.sessions||[]).filter(function(s){return engs.some(function(e){return e.id===s.engId;});}).length;
-  var fmtFee=function(n){return '£'+Number(n).toLocaleString('en-GB');};
-  var lbl='font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px';
-  c.innerHTML=
-    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">'
-    +'<button class="btn btn-outline" onclick="S.view=\'clients\';renderView()">← Back</button>'
-    +'<div style="flex:1"><h2 style="margin:0;font-size:20px">'+cl.name+'</h2>'
-    +'<div style="font-size:13px;color:var(--muted);margin-top:2px">'+cl.org+'</div></div>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">'
-    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:var(--venetian)">'+engs.length+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Engagements</div></div>'
-    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700;color:#27ae60">'+activeCount+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Active</div></div>'
-    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:22px;font-weight:700;color:var(--venetian)">'+(totalFee?fmtFee(totalFee):'—')+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Total Annual Fees</div></div>'
-    +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px;font-weight:700">'+sessCount+'</div><div style="font-size:11px;color:var(--muted);text-transform:uppercase">Sessions</div></div>'
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Contact Details</p>'
-    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px">'
-    +(cl.email?'<div><div style="'+lbl+'">Email</div><div style="font-size:13px">'+cl.email+'</div></div>':'')
-    +(cl.phone?'<div><div style="'+lbl+'">Phone</div><div style="font-size:13px">'+cl.phone+'</div></div>':'')
-    +(cl.org?'<div><div style="'+lbl+'">Organisation</div><div style="font-size:13px">'+cl.org+'</div></div>':'')
-    +'<div><div style="'+lbl+'">Status</div><div style="font-size:13px;text-transform:capitalize">'+(cl.status||'Active')+'</div></div>'
-    +'</div>'
-    +(cl.notes?'<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div style="'+lbl+'">Notes</div><div style="font-size:13px;margin-top:4px">'+cl.notes+'</div></div>':'')
-    +'</div>'
-    +'<div class="card" style="margin-bottom:16px">'
-    +'<p style="font-size:11px;font-weight:600;letter-spacing:.5px;color:var(--muted);margin:0 0 14px;text-transform:uppercase">Engagements ('+engs.length+')</p>'
-    +(engs.length===0?'<p style="font-size:13px;color:var(--muted);font-style:italic">No engagements yet.</p>'
-    :engs.map(function(e){
-      var mn=DB.contacts.find(function(x){return x.id===e.mentorId;});
-      var scol=e.status==='active'?'#27ae60':e.status==='planning'?'#f39c12':'#7f8c8d';
-      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer" onclick="S.currentEngId=\''+e.id+'\';S.view=\'engagementDetail\';renderView()">'
-        +'<div style="flex:1">'
-        +'<div style="font-size:13px;font-weight:600;margin-bottom:3px">'+e.name+'</div>'
-        +'<div style="font-size:12px;color:var(--muted)">'+(mn?mn.name:'No mentor assigned')+' · '+(e.startDate||'—')+' → '+(e.endDate||'—')+'</div>'
-        +'</div>'
-        +(e.annualFee?'<div style="font-size:13px;font-weight:600;color:var(--venetian)">'+fmtFee(e.annualFee)+' pa</div>':'')
-        +'<span class="badge" style="background:'+scol+'22;color:'+scol+';text-transform:capitalize">'+e.status+'</span>'
-        +'</div>';
-    }).join(''))
-    +'</div>'
-    +'<div class="card">'+renderComments('client',cl.id)+'</div>'
-  ;
+  var db=getDB();
+  var ctId=S.currentClientId;
+  var ct=(db.contacts||[]).find(function(x){return x.id===ctId;})||{};
+  if(!ctId){c.innerHTML='<p style="padding:32px;color:var(--muted)">No client selected.</p>';return;}
+  var engs=(db.engagements||DB.engagements||[]).filter(function(e){return ct.company&&e.client&&e.client.toLowerCase().indexOf(ct.company.toLowerCase())>-1;});
+  var deals=(DB.opportunities||[]).filter(function(o){return ct.company&&o.client&&o.client.toLowerCase().indexOf(ct.company.toLowerCase())>-1;});
+  var ptnr=engs.length?(engs[0].partner||engs[0].owner||'—'):'—';
+  function fld(l,v){return '<tr><td style="color:#64748b;font-size:13px;padding:7px 0;width:40%;border-bottom:1px solid #f8fafc">'+l+'</td><td style="font-size:13px;padding:7px 0;border-bottom:1px solid #f8fafc">'+(v||'<span style="color:#94a3b8">—</span>')+'</td></tr>';}
+  var cR=fld('Name',ct.name)+fld('Role',ct.role)+fld('Email',ct.email||ct.mail)+fld('Phone',ct.phone||ct.mobile)+fld('Company',ct.company)+fld('Country',ct.country);
+  var coR=fld('Address',ct.address||ct.addr)+fld('Co. No.',ct.companyNo||ct.num)+fld('Registered In',ct.registeredIn||ct.reg)+fld('Website',ct.website);
+  var eR=engs.length?engs.map(function(e){return '<tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+e.name+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc;color:#64748b">'+(e.type||e.solution||'—')+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc;color:#64748b">'+(e.status||e.stage||'—')+'</td></tr>';}).join(''):'<tr><td colspan="3" style="padding:14px 12px;color:#94a3b8;font-size:13px">No engagements on record</td></tr>';
+  var sL=['','Prospect','Qualify','Proposal','Negotiate','Closed Won','Closed Lost'];
+  var dR=deals.length?deals.map(function(o){return '<tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+o.name+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+fmt(o.value)+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc"><span class="badge stage-'+(o.stage||1)+'" style="font-size:11px">'+(sL[o.stage]||'Stage '+o.stage)+'</span></td></tr>';}).join(''):'<tr><td colspan="3" style="padding:14px 12px;color:#94a3b8;font-size:13px">No pipeline deals</td></tr>';
+  var eB='<button onclick="openClientEditModal(\''+ctId+'\')" style="padding:6px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:12px;color:#374151">Edit</button>';
+  c.innerHTML='<div style="padding:24px;max-width:1100px">'+
+  '<div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">'+
+  '<button onclick="S.view=\'clients\';renderView()" style="padding:7px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">&#8592; Clients</button>'+
+  '<div><h2 style="margin:0;font-size:20px;color:var(--txt)">'+(ct.name||'Client')+'</h2>'+
+  '<p style="margin:2px 0 0;font-size:13px;color:var(--muted)">'+(ct.company||'')+(ct.role?' · '+ct.role:'')+'</p></div></div>'+
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+
+  '<div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
+  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">'+
+  '<h3 style="margin:0;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Contact Details</h3>'+eB+'</div>'+
+  '<table style="width:100%;border-collapse:collapse"><tbody>'+cR+'</tbody></table></div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
+  '<h3 style="margin:0 0 14px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Company Details</h3>'+
+  '<table style="width:100%;border-collapse:collapse"><tbody>'+coR+'</tbody></table></div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
+  '<h3 style="margin:0 0 14px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Partner Responsible</h3>'+
+  '<div style="display:flex;align-items:center;gap:12px;padding:4px 0">'+
+  '<div style="width:38px;height:38px;background:#0f172a;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:14px">'+ptnr.charAt(0).toUpperCase()+'</div>'+
+  '<span style="font-size:14px;font-weight:500">'+ptnr+'</span></div></div></div>'+
+  '<div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
+  '<h3 style="margin:0 0 14px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Engagements</h3>'+
+  '<table style="width:100%;border-collapse:collapse"><thead><tr>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Name</th>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Type</th>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Status</th>'+
+  '</tr></thead><tbody>'+eR+'</tbody></table></div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
+  '<h3 style="margin:0 0 14px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Pipeline Deals</h3>'+
+  '<table style="width:100%;border-collapse:collapse"><thead><tr>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Deal</th>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Value</th>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Stage</th>'+
+  '</tr></thead><tbody>'+dR+'</tbody></table></div>'+
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px">'+
+  '<h3 style="margin:0 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">BoardEx</h3>'+
+  '<p style="font-size:13px;color:#94a3b8;margin:0 0 14px">Board composition and executive network data.</p>'+
+  '<button onclick="alert(\'BoardEx integration coming soon.\')" style="padding:7px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">View in BoardEx &#8594;</button>'+
+  '</div></div></div></div>';
 }
-
-function rEngDetail(id){
+function openClientEditModal(ctId){
+  var db=getDB();
+  var ct=(db.contacts||[]).find(function(c){return c.id===ctId;})||{};
+  var ov=document.createElement('div');
+  ov.id='client-edit-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  function inp(id,label,val){return '<div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px">'+label+'</label><input id="ce-'+id+'" value="'+(val||'')+'" style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;box-sizing:border-box"></div>';}
+  ov.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'+
+  '<h3 style="margin:0 0 20px;font-size:16px;color:#0f172a">Edit Client Details</h3>'+
+  inp('name','Full Name',ct.name)+inp('role','Role',ct.role)+
+  inp('email','Email',ct.email||ct.mail)+inp('phone','Phone',ct.phone||ct.mobile)+
+  inp('company','Company',ct.company)+inp('country','Country',ct.country)+
+  inp('address','Address',ct.address||ct.addr)+inp('companyNo','Co. No.',ct.companyNo||ct.num)+
+  inp('reg','Registered In',ct.registeredIn||ct.reg)+inp('website','Website',ct.website)+
+  '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'+
+  '<button onclick="document.getElementById(\'client-edit-ov\').remove()" style="padding:8px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px">Cancel</button>'+
+  '<button onclick="saveClientEdit(\''+ctId+'\')" style="padding:8px 16px;background:#0f172a;border:none;border-radius:6px;cursor:pointer;font-size:13px;color:#fff">Save</button>'+
+  '</div></div>';
+  document.body.appendChild(ov);
+}
+function saveClientEdit(ctId){
+  var db=getDB();
+  var idx=(db.contacts||[]).findIndex(function(c){return c.id===ctId;});
+  if(idx<0)return;
+  var f=function(id){var el=document.getElementById('ce-'+id);return el?el.value.trim():'';};
+  db.contacts[idx]=Object.assign({},db.contacts[idx],{name:f('name'),role:f('role'),email:f('email'),phone:f('phone'),company:f('company'),country:f('country'),address:f('address'),companyNo:f('companyNo'),registeredIn:f('reg'),website:f('website')});
+  localStorage.setItem('gmg_v2',JSON.stringify(db));
+  document.getElementById('client-edit-ov').remove();
+  S.view='clientDetail';
+  renderView();
+}function rEngDetail(id){
   const e=DB.engagements.find(x=>x.id===id);if(!e)return;
   const cl=DB.contacts.find(c=>c.id===e.clientId);
   const mn=DB.contacts.find(m=>m.id===e.mentorId);
@@ -4918,11 +4950,10 @@ function rPipeline(c){
     if(partnerF&&o.partner!==partnerF) return false;
     if(countryF&&o.country!==countryF) return false;
     if(solutionF&&o.solution!==solutionF) return false;
-    var _cd=o.closeDate||'';
+    var _cd=o.closeDate||(o.created?o.created.substring(0,10):'');
     if(yearF&&_cd&&_cd.substring(0,4)!==yearF) return false;
-    if(monthF&&_cd&&_cd.substring(5,7)!==monthF) return false;
-    if(quarterF&&_cd){var qm=parseInt(_cd.substring(5,7));if('Q'+Math.ceil(qm/3)!==quarterF) return false;}
-    return true;
+    if(monthF&&_cd&&parseInt(_cd.substring(5,7))!==parseInt(monthF)) return false;
+    if(quarterF&&_cd){var _qm=parseInt(_cd.substring(5,7));if('Q'+Math.ceil(_qm/3)!==quarterF) return false;}    return true;
   });
   const allPartners=[...new Set(DB.opportunities.map(o=>o.partner).filter(Boolean))];
   const allCountries=[...new Set(DB.opportunities.map(o=>o.country).filter(Boolean))];
