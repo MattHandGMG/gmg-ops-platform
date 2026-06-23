@@ -2050,7 +2050,7 @@ try{const lc=localStorage.getItem(SK);if(lc)DB=JSON.parse(lc);}catch(e){}
 
 const S={view:'dashboard',user:{name:'Matt Hand',role:'rm'},tab:{},search:'',engFilters:{partner:'',country:'',solution:''},mentorSector:'',mentorEnt:'',mentorCat:'',mentorId:null,currentEngId:null};
 const ROLES={leadership:'Senior Leadership',rm:'Relationship Manager',finance:'Finance',ops:'Operations'};
-const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',engagementDetail:'Engagement',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',chat:'Team Chat',training:'Training & Onboarding'};
+const VIEWS={dashboard:'Dashboard',pipeline:'Pipeline',engagements:'Engagements',engagementDetail:'Engagement',mentors:'Mentor Library',projects:'Project Management',quoting:'Quoting',finance:'Finance',tasks:'Tasks',reports:'Reports',training:'Training & Onboarding'};
 const TOPACT={pipeline:'+ New Deal',engagements:'+ New Engagement',mentors:'+ Add Mentor',quoting:'+ New Quote',tasks:'+ New Task'};
 const LC_STAGES=['Lead','Qualified','Mentee Identified','Proposal Sent','Proposal Accepted','Client Intro','Contracting','Closed Won'];
 const LC_STAGE_LABELS={'Lead':'1 · Prospect / Lead','Qualified':'2 · Qualified Opportunity','Mentee Identified':'3 · Mentee Identified','Proposal Sent':'3 · Proposal Sent','Proposal Accepted':'4 · Proposal Accepted','Client Intro':'5 · Client Intro','Contracting':'6 · Contracting','Closed Won':'7 · Closed Won'};
@@ -2190,7 +2190,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,chat:rChat,training:rTraining};
+  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
   if(r[S.view]) r[S.view](c);
   updateNotifBadge();
 }
@@ -2246,7 +2246,7 @@ function _dashContent(){
 function _seedDemoData(db){
   var y=new Date().getFullYear();
   var engs=[
-    {id:'demo_e1',name:'CEO Coaching â Barclays',entity:'GMG',solution:'executive',status:'active',annualFee:120,startDate:y+'-01-15',partner:'Sarah Mitchell',client:'Barclays'},
+    {id:'demo_e1',name:'CEO Coaching — Barclays',entity:'GMG',solution:'executive',status:'active',annualFee:120,startDate:y+'-01-15',partner:'Sarah Mitchell',client:'Barclays'},
     {id:'demo_e2',name:'CFO Leadership Programme',entity:'GMG',solution:'leadership',status:'active',annualFee:85,startDate:(y-1)+'-09-01',partner:'Sarah Mitchell',client:'HSBC'},
     {id:'demo_e3',name:'Board Chair Mentoring',entity:'GMG',solution:'chair',status:'active',annualFee:95,startDate:y+'-03-01',partner:'James Hartley',client:'Unilever'},
     {id:'demo_e4',name:'Senior Leadership Cohort',entity:'CMi',solution:'leadership',status:'active',annualFee:110,startDate:y+'-02-01',partner:'Tom Bradley',client:'Vodafone'},
@@ -2310,8 +2310,8 @@ function _metricCard(lbl,val,target,period,col,onclick){
     +'</div></div>';
 }
 
-function _kpiCard(label,value,sub,color){
-  return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;border-top:3px solid '+color+';flex:1;min-width:150px">'
+function _kpiCard(label,value,sub,color,fn){
+  return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 20px;border-top:3px solid '+color+';flex:1;min-width:150px;cursor:'+(fn?'pointer':'default')+'"'+(fn?' onclick="'+fn+'"':'')+'>'
     +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:8px">'+label+'</div>'
     +'<div style="font-size:26px;font-weight:800;color:#0f172a">'+value+'</div>'
     +'<div style="font-size:11px;color:#94a3b8;margin-top:4px">'+sub+'</div></div>';
@@ -2336,7 +2336,7 @@ function _dashPersonal(){
   var ytdPct=Math.round(ytdInv/fyTarget*100);
   var html='<div class="phdr"><div><h2>Dashboard</h2><p>Good morning, '+S.user.name.split(' ')[0]+'. Here\'s your operational overview.</p></div>'
     +'<div style="display:flex;gap:8px;align-items:center">'
-    +(unsyncedInv.length?'<span class="badge b-amber">â  '+unsyncedInv.length+' unsynced to Xero</span>':'')
+    +(unsyncedInv.length?'<span class="badge b-amber">⚠ '+unsyncedInv.length+' unsynced to Xero</span>':'')
     +'</div></div>';
   html+='<div class="kpi-grid">'
     +'<div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">'+fmt(ytdInv)+'</div>'
@@ -2356,7 +2356,7 @@ function _dashPersonal(){
     var ov=t.due<today()&&t.status!=='done';
     html+='<tr><td><span style="font-weight:600">'+t.title+'</span><div style="font-size:10px;color:var(--muted)">'+t.assignee+'</div></td>'
       +'<td><span class="badge b-grey">'+t.type+'</span></td>'
-      +'<td style="color:'+(ov?'var(--venetian)':'inherit')+';font-weight:'+(ov?700:400)+'">'+t.due+(ov?' â ':'')+'</td>'
+      +'<td style="color:'+(ov?'var(--venetian)':'inherit')+';font-weight:'+(ov?700:400)+'">'+t.due+(ov?' ⚠':'')+'</td>'
       +'<td><span class="badge '+(t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey')+'">'+t.priority+'</span></td></tr>';
   });
   html+='</tbody></table></div></div>';
@@ -2366,18 +2366,18 @@ function _dashPersonal(){
     var tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
     html+='<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">'
       +'<span class="badge '+tb+'" style="min-width:56px;justify-content:center">'+e.type+'</span>'
-      +'<div style="flex:1"><div style="font-size:12px;font-weight:600">'+(e.name.length>42?e.name.slice(0,42)+'â¦':e.name)+'</div>'
-      +'<div style="font-size:10px;color:var(--muted)">'+(mentor?mentor.name:'â')+' \xb7 '+e.coordinator+'</div></div>'
+      +'<div style="flex:1"><div style="font-size:12px;font-weight:600">'+(e.name.length>42?e.name.slice(0,42)+'…':e.name)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+(mentor?mentor.name:'—')+' \xb7 '+e.coordinator+'</div></div>'
       +'<button class="btn btn-sm btn-outline" onclick="openEngDetail(\''+e.id+'\')">View</button></div>';
   });
   html+='</div></div></div>';
   html+='<div class="g2">'
-    +'<div class="card"><div class="card-hdr"><h3>Finance â Pending Actions</h3></div><div class="card-body" style="padding:0 18px">';
-  if(!unsyncedInv.length&&!pendingPay.length) html+='<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced â</p>';
+    +'<div class="card"><div class="card-hdr"><h3>Finance — Pending Actions</h3></div><div class="card-body" style="padding:0 18px">';
+  if(!unsyncedInv.length&&!pendingPay.length) html+='<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced ✓</p>';
   unsyncedInv.forEach(function(inv){
     var cl=DB.contacts.find(function(c){return c.id===inv.clientId;});
     html+='<div class="fin-item"><div class="fin-dot" style="background:var(--venetian)"></div>'
-      +'<div class="fin-info"><strong>'+(cl?cl.name:'Client')+' â '+inv.period+'</strong><span>Invoice \xb7 '+inv.type+' \xb7 '+inv.status+'</span></div>'
+      +'<div class="fin-info"><strong>'+(cl?cl.name:'Client')+' — '+inv.period+'</strong><span>Invoice \xb7 '+inv.type+' \xb7 '+inv.status+'</span></div>'
       +'<div class="fin-amount" style="color:var(--venetian)">'+fmt(inv.amount)+'</div>'
       +'<button class="btn btn-sm btn-outline" onclick="pushInvXero(\''+inv.id+'\')">&#8594; Xero</button></div>';
   });
@@ -2385,7 +2385,7 @@ function _dashPersonal(){
     var m=DB.contacts.find(function(x){return x.id===p.mentorId;});
     var e=DB.engagements.find(function(x){return x.id===p.engId;});
     html+='<div class="fin-item"><div class="fin-dot" style="background:var(--cadmium)"></div>'
-      +'<div class="fin-info"><strong>'+(m?m.name:'Mentor')+' â '+p.period+'</strong><span>'+(e?e.name.split('â')[0]:'')+' \xb7 '+p.type+'</span></div>'
+      +'<div class="fin-info"><strong>'+(m?m.name:'Mentor')+' — '+p.period+'</strong><span>'+(e?e.name.split('—')[0]:'')+' \xb7 '+p.type+'</span></div>'
       +'<div class="fin-amount" style="color:var(--cadmium)">'+fmt(p.amount)+'</div>'
       +'<span class="badge b-amber">pending</span></div>';
   });
@@ -2448,34 +2448,38 @@ function _dashGroup(ctx,ent){
   html+=_metricCard('YTD Sales',ytd,tYTD,'Year to Date','#7c3aed','');
   html+='</div>';
   html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px">';
-  html+=_kpiCard('Active Engagements',active.length,'currently running','#0d7c59');
-  html+=_kpiCard('New This Year',newYTD,'engagements started','#2563eb');
-  html+=_kpiCard('Open Pipeline',_fmt(openPV),openP.length+' deals','#e07b00');
-  html+=_kpiCard('New Business Won',_fmt(wonYTD),'closed YTD','#7c3aed');
+  html+=_kpiCard('Active Engagements',active.length,'currently running','#0d7c59',"_showDashReport('engagements')");
+  html+=_kpiCard('New This Year',newYTD,'engagements started','#2563eb',"_showDashReport('new-engagements')");
+  html+=_kpiCard('Open Pipeline',_fmt(openPV),openP.length+' deals','#e07b00',"_showDashReport('pipeline')");
+  html+=_kpiCard('New Business Won',_fmt(wonYTD),'closed YTD','#7c3aed',"_showDashReport('won')")
+  var activeIds=active.map(function(e){return e.id;});
+  var crTotal=fInv.filter(function(i){return activeIds.indexOf(i.engId)!==-1&&i.status!=='paid';}).reduce(function(s,i){return s+(i.amount||0);},0);
+  html+=_kpiCard('Committed Revenue',_fmt(crTotal),'invoiced & to raise','#059669',"_showDashReport('committed')");;
   html+='</div>';
   if(!ent) html+=_entityBreakdown(ctx);
   html+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px;margin-bottom:20px">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-    +'<h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">Active Engagements'+(ent?' â '+ent:'')+'</h3>'
-    +'<span style="font-size:12px;color:#2563eb;cursor:pointer" onclick="S.view=\'eng\';renderView()">View all in Engagements â</span></div>'
+    +'<h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">Active Engagements'+(ent?' — '+ent:'')+'</h3>'
+    +'<span style="font-size:12px;color:#2563eb;cursor:pointer" onclick="S.view=\'eng\';renderView()">View all in Engagements →</span></div>'
     +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
     +'<tr style="color:#94a3b8;font-size:11px;font-weight:700;text-transform:uppercase;border-bottom:1px solid #f1f5f9">'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Engagement</th>'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Entity</th>'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Partner</th>'
     +'<th style="text-align:left;padding-bottom:8px;font-weight:700">Client</th>'
-    +'<th style="text-align:right;padding-bottom:8px;font-weight:700">ARR</th></tr>';
+    +'<th style="text-align:right;padding-bottom:8px;font-weight:700">ARR</th><th style="text-align:right;padding-bottom:8px;font-weight:700">Committed</th></tr>';
   active.forEach(function(e){
+    var eC=fInv.filter(function(i){return i.engId===e.id&&i.status!=='paid';}).reduce(function(s,i){return s+(i.amount||0);},0);
     html+='<tr style="border-bottom:1px solid #f8fafc;cursor:pointer" onmouseenter="this.style.background=\'#f8fafc\'" onmouseleave="this.style.background=\'\'" onclick="S.view=\'engDetail\';S.selEng=\''+e.id+'\';renderView()">'
       +'<td style="padding:9px 0"><span style="font-weight:600;color:#1e293b">'+e.name+'</span></td>'
       +'<td style="color:#475569">'+e.entity+'</td>'
-      +'<td style="color:#475569">'+(e.partner||'â')+'</td>'
-      +'<td style="color:#475569">'+(e.client||'â')+'</td>'
-      +'<td style="text-align:right;font-weight:700;color:#0d7c59">'+_fmt(e.annualFee||0)+'</td></tr>';
+      +'<td style="color:#475569">'+(e.partner||'—')+'</td>'
+      +'<td style="color:#475569">'+(e.client||'—')+'</td>'
+      +'<td style="text-align:right;font-weight:700;color:#0d7c59">'+_fmt(e.annualFee||0)+'<td style="text-align:right;padding:8px;color:#059669;font-weight:600">'+_fmt(eC)+'</td></tr>';
   });
-  if(!active.length) html+='<tr><td colspan="5" style="padding:16px 0;color:#94a3b8;text-align:center">No active engagements</td></tr>';
+  if(!active.length) html+='<tr><td colspan="6" style="padding:16px 0;color:#94a3b8;text-align:center">No active engagements</td></tr>';
   html+='</table></div></div>';
-  return html+_dashCommittedRevenue();
+  return html+(ent?_dashCommittedRevenue(fEngs,fInv):'');
 }
 
 function _entityBreakdown(ctx){
@@ -2690,6 +2694,60 @@ function _dashCommittedRevenue(engIn,invIn){
   }
   h+='</div>';
   return h;
+}
+function _showDashReport(type){
+  var db=getDB();
+  var dashState=window._gmgDash||{};
+  var ent=dashState.entity&&dashState.entity!=='GMG'?dashState.entity:null;
+  var engs=db.engagements||[];
+  var invs=db.clientInvoices||[];
+  var pipe=db.pipeline||[];
+  var fEngs=ent?engs.filter(function(e){return e.entity===ent;}):engs;
+  var fInvs=ent?invs.filter(function(i){var e2=engs.find(function(x){return x.id===i.engId;});return e2&&e2.entity===ent;}):invs;
+  var today=new Date();var yr=today.getFullYear();
+  var title='';var content='';
+  if(type==='committed'){
+    title='Committed Revenue Pipeline'+(ent?' — '+ent:'');
+    content=_dashCommittedRevenue(fEngs,fInvs);
+  } else if(type==='engagements'){
+    title='Active Engagements'+(ent?' — '+ent:'');
+    var rows=fEngs.filter(function(e){return e.status==='active';});
+    content='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:8px;color:#64748b">Client</th><th style="text-align:left;padding:8px;color:#64748b">Type</th><th style="text-align:left;padding:8px;color:#64748b">Entity</th><th style="text-align:left;padding:8px;color:#64748b">Start</th><th style="text-align:right;padding:8px;color:#64748b">Annual Fee</th></tr></thead><tbody>'+rows.map(function(e){return '<tr><td style="padding:8px">'+e.name+'</td><td style="padding:8px;color:#64748b">'+e.type+'</td><td style="padding:8px;color:#64748b">'+e.entity+'</td><td style="padding:8px;color:#64748b">'+(e.startDate?(e.startDate+'').substring(0,10):'&mdash;')+'</td><td style="text-align:right;padding:8px;font-weight:700">'+_fmt(e.annualFee||0)+'</td></tr>';}).join('')+'</tbody></table>';
+  } else if(type==='new-engagements'){
+    title='New Engagements This Year'+(ent?' — '+ent:'');
+    var rows=fEngs.filter(function(e){return e.startDate&&new Date(e.startDate).getFullYear()===yr;});
+    content='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:8px;color:#64748b">Client</th><th style="text-align:left;padding:8px;color:#64748b">Type</th><th style="text-align:left;padding:8px;color:#64748b">Entity</th><th style="text-align:left;padding:8px;color:#64748b">Start</th><th style="text-align:right;padding:8px;color:#64748b">Annual Fee</th></tr></thead><tbody>'+rows.map(function(e){return '<tr><td style="padding:8px">'+e.name+'</td><td style="padding:8px;color:#64748b">'+e.type+'</td><td style="padding:8px;color:#64748b">'+e.entity+'</td><td style="padding:8px;color:#64748b">'+(e.startDate?(e.startDate+'').substring(0,10):'&mdash;')+'</td><td style="text-align:right;padding:8px;font-weight:700">'+_fmt(e.annualFee||0)+'</td></tr>';}).join('')+'</tbody></table>';
+  } else if(type==='pipeline'){
+    title='Open Pipeline'+(ent?' — '+ent:'');
+    var rows=pipe.filter(function(p){return p.stage!=='Won'&&p.stage!=='Lost'&&(!ent||(p.entity||'')===ent);});
+    content='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:8px;color:#64748b">Deal</th><th style="text-align:left;padding:8px;color:#64748b">Stage</th><th style="text-align:left;padding:8px;color:#64748b">Owner</th><th style="text-align:right;padding:8px;color:#64748b">Value</th></tr></thead><tbody>'+rows.map(function(p){return '<tr><td style="padding:8px">'+p.name+'</td><td style="padding:8px;color:#64748b">'+(p.stage||'')+'</td><td style="padding:8px;color:#64748b">'+(p.owner||p.partner||'&mdash;')+'</td><td style="text-align:right;padding:8px;font-weight:700">'+_fmt(p.value||0)+'</td></tr>';}).join('')+'</tbody></table>';
+  } else if(type==='won'){
+    title='New Business Won This Year'+(ent?' — '+ent:'');
+    var rows=pipe.filter(function(p){return p.stage==='Won'&&p.closeDate&&new Date(p.closeDate).getFullYear()===yr&&(!ent||(p.entity||'')===ent);});
+    content='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid #e2e8f0"><th style="text-align:left;padding:8px;color:#64748b">Deal</th><th style="text-align:left;padding:8px;color:#64748b">Owner</th><th style="text-align:left;padding:8px;color:#64748b">Closed</th><th style="text-align:right;padding:8px;color:#64748b">Value</th></tr></thead><tbody>'+rows.map(function(p){return '<tr><td style="padding:8px">'+p.name+'</td><td style="padding:8px;color:#64748b">'+(p.owner||p.partner||'&mdash;')+'</td><td style="padding:8px;color:#64748b">'+((p.closeDate||'').substring(0,10)||'&mdash;')+'</td><td style="text-align:right;padding:8px;font-weight:700">'+_fmt(p.value||0)+'</td></tr>';}).join('')+'</tbody></table>';
+  }
+  var existing=document.getElementById('gmg-dash-report');
+  if(existing)document.body.removeChild(existing);
+  var overlay=document.createElement('div');
+  overlay.id='gmg-dash-report';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:48px 20px';
+  overlay.onclick=function(ev){if(ev.target===overlay)document.body.removeChild(overlay);};
+  var modal=document.createElement('div');
+  modal.style.cssText='background:#f8fafc;border-radius:16px;padding:28px;max-width:960px;width:100%;position:relative;margin:auto';
+  var hdr=document.createElement('div');
+  hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:20px';
+  var ttl=document.createElement('h2');
+  ttl.style.cssText='margin:0;font-size:18px;font-weight:700;color:#0f172a';
+  ttl.textContent=title;
+  var btn=document.createElement('button');
+  btn.textContent='×';
+  btn.style.cssText='background:none;border:none;font-size:22px;cursor:pointer;color:#64748b;padding:4px 8px';
+  btn.onclick=function(){var o=document.getElementById('gmg-dash-report');if(o)document.body.removeChild(o);};
+  hdr.appendChild(ttl);hdr.appendChild(btn);
+  modal.appendChild(hdr);
+  modal.insertAdjacentHTML('beforeend',content);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
 }
 function rDashboardAdmin(c){
   rDashboardRM(c);
@@ -3528,11 +3586,11 @@ function rEngDetail(id){
   const minFee=e.type==='chair'?(selOpt?selOpt.minFee||0:0):((DB.minimumPricing||{})[e.type]||0);
   const pricingDiff=minFee>0?mainFee-minFee:null;
 
-  const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'â';
+  const initials=n=>n?n.trim().split(' ').filter(Boolean).map(w=>w[0]).join('').toUpperCase().substring(0,2):'⁓';
 
   const avatar=(name,sub,bg)=>`<div style="display:flex;align-items:center;gap:12px">
     <div style="width:38px;height:38px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:13px;font-weight:700;color:#fff;flex-shrink:0">${initials(name||'')}</div>
-    <div><div style="font-size:13px;font-weight:600;color:var(--nearblack);line-height:1.2">${name||'â'}</div><div style="font-size:11px;color:var(--muted)">${sub}</div></div>
+    <div><div style="font-size:13px;font-weight:600;color:var(--nearblack);line-height:1.2">${name||'—'}</div><div style="font-size:11px;color:var(--muted)">${sub}</div></div>
   </div>`;
 
   const sectionHeader=(title,action)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
@@ -3555,7 +3613,7 @@ function rEngDetail(id){
             <span style="font-weight:600;font-size:12px;color:var(--nearblack)">Session ${i+1}</span>
             <span style="font-size:10px;font-weight:600;color:${sc};background:${sc}15;padding:2px 7px;border-radius:20px;text-transform:capitalize">${s.status}</span>
             <span style="font-size:11px;color:var(--muted)">${sd} Â· ${s.duration} mins</span>
-            <span style="font-size:10px;color:var(--muted);margin-left:auto;opacity:.7">â click to edit</span>
+            <span style="font-size:10px;color:var(--muted);margin-left:auto;opacity:.7">↗ click to edit</span>
           </div>
           ${s.notes?`<p style="font-size:12px;color:var(--muted);margin:0;line-height:1.5">${s.notes}</p>`:''}
           ${s.createdBy?`<div style="font-size:10px;color:var(--muted);margin-top:3px;opacity:.7">Added by ${s.createdBy}</div>`:''}
@@ -3653,7 +3711,7 @@ function rEngDetail(id){
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
       <button onclick="(function(){const en=DB.engagements.find(x=>x.id==='${id}');if(en){en.commissions=en.commissions||[];en.commissions.push({name:'',role:'partner',pct:0});save();rEngDetail('${id}');}})()"
  style="font-size:11px;padding:5px 12px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:inherit;font-weight:500;color:var(--nearblack)">+ Add Allocation</button>
-      ${commissions.length>0?`<span style="font-size:11px;color:${totalCommPct>100?'#DC2626':'var(--muted)'};font-weight:600">Total: ${totalCommPct}%${totalCommPct>100?' â  over 100%':''}</span>`:''}
+      ${commissions.length>0?`<span style="font-size:11px;color:${totalCommPct>100?'#DC2626':'var(--muted)'};font-weight:600">Total: ${totalCommPct}%${totalCommPct>100?' ⚠ over 100%':''}</span>`:''}
     </div>`;
 
   const sfBar=isEnded
@@ -3695,7 +3753,7 @@ function rEngDetail(id){
     <div style="position:absolute;top:-50px;right:-30px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.05);pointer-events:none"></div>
     <div style="position:absolute;bottom:-80px;left:30%;width:280px;height:280px;border-radius:50%;background:rgba(0,0,0,.08);pointer-events:none"></div>
     <div style="position:relative;z-index:1">
-      <button onclick="S.view='engagements';renderView()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:14px" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">â Back to Engagements</button>
+      <button onclick="S.view='engagements';renderView()" style="display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;margin-bottom:14px" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">← Back to Engagements</button>
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
         <div style="min-width:0">
           <h1 style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#fff;margin:0 0 10px;line-height:1.15;letter-spacing:-.01em">${e.name}</h1>
@@ -3710,7 +3768,7 @@ function rEngDetail(id){
           <div style="font-family:Georgia,serif;font-size:34px;font-weight:700;color:#fff;line-height:1;letter-spacing:-.02em">${fmt(mainFee)}</div>
           <div style="font-size:10px;color:rgba(255,255,255,.45);margin-top:3px">${e.type==='chair'?'per year':e.type==='executive'?'per year':'total programme'}</div>
           ${pricingDiff!==null?`<div style="margin-top:7px;display:inline-flex;align-items:center;gap:4px;background:${pricingDiff>=0?'rgba(16,185,129,.22)':'rgba(220,38,38,.22)'};border:1px solid ${pricingDiff>=0?'rgba(16,185,129,.45)':'rgba(220,38,38,.45)'};border-radius:12px;padding:3px 10px">
-            <span style="font-size:11px;font-weight:600;color:${pricingDiff>=0?'#6EE7B7':'#FCA5A5'}">${pricingDiff>=0?'+':'â'}${fmt(Math.abs(pricingDiff))} ${pricingDiff>=0?'above':'below'} minimum</span>
+            <span style="font-size:11px;font-weight:600;color:${pricingDiff>=0?'#6EE7B7':'#FCA5A5'}">${pricingDiff>=0?'+':'−'}${fmt(Math.abs(pricingDiff))} ${pricingDiff>=0?'above':'below'} minimum</span>
           </div>`:''}  
         </div>
       </div>
@@ -3761,7 +3819,7 @@ function rEngDetail(id){
         ${sectionHeader('Comments','')}
         <div id="comments-${id}"></div>
         <div style="margin-top:14px;display:flex;gap:8px">
-          <input id="comment-input-${id}" type="text" placeholder="Add a commentâ¦ type @ to mention someone" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
+          <input id="comment-input-${id}" type="text" placeholder="Add a comment… type @ to mention someone" style="flex:1;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:12px;font-family:inherit;outline:none" onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
           <button class="btn btn-sm btn-primary" onclick="if(document.getElementById('comment-input-${id}').value.trim()){postComment&&postComment('${id}',document.getElementById('comment-input-${id}').value);document.getElementById('comment-input-${id}').value=''}">Post</button>
         </div>
       </div>
@@ -3775,9 +3833,9 @@ function rEngDetail(id){
         ${sectionHeader('Engagement Info','')}
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Type</span><span style="font-size:12px;font-weight:600;text-transform:capitalize">${e.type} Mentoring</span></div>
         ${e.type==='chair'?`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Pricing Option</span><span style="font-size:12px;font-weight:600;color:${selOpt?'var(--nearblack)':'var(--muted)'}">${selOpt?selOpt.name:'Not set'}</span></div>`:''}
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'â'}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'â'}</span></div>
-        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'â'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Coordinator</span><span style="font-size:12px;font-weight:500">${e.coordinator||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Partner</span><span style="font-size:12px;font-weight:500">${e.partner||'—'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Country</span><span style="font-size:12px;font-weight:500">${e.country||'—'}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px;color:var(--muted)">Start Date</span><span style="font-size:12px;font-weight:500">${e.startDate}</span></div>
         <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="font-size:11px;color:var(--muted)">End Date</span><span style="font-size:12px;font-weight:500">${e.endDate}</span></div>
       </div>
@@ -3800,12 +3858,12 @@ function rEngDetail(id){
         ${sectionHeader('People','')}
         <div style="margin-bottom:14px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Client</div>
-          ${avatar(cl?cl.name:'â',cl?cl.org||'Client':'Client','#CE2702')}
+          ${avatar(cl?cl.name:'—',cl?cl.org||'Client':'Client','#CE2702')}
           ${cl?cl.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${cl.email}</div>`:'':''}
         </div>
         <div style="border-top:1px solid var(--border);padding-top:14px">
           <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">Mentor</div>
-          ${avatar(mn?mn.name:'â',mn?mn.org||'Mentor':'Mentor','#059669')}
+          ${avatar(mn?mn.name:'—',mn?mn.org||'Mentor':'Mentor','#059669')}
           ${mn?mn.email?`<div style="font-size:11px;color:var(--muted);margin-top:4px;padding-left:50px">${mn.email}</div>`:'':''}
         </div>
       </div>
@@ -4178,14 +4236,14 @@ function rProjects(c){
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
           <div style="flex:1">
             <div style="font-family:Georgia,serif;font-size:14px;font-weight:700;color:var(--nearblack);margin-bottom:4px">${e.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${client?client.name:'â'} Â· ${mentor?mentor.name:'No mentor'}</div>
+            <div style="font-size:11px;color:var(--muted)">${client?client.name:'—'} Â· ${mentor?mentor.name:'No mentor'}</div>
           </div>
           <span class="badge ${stBadge}" style="margin-left:8px;flex-shrink:0">${e.status}</span>
         </div>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
           ${e.country?`<span class="badge b-grey">🌍 ${e.country}</span>`:''}
-          ${e.startDate?`<span class="badge b-grey">${e.startDate} â ${e.endDate||'ongoing'}</span>`:''}
+          ${e.startDate?`<span class="badge b-grey">${e.startDate} → ${e.endDate||'ongoing'}</span>`:''}
         </div>
         <div style="margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
@@ -4343,12 +4401,12 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
     <div class="card">
       <div class="card-hdr"><h3>Project Details</h3></div>
       <div class="card-body"><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
-        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Client</div><div style="font-weight:500">${client?client.name:'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Client</div><div style="font-weight:500">${client?client.name:'—'}</div></div>
         <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Mentor</div><div style="font-weight:500">${mentor?mentor.name:'None assigned'}</div></div>
-        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Partner</div><div>${e.partner||'â'}</div></div>
-        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Country</div><div>${e.country||'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Partner</div><div>${e.partner||'—'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Country</div><div>${e.country||'—'}</div></div>
         <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Type</div><div><span class="badge">${e.type}</span></div></div>
-        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Start Date</div><div>${e.startDate||'â'}</div></div>
+        <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Start Date</div><div>${e.startDate||'—'}</div></div>
         <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Annual Fee</div><div style="font-family:Georgia,serif">${fmt(e.annualFee||0)}</div></div>
         <div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Quarterly Fee</div><div style="font-family:Georgia,serif">${fmt(e.quarterlyFee||0)}</div></div>
       </div></div>
@@ -4368,7 +4426,7 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
             <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden">
               <div style="width:${st.status==='Complete'?100:st.status==='Active'?50:0}%;height:100%;background:${st.status==='Complete'?'var(--success)':'var(--venetian)'};border-radius:3px;transition:.3s"></div>
             </div>
-            ${st.startDate?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${st.startDate}${st.endDate?' â '+st.endDate:''}</div>`:''}
+            ${st.startDate?`<div style="font-size:10px;color:var(--muted);margin-top:3px">${st.startDate}${st.endDate?' → '+st.endDate:''}</div>`:''}
             ${(st.clientFee||st.mentorFee)?`<div style="font-size:11px;margin-top:3px">${st.clientFee?'<span style="color:var(--venetian);font-weight:600">Client: '+fmt(st.clientFee)+'</span> ':''}${st.mentorFee?'<span style="color:var(--cadmium)">Mentor: '+fmt(st.mentorFee)+'</span>':''}</div>`:''}
           </div>`).join('')}
       </div>
@@ -4381,10 +4439,10 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
         `<table class="tbl"><thead><tr><th>#</th><th>Date</th><th>Type</th><th>Status</th><th>Notes</th></tr></thead><tbody>
           ${sessions.map((s,i)=>`<tr>
             <td style="font-weight:600">${i+1}</td>
-            <td>${s.date||'â'}</td>
-            <td style="font-size:11px">${s.type||'â'}</td>
+            <td>${s.date||'—'}</td>
+            <td style="font-size:11px">${s.type||'—'}</td>
             <td><span class="badge ${s.status==='completed'?'b-green':'b-amber'}" style="font-size:10px">${s.status}</span></td>
-            <td style="font-size:11px;color:var(--muted)">${s.notes?(s.notes.length>80?s.notes.slice(0,80)+'â¦':s.notes):'â'}</td>
+            <td style="font-size:11px;color:var(--muted)">${s.notes?(s.notes.length>80?s.notes.slice(0,80)+'…':s.notes):'—'}</td>
           </tr>`).join('')}
         </tbody></table>`}
     </div>
@@ -4422,12 +4480,12 @@ function rProjTasks(body,e,tasks){
             <div style="font-size:13px;font-weight:500;margin-bottom:8px">${t.title}</div>
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:8px">
               <span style="font-size:11px;color:var(--muted)">${t.assignee||'Unassigned'}${t.due?' &middot; '+t.due:''}</span>
-              <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}" style="font-size:10px">${t.priority||'â'}</span>
+              <span class="badge ${t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-grey'}" style="font-size:10px">${t.priority||'—'}</span>
             </div>
             ${t.notes?`<div style="font-size:11px;color:var(--muted);padding-top:6px;border-top:1px solid var(--border)">${t.notes.slice(0,80)}</div>`:''}
             <div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">
-              ${col!=='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;todo&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:none">â Back</button>`:''}
-              ${col==='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;in_progress&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--venetian);border-radius:3px;cursor:pointer;background:none;color:var(--venetian)">Start â</button>`:''}
+              ${col!=='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;todo&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--border);border-radius:3px;cursor:pointer;background:none">← Back</button>`:''}
+              ${col==='todo'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;in_progress&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--venetian);border-radius:3px;cursor:pointer;background:none;color:var(--venetian)">Start →</button>`:''}
               ${col==='in_progress'?`<button onclick="updateProjTask(&apos;${t.id}&apos;,&apos;done&apos;)" style="font-size:10px;padding:2px 7px;border:1px solid var(--success);border-radius:3px;cursor:pointer;background:none;color:var(--success)">&#10003; Done</button>`:''}
             </div>
           </div>`).join('')}
@@ -4438,7 +4496,7 @@ function rProjTasks(body,e,tasks){
 
 function updateProjTask(taskId,newStatus){
   const t=DB.tasks.find(x=>x.id===taskId);
-  if(t){t.status=newStatus;addAct('â»','Task updated: '+t.title);save();renderView();}
+  if(t){t.status=newStatus;addAct('◻','Task updated: '+t.title);save();renderView();}
 }
 
 function rProjGantt(body,e,stages,sessions){
@@ -4467,7 +4525,7 @@ function rProjGantt(body,e,stages,sessions){
   const stColor={Active:'var(--venetian)',Complete:'var(--success)','Not Started':'#f5a623'};
   body.innerHTML=`
   <div class="card">
-    <div class="card-hdr"><h3>Gantt Chart</h3><span style="font-size:11px;color:var(--muted)">${lo.toLocaleDateString('en-GB')} â ${hi.toLocaleDateString('en-GB')}</span></div>
+    <div class="card-hdr"><h3>Gantt Chart</h3><span style="font-size:11px;color:var(--muted)">${lo.toLocaleDateString('en-GB')} – ${hi.toLocaleDateString('en-GB')}</span></div>
     <div class="card-body" style="overflow-x:auto;padding-bottom:8px">
       <div style="min-width:560px">
         <div style="position:relative;height:22px;margin-left:170px;margin-bottom:6px;border-bottom:1px solid var(--border)">
@@ -4484,7 +4542,7 @@ function rProjGantt(body,e,stages,sessions){
             <div style="width:170px;flex-shrink:0;font-size:12px;font-weight:500;padding-right:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${st.name}">${st.name}</div>
             <div style="flex:1;position:relative;height:24px;background:var(--halfnarrow);border-radius:4px">
               ${todayP>=0&&todayP<=100?`<div style="position:absolute;left:${todayP}%;top:-6px;bottom:-6px;width:2px;background:var(--cadmium);z-index:2;border-radius:1px"></div>`:''}
-              <div style="position:absolute;left:${left}%;width:${w}%;height:100%;background:${col};border-radius:4px;opacity:.88;display:flex;align-items:center;padding:0 7px;box-sizing:border-box;overflow:hidden" title="${st.name}: ${st.startDate||'?'} â ${st.endDate||'ongoing'}">
+              <div style="position:absolute;left:${left}%;width:${w}%;height:100%;background:${col};border-radius:4px;opacity:.88;display:flex;align-items:center;padding:0 7px;box-sizing:border-box;overflow:hidden" title="${st.name}: ${st.startDate||'?'} → ${st.endDate||'ongoing'}">
                 <span style="font-size:10px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${st.name}</span>
               </div>
             </div>
@@ -4523,7 +4581,7 @@ function rProjTimeline(body,e,stages,sessions,tasks){
   const upcoming=events.filter(ev=>ev.date>=today);
   const past=[...events.filter(ev=>ev.date<today)].reverse();
   const tColor={'stage-start':'var(--venetian)','stage-end':'var(--success)','session':'var(--info)','task':'#f5a623'};
-  const tIcon={'stage-start':'ð','stage-end':'â','session':'ð','task':'â»'};
+  const tIcon={'stage-start':'ð','stage-end':'✅','session':'ð','task':'◻'};
   const renderEv=(ev,dim)=>`
     <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);opacity:${dim?'0.55':'1'}">
       <div style="width:88px;flex-shrink:0;font-size:11px;color:var(--muted);text-align:right;padding-top:1px">${ev.date}</div>
@@ -5990,7 +6048,7 @@ function rMentors(c){
     <!-- Search -->
     <div style="flex:1;min-width:220px;position:relative">
       <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted);pointer-events:none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input class="inp" placeholder="Search mentorsâ¦" value="${S.search||''}"
+      <input class="inp" placeholder="Search mentors…" value="${S.search||''}"
         oninput="S.search=this.value;renderView()"
         style="padding:9px 12px 9px 36px;width:100%;box-sizing:border-box;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--bg);transition:border-color .15s"
         onfocus="this.style.borderColor='var(--venetian)'" onblur="this.style.borderColor='var(--border)'">
@@ -6051,7 +6109,7 @@ function rMentors(c){
             <div style="font-size:11px;color:var(--muted);margin-top:2px;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title||''}</div>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--nearblack);margin-bottom:8px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.org||'â'}</div>
+        <div style="font-size:11px;color:var(--nearblack);margin-bottom:8px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.org||'—'}</div>
         ${(m.sectors||[]).length?`<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">${(m.sectors||[]).slice(0,3).map(s=>`<span style="font-size:9px;font-weight:600;padding:2px 8px;background:var(--halfnarrow);border:1px solid var(--border);border-radius:10px;white-space:nowrap">${s}</span>`).join('')}${(m.sectors||[]).length>3?`<span style="font-size:9px;color:var(--muted);padding:2px 4px">+${m.sectors.length-3}</span>`:''}</div>`:''}
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border);margin-top:auto">
           ${m.entity?`<span class="badge ${comBadge}" style="font-size:9px">${m.entity}</span>`:'<span></span>'}
@@ -6565,97 +6623,6 @@ async function setNewPwd(){
   if(error){msg.style.color='red';msg.textContent='Error: '+error.message;}
   else{msg.style.color='green';msg.textContent='Password updated! Logging you in...';setTimeout(()=>window.location.reload(),1500);}
 }
-/* ââ TEAM CHAT ââ */
-function rChat(c){
-  if(!DB.chatChannels)DB.chatChannels=[
-    {id:'ch_general',name:'general',description:'Company-wide discussions'},
-    {id:'ch_projects',name:'projects',description:'Project updates and coordination'},
-    {id:'ch_finance',name:'finance',description:'Finance team discussions'},
-    {id:'ch_mentors',name:'mentors',description:'Mentor coordination'}
-  ];
-  if(!DB.chatMessages)DB.chatMessages=[];
-  const activeChat=S.tab.chatActive||'ch_general';
-  const isChannel=activeChat.startsWith('ch_');
-  const users=DB.appUsers||[];
-  const cu=S.user;
-  let messages=isChannel
-    ?DB.chatMessages.filter(m=>m.channelId===activeChat)
-    :DB.chatMessages.filter(m=>m.isDM&&((m.fromId===cu.id&&m.toId===activeChat.replace('dm_',''))||(m.fromId===activeChat.replace('dm_','')&&m.toId===cu.id)));
-  if(!S.tab.chatLastRead)S.tab.chatLastRead={};
-  S.tab.chatLastRead[activeChat]=Date.now();
-  const getUnread=cid=>{
-    const lr=(S.tab.chatLastRead||{})[cid]||0;
-    if(cid.startsWith('ch_'))return DB.chatMessages.filter(m=>m.channelId===cid&&m.ts>lr&&m.fromId!==cu.id).length;
-    const oid=cid.replace('dm_','');
-    return DB.chatMessages.filter(m=>m.isDM&&m.fromId===oid&&m.toId===cu.id&&m.ts>lr).length;
-  };
-  let hTitle='',hSub='';
-  if(isChannel){const ch=DB.chatChannels.find(x=>x.id===activeChat);hTitle=ch?'# '+ch.name:'Channel';hSub=ch?ch.description:'';}
-  else{const oid=activeChat.replace('dm_','');const ou=users.find(u=>u.id===oid);hTitle=ou?ou.name:'Direct Message';hSub='Direct Message';}
-  const otherUsers=users.filter(u=>u.id!==cu.id);
-  c.innerHTML=`
-  <div style="display:flex;height:calc(100vh - 124px);border:1px solid var(--border);border-radius:8px;overflow:hidden">
-    <div style="width:220px;flex-shrink:0;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--halfnarrow);overflow-y:auto">
-      <div style="padding:14px 12px 6px;font-size:13px;font-weight:700;color:var(--nearblack);font-family:Georgia,serif">Team Chat</div>
-      <div style="padding:4px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">CHANNELS</div>
-      ${DB.chatChannels.map(ch=>{
-        const unread=getUnread(ch.id);
-        const active=activeChat===ch.id;
-        return `<div onclick="S.tab.chatActive='${ch.id}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
-          <span style="font-size:13px"># ${ch.name}</span>
-          ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
-        </div>`;
-      }).join('')}
-      <div onclick="openNewChannelModal()" style="padding:6px 14px;cursor:pointer;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;margin:1px 6px">
-        <span style="font-size:16px;line-height:1">+</span><span>Add channel</span>
-      </div>
-      <div style="padding:10px 8px 2px;font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.08em">DIRECT MESSAGES</div>
-      ${otherUsers.length===0?'<div style="padding:6px 14px;font-size:12px;color:var(--muted)">No other users yet</div>':
-        otherUsers.map(u=>{
-          const dmId='dm_'+u.id;
-          const unread=getUnread(dmId);
-          const active=activeChat===dmId;
-          const initials=u.name.split(' ').map(n=>n[0]||'').join('').slice(0,2).toUpperCase();
-          return `<div onclick="S.tab.chatActive='${dmId}';renderView()" style="padding:6px 14px;cursor:pointer;border-radius:4px;margin:1px 6px;display:flex;align-items:center;justify-content:space-between;background:${active?'var(--venetian)':'transparent'};color:${active?'#fff':'var(--nearblack)'}">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:22px;height:22px;border-radius:50%;background:${active?'rgba(255,255,255,.3)':'var(--venetian)'};color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${initials}</div>
-              <span style="font-size:12px">${u.name}</span>
-            </div>
-            ${unread>0&&!active?`<span style="background:var(--venetian);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700">${unread}</span>`:''}
-          </div>`;
-        }).join('')}
-    </div>
-    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--surface)">
-      <div style="padding:12px 20px;border-bottom:1px solid var(--border);flex-shrink:0">
-        <div style="font-size:15px;font-weight:700;color:var(--nearblack)">${hTitle}</div>
-        ${hSub?`<div style="font-size:11px;color:var(--muted)">${hSub}</div>`:''}
-      </div>
-      <div id="chat-messages" style="flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:1px">
-        ${messages.length===0?'<div style="text-align:center;color:var(--muted);padding:48px;font-size:13px">No messages yet â start the conversation!</div>':
-          messages.map(m=>renderChatMsg(m,users,cu)).join('')}
-      </div>
-      <div style="padding:12px 20px;border-top:1px solid var(--border);flex-shrink:0">
-        <div style="position:relative">
-          <div id="mention-dd" style="display:none;position:absolute;bottom:calc(100% + 4px);left:0;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,.12);min-width:200px;z-index:100;max-height:200px;overflow-y:auto"></div>
-          <div style="display:flex;gap:8px;align-items:flex-end">
-            <textarea id="chat-input" placeholder="Message ${hTitle.replace(/'/g,'&#39;')}â¦ type @ to mention someone" rows="1"
-              style="flex:1;box-sizing:border-box;padding:9px 14px;border:1px solid var(--border);border-radius:6px;font-size:13px;resize:none;font-family:inherit;min-height:40px;max-height:120px;line-height:1.4;background:var(--surface);color:var(--nearblack)"
-              onkeydown="handleChatKey(event,'${activeChat}')"
-              oninput="handleChatInput(this)"></textarea>
-            <button class="btn btn-primary" onclick="sendChatMsg('${activeChat}')" style="padding:9px 18px;flex-shrink:0;height:40px">Send</button>
-          </div>
-          <div style="font-size:10px;color:var(--muted);margin-top:4px">Enter to send &middot; Shift+Enter for new line</div>
-        </div>
-      </div>
-    </div>
-  </div>`;
-  setTimeout(()=>{
-    const el=document.getElementById('chat-messages');
-    if(el)el.scrollTop=el.scrollHeight;
-    const inp=document.getElementById('chat-input');
-    if(inp)inp.focus();
-  },60);
-}
 
 function renderChatMsg(m,users,cu){
   const sender=users.find(u=>u.id===m.fromId)||{name:m.fromName||'Unknown',id:m.fromId};
@@ -6762,7 +6729,7 @@ function openNewChannelModal(){
   S.tab.chatActive='ch_'+DB.chatChannels[DB.chatChannels.length-1].id;
   renderView();
 }
-/* ââ END TEAM CHAT ââ */
+/* ── END TEAM CHAT ── */
 
 function rTraining(c){
   const VIEW=S.tab.trainView||'modules';
@@ -6959,7 +6926,7 @@ ${content}
     const u=user||{id:'u_'+Date.now(),name:'',email:'',role:'rm',title:'',phone:'',entity:'GMG',reportsTo:''};
     const users=getUsers();
     const ropts=['admin','partner','rm','finance','mentor','ops'].map(r=>`<option value="${r}"${u.role===r?' selected':''}>${r[0].toUpperCase()+r.slice(1)}</option>`).join('');
-    const rtopts=`<option value="">â None (top level) â</option>`+users.filter(x=>x.id!==u.id).map(x=>`<option value="${x.id}"${u.reportsTo===x.id?' selected':''}>${x.name}</option>`).join('');
+    const rtopts=`<option value="">— None (top level) —</option>`+users.filter(x=>x.id!==u.id).map(x=>`<option value="${x.id}"${u.reportsTo===x.id?' selected':''}>${x.name}</option>`).join('');
     const bg=document.createElement('div');
     bg.className='oc3mbg';
     bg.innerHTML=`<div class="oc3modal"><h3>${isNew?'Add Person':'Edit Person'}</h3><label>Full Name *</label><input id="oc3fn" value="${(u.name||'').replace(/"/g,'&quot;')}"><label>Email</label><input id="oc3fe" type="email" value="${(u.email||'').replace(/"/g,'&quot;')}"><label>Job Title</label><input id="oc3ft" value="${(u.title||'').replace(/"/g,'&quot;')}"><label>Role</label><select id="oc3fr">${ropts}</select><label>Reports To</label><select id="oc3frt">${rtopts}</select><label>Phone</label><input id="oc3fp" value="${(u.phone||'').replace(/"/g,'&quot;')}"><div class="oc3mbtns">${!isNew?'<button class="oc3bdel" id="oc3dbtn">Delete</button>':''}<button class="oc3bcancel" id="oc3cbtn">Cancel</button><button class="oc3bsave" id="oc3sbtn">${isNew?'Add':'Save'}</button></div></div>`;
