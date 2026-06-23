@@ -5234,12 +5234,12 @@ function saveSalesforceConfig(){
   alert('Salesforce configuration saved.');
 }
 function testSalesforceConnection(){
-  var el=document.getElementById(\'sf_status\');
+  var el=document.getElementById('sf_status');
   if(el)el.textContent='Testing...';
   setTimeout(function(){if(el)el.textContent='Configuration saved. Live sync requires server-side OAuth setup.';},1200);
 }
 function syncFromSalesforce(){
-  var el=document.getElementById(\'sf_status\');
+  var el=document.getElementById('sf_status');
   if(el)el.textContent='Syncing...';
   var db=getDB();
   var d=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
