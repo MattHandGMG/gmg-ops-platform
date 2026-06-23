@@ -3578,7 +3578,7 @@ function rProcurement(){
     ANZ:[{label:'Legal Name',value:'CMi ANZ'},{label:'Registered In',value:'Australia'},{label:'Company No.',value:'TBC'},{label:'Address',value:'Sydney, Australia'},{label:'Description',value:'Regional entity covering Asia-Pacific engagements.'}]
   };
   var db=getDB();
-  var isAdmin=!db.appUsers||db.appUsers.some(function(u){return u.role==='Admin';});
+  var isAdmin=!db.appUsers||db.appUsers.some(function(u){return u.role==='admin';});
   var fields=(db.procInfo&&db.procInfo[tab])||defaults[tab];
   var tabs=ents.map(function(e){var a=e===tab;return '<button onclick="S.tab.procEnt=\''+e+'\';renderView()" style="padding:9px 16px;border:none;border-bottom:3px solid '+(a?'#0f172a':'transparent')+';background:transparent;font-weight:'+(a?'600':'400')+';cursor:pointer;font-size:14px;color:'+(a?'#0f172a':'#64748b')+'">'+labels[e]+'</button>';}).join('');
   var rows=fields.map(function(f){return '<tr><td style="font-weight:500;color:#64748b;padding:10px 16px;width:38%;font-size:14px;border-bottom:1px solid #f1f5f9">'+f.label+'</td><td style="padding:10px 16px;font-size:14px;border-bottom:1px solid #f1f5f9">'+f.value+'</td></tr>';}).join('');
@@ -4993,15 +4993,15 @@ function rPipeline(c){
   
     <select onchange="S.tab.plYear=this.value;renderView()">
       <option value="">All Years</option>
-      ${['2024','2025','2026','2027','2028'].map(y=>`<option value="${y}"${yearF===y?' selected':''}}>${y}</option>`).join('')}
+      ${['2024','2025','2026','2027','2028'].map(y=>`<option value="${y}"${yearF===y?' selected':''}>${y}</option>`).join('')}
     </select>
     <select onchange="S.tab.plQuarter=this.value;renderView()">
       <option value="">All Quarters</option>
-      ${['Q1','Q2','Q3','Q4'].map(q=>`<option value="${q}"${quarterF===q?' selected':''}}>${q}</option>`).join('')}
+      ${['Q1','Q2','Q3','Q4'].map(q=>`<option value="${q}"${quarterF===q?' selected':''}>${q}</option>`).join('')}
     </select>
     <select onchange="S.tab.plMonth=this.value;renderView()">
       <option value="">All Months</option>
-      ${[['01','Jan'],['02','Feb'],['03','Mar'],['04','Apr'],['05','May'],['06','Jun'],['07','Jul'],['08','Aug'],['09','Sep'],['10','Oct'],['11','Nov'],['12','Dec']].map(([mv,ml])=>`<option value="${mv}"${monthF===mv?' selected':''}}>${ml}</option>`).join('')}
+      ${[['01','Jan'],['02','Feb'],['03','Mar'],['04','Apr'],['05','May'],['06','Jun'],['07','Jul'],['08','Aug'],['09','Sep'],['10','Oct'],['11','Nov'],['12','Dec']].map(([mv,ml])=>`<option value="${mv}"${monthF===mv?' selected':''}>${ml}</option>`).join('')}
     </select><button id="pl-set-default-btn" onclick="(function(btn){DB.userPrefs=DB.userPrefs||{};DB.userPrefs.pipelineFilters={partner:S.tab.plPartner||'',country:S.tab.plCountry||'',solution:S.tab.plSolution||''};save();btn.textContent='Default saved';btn.style.background='#059669';btn.style.color='#fff';setTimeout(()=>{btn.textContent='⊙ Set as Default';btn.style.background='';btn.style.color='';},2000);})(this)" style="padding:6px 12px;border:1px solid var(--border);border-radius:5px;background:var(--halfnarrow);font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .2s;white-space:nowrap">⊙ Set as Default</button></div>
   <div class="lc-board">
     ${LC_STAGES.map((stage,i)=>{
