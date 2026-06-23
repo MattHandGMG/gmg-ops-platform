@@ -2683,7 +2683,7 @@ function _dashCommittedRevenue(engIn,invIn){
     execRows.forEach(function(r){
       var od=r.due&&new Date(r.due)<today&&r.status!=='paid';
       var sl=r.status==='to-raise'?'To raise':r.status==='sent'?'Sent':r.status==='draft'?'Draft':r.status;
-      h+='<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer" onclick="_openEngReport(\''+eng.entity+'\',\''+(eng.partner||'')+'\',\''+(eng.country||'')+'\')">'
+      h+='<tr style="border-bottom:1px solid #f1f5f9;cursor:pointer" onclick="_openEngReport(\''+r.entity+'\',\''+(r.partner||'')+'\',\''+(r.country||'')+'\')">'
         +'<td style="padding:7px 8px;font-weight:500">'+r.client+'</td>'
         +'<td style="padding:7px 8px;color:#64748b">'+r.entity+'</td>'
         +'<td style="padding:7px 8px;font-weight:600">'+r.period+'</td>'
