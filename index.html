@@ -4173,7 +4173,7 @@ function saveClientEdit(ctId){
 
       <!-- Invoices & Payments -->
       <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        ${sectionHeader('Invoices & Payments',`<button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="font-size:11px">+ New Invoice</button>`)}
+        ${sectionHeader('Invoices & Payments',e.solution==='chair'?`<button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="font-size:11px">+ New Invoice</button>`:'')}
         ${invHtml}${payHtml}
       </div>
 
