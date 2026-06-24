@@ -2580,45 +2580,103 @@ function _dashCustom(ctx){
 function _dashPartner(ctx){
   var db=ctx.db,engs=ctx.engs,inv=ctx.invoices,pipe=ctx.pipeline,now=ctx.now,ytdStart=ctx.ytdStart;
   var users=db.appUsers||[];
+  var fmt=function(n){return n>=1e6?(n/1e6).toFixed(1)+'m':n>=1000?(n/1000).toFixed(1)+'k':''+Math.round(n);};
+  var fmtC=function(n){return '£'+fmt(n);};
+  var nowMs=new Date(now).getTime(), ytdMs=new Date(ytdStart).getTime();
+  var yr=new Date(now).getFullYear();
+  var partnerUsers=users.filter(function(u){return u.role==='partner'||u.role==='rm';});
   var partnerNames=[...new Set(
-    users.filter(function(u){return u.role==='partner'||u.role==='rm';}).map(function(u){return u.name;})
-    .concat(engs.map(function(e){return e.partner;}).filter(Boolean))
-  )].filter(Boolean).sort();
-  if(!partnerNames.length){var pp=engs.map(function(e){return e.partner;}).filter(Boolean);partnerNames=[...new Set(pp)];}
-  var fmt=function(n){return '£'+(n||0).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:0});};
-  var rows=partnerNames.map(function(nm){
-    var u=users.find(function(x){return x.name===nm;})||{};
-    var pEngs=engs.filter(function(e){return e.partner===nm;});
-    var pEngIds=pEngs.map(function(e){return e.id;});
-    var pInv=inv.filter(function(i){return pEngIds.indexOf(i.engId)>-1;});
-    var ytdRev=pInv.filter(function(i){return i.status==='paid'&&i.issued&&new Date(i.issued)>=ytdStart;}).reduce(function(s,i){return s+i.amount;},0);
-    var outstanding=pInv.filter(function(i){return i.status==='sent';}).reduce(function(s,i){return s+i.amount;},0);
-    var committed=pInv.filter(function(i){return i.status==='paid'||i.status==='sent';}).reduce(function(s,i){return s+i.amount;},0);
-    var pipeVal=pipe.filter(function(p){return (p.partner||p.owner||'')===nm&&p.stage!=='Closed Won'&&p.stage!=='Closed Lost';}).reduce(function(s,p){return s+p.value;},0);
-    var target=u.salesTarget||0;
-    var pct=target>0?Math.round(ytdRev/target*100):null;
-    var pctColor=pct===null?'var(--muted)':pct>=100?'#2d7a3a':pct>=70?'#B95300':'#CE2702';
-    var barW=target>0?Math.min(100,Math.round(ytdRev/target*100)):0;
-    return '<tr style="border-bottom:1px solid #f5f3f0">'
-      +'<td style="padding:12px 0;font-size:13px;font-weight:600">'+nm+'</td>'
-      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;font-weight:700;color:#2d7a3a">'+fmt(ytdRev)+'</td>'
-      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;color:#B95300">'+fmt(outstanding)+'</td>'
-      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif">'+fmt(committed)+'</td>'
-      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif;color:var(--muted)">'+fmt(pipeVal)+'</td>'
-      +'<td style="padding:12px 8px;font-size:13px;font-family:Georgia,serif">'+(target>0?fmt(target):'<span style="color:var(--muted);font-size:11px">Not set</span>')+'</td>'
-      +'<td style="padding:12px 8px">'+(target>0?'<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#f5f3f0;border-radius:4px;height:6px"><div style="background:'+pctColor+';width:'+barW+'%;height:6px;border-radius:4px"></div></div><span style="font-size:12px;font-weight:700;color:'+pctColor+';white-space:nowrap">'+pct+'%</span></div>':'<span style="color:var(--muted);font-size:11px">—</span>')+'</td>'
-      +'<td style="padding:12px 8px;font-size:12px;color:var(--muted)">'+pEngs.length+'</td>'
-      +'</tr>';
+    partnerUsers.map(function(u){return u.name;}).concat(
+      engs.map(function(e){return e.partnerName;}).filter(Boolean)
+    )
+  )].sort();
+  var partnerData=partnerNames.map(function(name){
+    var pu=partnerUsers.find(function(u){return u.name===name;})||{};
+    var target=pu.salesTarget?Number(pu.salesTarget):0;
+    var activeEngs=engs.filter(function(e){return e.partnerName===name&&e.status==='active';}).length;
+    var ytdRev=0,outstanding=0,committed=0;
+    (inv||[]).forEach(function(i){
+      if(i.partnerName!==name)return;
+      var amt=Number(i.amount)||0;
+      if(i.status==='paid'){var d=new Date(i.issueDate||i.date||0).getTime();if(d>=ytdMs&&d<=nowMs)ytdRev+=amt;}
+      if(i.status==='sent'||i.status==='overdue')outstanding+=amt;
+      if(i.status!=='draft')committed+=amt;
+    });
+    var pipeline=0;
+    (pipe||[]).forEach(function(p){
+      if(p.partnerName===name&&p.stage!=='closed_lost'&&p.stage!=='closed_won')pipeline+=Number(p.value||p.fee)||0;
+    });
+    var vsTarget=target?ytdRev-target:null;
+    var pct=target?Math.min(100,Math.round(ytdRev/target*100)):0;
+    return {name:name,target:target,ytdRev:ytdRev,outstanding:outstanding,committed:committed,pipeline:pipeline,vsTarget:vsTarget,pct:pct,activeEngs:activeEngs};
+  });
+  var totYtd=partnerData.reduce(function(s,p){return s+p.ytdRev;},0);
+  var totOut=partnerData.reduce(function(s,p){return s+p.outstanding;},0);
+  var totCom=partnerData.reduce(function(s,p){return s+p.committed;},0);
+  var totPipe=partnerData.reduce(function(s,p){return s+p.pipeline;},0);
+  var totTarget=partnerData.reduce(function(s,p){return s+p.target;},0);
+  var kpiCards=[
+    ['YTD REVENUE',fmtC(totYtd),'paid invoices'],
+    ['OUTSTANDING',fmtC(totOut),'awaiting payment'],
+    ['COMMITTED',fmtC(totCom),'invoiced & to raise'],
+    ['OPEN PIPELINE',fmtC(totPipe),'active deals'],
+    ['ANNUAL TARGETS',totTarget?fmtC(totTarget):'Not set',totTarget?fmtC(totYtd)+' earned':'set in Admin']
+  ].map(function(k){
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:20px 22px;flex:1;min-width:150px">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px">'+k[0]+'</div>'
+      +'<div style="font-size:22px;font-weight:800;letter-spacing:-.02em">'+k[1]+'</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+k[2]+'</div>'
+      +'</div>';
   }).join('');
-  return '<div style="padding:28px 32px;max-width:980px">'
-    +'<div style="margin-bottom:20px"><h2 style="font-family:Georgia,serif;font-size:22px;font-weight:700">Partner Sales Dashboard</h2>'
-    +'<p style="font-size:13px;color:var(--muted);margin-top:4px">YTD actuals vs target · '+now.getFullYear()+'</p></div>'
-    +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
-    +['Partner','YTD Revenue','Outstanding','Committed','Pipeline','Target','vs Target','Engs'].map(function(h){return '<th style="text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 8px;border-bottom:1px solid var(--border)">'+h+'</th>';}).join('')
-    +'</tr></thead><tbody>'+rows+'</tbody></table></div>'
-    +'<p style="font-size:11px;color:var(--muted);margin-top:12px">Set partner targets in Admin → Users. Revenue from paid invoices YTD.</p>'
+  var cards=partnerData.map(function(p){
+    var initials=p.name.split(' ').filter(Boolean).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+    var vsCol=p.vsTarget===null?'var(--muted)':(p.vsTarget>=0?'#16a34a':'#dc2626');
+    var vsText=p.vsTarget===null?'No target set':(p.vsTarget>=0?'+'+fmtC(p.vsTarget)+' above target':fmtC(Math.abs(p.vsTarget))+' under target');
+    var barPct=p.pct;
+    var barCol=barPct>=100?'#16a34a':barPct>=75?'#2563eb':barPct>=50?'#d97706':'#dc2626';
+    var metrics=[['Outstanding',p.outstanding],['Committed',p.committed],['Pipeline',p.pipeline]];
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px">'
+      +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+      +'<div style="width:40px;height:40px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#2563eb;flex-shrink:0">'+initials+'</div>'
+      +'<div><div style="font-size:15px;font-weight:600;margin-bottom:2px">'+p.name+'</div>'
+      +'<div style="font-size:12px;color:var(--muted)">'+p.activeEngs+' active engagement'+(p.activeEngs!==1?'s':'')+'</div></div>'
+      +'</div>'
+      +(p.target
+        ?'<div style="margin-bottom:14px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">'
+          +'<span style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">YTD vs Target</span>'
+          +'<span style="font-size:13px;font-weight:700">'+fmtC(p.ytdRev)+' / '+fmtC(p.target)+'</span>'
+          +'</div>'
+          +'<div style="background:#f1f5f9;border-radius:4px;height:7px;overflow:hidden">'
+          +'<div style="background:'+barCol+';height:7px;width:'+barPct+'%"></div>'
+          +'</div>'
+          +'<div style="font-size:11px;font-weight:600;color:'+vsCol+';margin-top:5px">'+vsText+'</div>'
+          +'</div>'
+        :'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:9px 12px;background:#f8fafc;border-radius:8px">'
+          +'<span style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">YTD Revenue</span>'
+          +'<span style="font-size:16px;font-weight:700">'+fmtC(p.ytdRev)+'</span>'
+          +'</div>')
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
+      +metrics.map(function(m){
+        return '<div style="background:#f8fafc;border-radius:8px;padding:10px;text-align:center">'
+          +'<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+m[0]+'</div>'
+          +'<div style="font-size:15px;font-weight:700">'+fmtC(m[1])+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div></div>';
+  }).join('');
+  var html='<div style="padding:24px">'
+    +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">'
+    +'<div><h2 style="font-size:18px;font-weight:700;margin:0 0 3px">Partner Sales Dashboard</h2>'
+    +'<p style="font-size:13px;color:var(--muted);margin:0">YTD actuals vs target · '+yr+'</p></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px">'+kpiCards+'</div>'
+    +(partnerData.length
+      ?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">'+cards+'</div>'
+      :'<div style="padding:40px;text-align:center;color:var(--muted)">No partner users found.</div>')
+    +'<p style="font-size:11px;color:var(--muted);margin-top:16px">Revenue from paid invoices YTD. Set partner targets in Admin → Users.</p>'
     +'</div>';
+  return html;
 }
 
 function _saveCustomDash(){
