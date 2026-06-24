@@ -3157,7 +3157,7 @@ async function rAdmin(c){
     {id:'users',label:'Users & Roles',content:tabUsers},
     {id:'pricing',label:'Pricing',content:tabPricing},
     {id:'integrations',label:'Integrations',content:tabIntegrations},
-    {id:'notifications',label:'Notifications',content:tabNotifications},
+    {id:'notifications',label:'Notifications',content:(c)=>{}},
     {id:'templates',label:'Email Templates',content:tabTemplates},
     {id:'system',label:'System',content:tabSystem}
   ];
