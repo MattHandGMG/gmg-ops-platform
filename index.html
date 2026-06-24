@@ -2237,7 +2237,7 @@ function rDashboard(c){
 
 function _dashSelector(){
   var t=window._gmgDash.type||'personal';
-  var tabs=[{k:'personal',lbl:'Personal'},{k:'group',lbl:'GMG Group'},{k:'entity',lbl:'By Entity'},{k:'service',lbl:'By Service Line'},{k:'custom',lbl:'Custom'},{k:'partner',lbl:'By Partner'}];
+  var tabs=[{k:'personal',lbl:'Personal'},{k:'group',lbl:'GMG Group'},{k:'entity',lbl:'By Entity'},{k:'service',lbl:'By Service Line'},{k:'partner',lbl:'By Partner'}];
   var tabHtml=tabs.map(function(tab){
     var on=t===tab.k;
     return '<button style="background:'+(on?'#1e293b':'transparent')+';color:'+(on?'#fff':'#64748b')+';border:none;border-radius:7px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s" onclick="window._gmgDash.type=\''+tab.k+'\';renderView()">'+tab.lbl+'</button>';
@@ -2270,7 +2270,6 @@ function _dashContent(){
   if(t==='group') return _dashGroup(ctx,null);
   if(t==='entity') return _dashGroup(ctx,window._gmgDash.entity||'GMG');
   if(t==='service') return _dashService(ctx,window._gmgDash.svc||'all');
-  if(t==='custom') return _dashCustom(ctx);
   if(t==='partner') return _dashPartner(ctx);
   return _dashPersonal();
 }
@@ -2586,26 +2585,6 @@ function _dashService(ctx,svc){
   return html;
 }
 
-function _dashCustom(ctx){
-  var db=ctx.db;var saved=db.customDash||{widgets:['personal_kpis','my_engs','pipeline','group_kpis']};
-  var all=[{k:'personal_kpis',l:'My KPIs'},{k:'my_engs',l:'My Engagements'},{k:'pipeline',l:'My Pipeline'},{k:'group_kpis',l:'Group Revenue'},{k:'entity_breakdown',l:'Entity Breakdown'},{k:'team_summary',l:'Team Performance'}];
-  var enabled=saved.widgets||[];
-  var html='<div style="padding:28px 24px;max-width:1200px;margin:0 auto">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">'
-    +'<div><h2 style="margin:0;font-size:22px;font-weight:800;color:#0f172a">Custom Dashboard</h2>'
-    +'<p style="margin:4px 0 0;font-size:13px;color:#64748b">Choose which widgets to display</p></div>'
-    +'<button onclick="_saveCustomDash()" style="background:#0f172a;color:#fff;border:none;border-radius:9px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer">Save Layout</button></div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:24px">';
-  all.forEach(function(w){
-    var on=enabled.indexOf(w.k)>-1;
-    html+='<label style="display:flex;align-items:center;gap:10px;background:'+(on?'#eff6ff':'#fff')+';border:1.5px solid '+(on?'#2563eb':'#e2e8f0')+';border-radius:10px;padding:12px 16px;cursor:pointer;font-size:13px;font-weight:500;color:#1e293b;transition:all .15s">'
-      +'<input type="checkbox" id="cw_'+w.k+'" '+(on?'checked':'')+' style="width:14px;height:14px;cursor:pointer;accent-color:#2563eb"> '+w.l+'</label>';
-  });
-  html+='</div>';
-  html+='<div style="background:#f8fafc;border:1.5px dashed #cbd5e1;border-radius:12px;padding:20px;text-align:center;color:#94a3b8;font-size:13px">'
-    +'&#9881; Save your layout to preview. Currently '+enabled.length+' widget(s) selected.</div></div>';
-  return html;
-}
 
 function _dashPartner(ctx){
   var db=ctx.db,engs=ctx.engs,inv=ctx.invoices,pipe=ctx.pipeline,now=ctx.now,ytdStart=ctx.ytdStart;
