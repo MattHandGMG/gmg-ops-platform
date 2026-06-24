@@ -2953,6 +2953,7 @@ function rAdmin(c){
   const myrFees=DB.mentorYearlyFees||{legacy:0,y2024:0,y2025:0,y2026:0};
   const minP=DB.minimumPricing||{};
   const xero=DB.xeroSettings||{chairCode:'',execCode:'',teamCode:'',paymentTerms:30,invoicePrefix:'GMG'};
+const xi=DB.xeroInstances||{};
   const sfMap=DB.salesforceMapping||{engName:'Name',clientName:'Account',mentorName:'Contact__c',annualFee:'Annual_Value__c',status:'Stage'};
   const sfCfg=DB.salesforceConfig||{orgUrl:'',clientId:'',clientSecret:'',username:'',syncEngs:true,syncClients:true,syncMentors:true,lastSync:''};
   const notifRules=DB.notificationRules||[
@@ -3107,6 +3108,33 @@ function rAdmin(c){
         </div>
       </div>
       ${saveBtn('saveXeroBtn','saveXero()')}
+    </div>
+    <div style="${cardStyle}">
+      ${sectionHead('🔗','Xero — Instance Config','One Xero tenant per entity; invoices route automatically')}
+      <div style="padding:20px 24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:16px">
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px;color:#1e293b">GMG</b><label style="font-size:12px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:5px"><input type="checkbox" id="xeroGMGEnabled" ${xi.GMG?.enabled?'checked':''}> Active</label></div>
+            <label style="${labelStyle}">Client ID</label><input id="xeroGMGClientId" value="${xi.GMG?.clientId||''}" style="${inputStyle}" placeholder="Xero App Client ID">
+            <label style="${labelStyle}">Client Secret</label><input id="xeroGMGSecret" type="password" value="${xi.GMG?.clientSecret||''}" style="${inputStyle}" placeholder="••••••••">
+            <label style="${labelStyle}">Tenant ID</label><input id="xeroGMGTenant" value="${xi.GMG?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
+          </div>
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px;color:#1e293b">CMi</b><label style="font-size:12px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:5px"><input type="checkbox" id="xeroCMiEnabled" ${xi.CMi?.enabled?'checked':''}> Active</label></div>
+            <label style="${labelStyle}">Client ID</label><input id="xeroCMiClientId" value="${xi.CMi?.clientId||''}" style="${inputStyle}" placeholder="Xero App Client ID">
+            <label style="${labelStyle}">Client Secret</label><input id="xeroCMiSecret" type="password" value="${xi.CMi?.clientSecret||''}" style="${inputStyle}" placeholder="••••••••">
+            <label style="${labelStyle}">Tenant ID</label><input id="xeroCMiTenant" value="${xi.CMi?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
+          </div>
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px;color:#1e293b">Merryck</b><label style="font-size:12px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:5px"><input type="checkbox" id="xeroMerryckEnabled" ${xi.Merryck?.enabled?'checked':''}> Active</label></div>
+            <label style="${labelStyle}">Client ID</label><input id="xeroMerryckClientId" value="${xi.Merryck?.clientId||''}" style="${inputStyle}" placeholder="Xero App Client ID">
+            <label style="${labelStyle}">Client Secret</label><input id="xeroMerryckSecret" type="password" value="${xi.Merryck?.clientSecret||''}" style="${inputStyle}" placeholder="••••••••">
+            <label style="${labelStyle}">Tenant ID</label><input id="xeroMerryckTenant" value="${xi.Merryck?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
+          </div>
+        </div>
+        <p style="font-size:12px;color:#64748b;background:#f8fafc;border-radius:6px;padding:10px;margin:0">Invoices route to the Xero instance matching the engagement entity. Mark each instance Active once credentials are configured.</p>
+      </div>
+      ${saveBtn('saveXeroInstancesBtn','saveXeroInstances()')}
     </div>
     <div style="${cardStyle}">
       ${sectionHead('☁️','Salesforce Integration','Connect GMG to your Salesforce org to sync Engagements, Clients and Mentors')}
@@ -3281,6 +3309,15 @@ function rAdmin(c){
 
   window.saveXero=function(){
     DB.xeroSettings={chairCode:document.getElementById('xeroChair')?.value||'',execCode:document.getElementById('xeroExec')?.value||'',teamCode:document.getElementById('xeroTeam')?.value||'',paymentTerms:parseInt(document.getElementById('xeroTerms')?.value)||30,invoicePrefix:document.getElementById('xeroPrefix')?.value||'GMG'};
+  window.saveXeroInstances=function(){
+    DB.xeroInstances={
+      GMG:{clientId:document.getElementById('xeroGMGClientId')?.value||'',clientSecret:document.getElementById('xeroGMGSecret')?.value||'',tenantId:document.getElementById('xeroGMGTenant')?.value||'',enabled:document.getElementById('xeroGMGEnabled')?.checked||false},
+      CMi:{clientId:document.getElementById('xeroCMiClientId')?.value||'',clientSecret:document.getElementById('xeroCMiSecret')?.value||'',tenantId:document.getElementById('xeroCMiTenant')?.value||'',enabled:document.getElementById('xeroCMiEnabled')?.checked||false},
+      Merryck:{clientId:document.getElementById('xeroMerryckClientId')?.value||'',clientSecret:document.getElementById('xeroMerryckSecret')?.value||'',tenantId:document.getElementById('xeroMerryckTenant')?.value||'',enabled:document.getElementById('xeroMerryckEnabled')?.checked||false}
+    };
+    save();flashBtn('saveXeroInstancesBtn');
+  };
+  window.getXeroForEntity=function(entity){return (DB.xeroInstances||{})[entity]||null;};
     flashBtn('saveXeroBtn');
   };
 
@@ -5243,10 +5280,10 @@ function saveDeal(id){
 /* ── FINANCE ─────────────────────────────────────────────────── */
 function makeEngLive(dealId){
   var db=getDB();
-  var deal=(db.pipeline||[]).find(function(x){return x.id===dealId;});
+  var deal=(db.opportunities||[]).find(function(x){return x.id===dealId;});
   if(!deal){alert('Deal not found.');return;}
   var eng=(db.engagements||[]).find(function(e){return e.pipelineId===dealId||(e.name&&deal.name&&e.name.toLowerCase()===deal.name.toLowerCase());});
-  if(!eng){alert('No linked engagement found for this deal. Please create the engagement first.');return;}
+  if(!eng){if(!confirm('No linked engagement found for this deal.\n\nAuto-create an engagement from this deal?\n\n'+deal.name))return;if(!DB.engagements)DB.engagements=[];eng={id:uid(),name:deal.name,clientId:deal.clientId||null,client:deal.client||deal.name,pipelineId:dealId,status:'pending',entity:deal.entity||'GMG',partner:deal.partner||'',country:deal.country||'',annualFee:deal.value||0,notes:'Created from pipeline deal.',startDate:today(),created:today()};DB.engagements.push(eng);}
   var missing=[];
   if(!eng.billingContact)missing.push('Billing Contact');
   if(!eng.billingEmail)missing.push('Billing Email');
@@ -5288,7 +5325,7 @@ function rInvoices(c){
   var eOpts=entities.map(function(e){return '<option value="'+e+'"'+(e===fEnt?' selected':'')+'>'+( e==='all'?'All Entities':e)+'</option>';}).join('');
   var pOpts=partners.map(function(p){return '<option value="'+p+'"'+(p===fPart?' selected':'')+'>'+( p==='all'?'All Partners':p)+'</option>';}).join('');
   var sOpts=['all','paid','sent','draft','overdue'].map(function(s){return '<option value="'+s+'"'+(s===fStat?' selected':'')+'>'+( s==='all'?'All Statuses':s[0].toUpperCase()+s.slice(1))+'</option>';}).join('');
-  var rows=filtered.length===0?'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-style:italic">No invoices match the filters.</td></tr>':filtered.map(function(i){return '<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:11px;font-family:monospace;color:var(--muted)">'+i.id+'</td><td style="padding:9px 8px;font-size:12px">'+i.engName+'</td><td style="padding:9px 8px;font-size:12px">'+i.entity+'</td><td style="padding:9px 8px;font-size:12px">'+i.partner+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.period+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.issued+'</td><td style="padding:9px 8px;text-align:right;font-size:13px;font-weight:700;font-family:Georgia,serif">'+fmt(i.amount)+'</td><td style="padding:9px 8px">'+badge(i.status)+'</td></tr>';}).join('');
+  var rows=filtered.length===0?'<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-style:italic">No invoices match the filters.</td></tr>':filtered.map(function(i){return '<tr style="border-bottom:1px solid #f5f3f0"><td style="padding:9px 0;font-size:11px;font-family:monospace;color:var(--muted)">'+i.id+'</td><td style="padding:9px 8px;font-size:12px">'+i.engName+'</td><td style="padding:9px 8px;font-size:12px">'+i.entity+(i.entity&&(DB.xeroInstances||{})[i.entity]?.enabled?'<b style="font-size:10px;color:#13a;margin-left:4px;font-weight:600">Xero ✓</b>':'')+'</td><td style="padding:9px 8px;font-size:12px">'+i.partner+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.period+'</td><td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+i.issued+'</td><td style="padding:9px 8px;text-align:right;font-size:13px;font-weight:700;font-family:Georgia,serif">'+fmt(i.amount)+'</td><td style="padding:9px 8px">'+badge(i.status)+'</td></tr>';}).join('');
   c.innerHTML='<div style="padding:28px 32px;max-width:1100px"><div style="margin-bottom:20px"><h2 style="font-family:Georgia,serif;font-size:22px;font-weight:700">Invoices</h2><p style="color:var(--muted);font-size:13px;margin-top:4px">All client invoices · source of dashboard revenue figures</p></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">'
     +'<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:20px 24px"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Paid (filtered)</div><div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:#2d7a3a">'+fmt(totalPaid)+'</div></div>'
