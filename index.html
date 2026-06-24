@@ -3887,7 +3887,14 @@ function rClientDetail(c){
   '<h3 style="margin:0 0 8px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">BoardEx</h3>'+
   '<p style="font-size:13px;color:#94a3b8;margin:0 0 14px">Board composition and executive network data.</p>'+
   '<button onclick="alert(\'BoardEx integration coming soon.\')" style="padding:7px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">View in BoardEx &#8594;</button>'+
-  '</div></div></div></div>';
+  '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:22px;margin-top:20px">'+
+  '<h3 style="margin:0 0 6px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Email Chains</h3>'+
+  '<div style="text-align:center;padding:24px 0;color:#94a3b8">'+
+  '<div style="font-size:28px;margin-bottom:8px">✉️</div>'+
+  '<p style="font-size:13px;margin:0;font-weight:500;color:#374151">Email chain linking — coming soon</p>'+
+  '<p style="font-size:12px;margin:4px 0 0;color:#94a3b8">Attach and view email threads related to this client directly here.</p>'+
+  '</div></div>'+
+'</div></div></div></div>';
 }
 function openClientEditModal(ctId){
   var db=getDB();
@@ -4256,6 +4263,14 @@ function saveClientEdit(ctId){
         ${sectionHeader('Notes','')}
         <p style="font-size:12px;color:var(--muted);line-height:1.65;margin:0;white-space:pre-wrap">${e.notes}</p>
       </div>`:''}
+      <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+        ${sectionHeader('Email Chains','')}
+        <div style="text-align:center;padding:24px 0;color:var(--muted)">
+          <div style="font-size:28px;margin-bottom:8px">✉️</div>
+          <p style="font-size:13px;margin:0;font-weight:500">Email chain linking — coming soon</p>
+          <p style="font-size:12px;margin:4px 0 0;opacity:.7">Attach and view email threads related to this engagement directly here.</p>
+        </div>
+      </div>
 
     </div>
  "</div>
