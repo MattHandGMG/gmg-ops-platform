@@ -3309,15 +3309,6 @@ const xi=DB.xeroInstances||{};
 
   window.saveXero=function(){
     DB.xeroSettings={chairCode:document.getElementById('xeroChair')?.value||'',execCode:document.getElementById('xeroExec')?.value||'',teamCode:document.getElementById('xeroTeam')?.value||'',paymentTerms:parseInt(document.getElementById('xeroTerms')?.value)||30,invoicePrefix:document.getElementById('xeroPrefix')?.value||'GMG'};
-  window.saveXeroInstances=function(){
-    DB.xeroInstances={
-      GMG:{clientId:document.getElementById('xeroGMGClientId')?.value||'',clientSecret:document.getElementById('xeroGMGSecret')?.value||'',tenantId:document.getElementById('xeroGMGTenant')?.value||'',enabled:document.getElementById('xeroGMGEnabled')?.checked||false},
-      CMi:{clientId:document.getElementById('xeroCMiClientId')?.value||'',clientSecret:document.getElementById('xeroCMiSecret')?.value||'',tenantId:document.getElementById('xeroCMiTenant')?.value||'',enabled:document.getElementById('xeroCMiEnabled')?.checked||false},
-      Merryck:{clientId:document.getElementById('xeroMerryckClientId')?.value||'',clientSecret:document.getElementById('xeroMerryckSecret')?.value||'',tenantId:document.getElementById('xeroMerryckTenant')?.value||'',enabled:document.getElementById('xeroMerryckEnabled')?.checked||false}
-    };
-    save();flashBtn('saveXeroInstancesBtn');
-  };
-  window.getXeroForEntity=function(entity){return (DB.xeroInstances||{})[entity]||null;};
     flashBtn('saveXeroBtn');
   };
 
@@ -5278,6 +5269,15 @@ function saveDeal(id){
 }
 
 /* ── FINANCE ─────────────────────────────────────────────────── */
+function saveXeroInstances(){
+  DB.xeroInstances={
+    GMG:{clientId:document.getElementById('xeroGMGClientId')?.value||'',clientSecret:document.getElementById('xeroGMGSecret')?.value||'',tenantId:document.getElementById('xeroGMGTenant')?.value||'',enabled:document.getElementById('xeroGMGEnabled')?.checked||false},
+    CMi:{clientId:document.getElementById('xeroCMiClientId')?.value||'',clientSecret:document.getElementById('xeroCMiSecret')?.value||'',tenantId:document.getElementById('xeroCMiTenant')?.value||'',enabled:document.getElementById('xeroCMiEnabled')?.checked||false},
+    Merryck:{clientId:document.getElementById('xeroMerryckClientId')?.value||'',clientSecret:document.getElementById('xeroMerryckSecret')?.value||'',tenantId:document.getElementById('xeroMerryckTenant')?.value||'',enabled:document.getElementById('xeroMerryckEnabled')?.checked||false}
+  };
+  save();flashBtn('saveXeroInstancesBtn');
+}
+function getXeroForEntity(entity){return (DB.xeroInstances||{})[entity]||null;}
 function makeEngLive(dealId){
   var db=getDB();
   var deal=(db.opportunities||[]).find(function(x){return x.id===dealId;});
