@@ -2233,6 +2233,7 @@ function getDB(){return JSON.parse(localStorage.getItem('gmg_v2')||'{}');};
 function rDashboard(c){
   if(!window._gmgDash) window._gmgDash={type:'personal',period:'ytd',entity:'GMG',svc:'all'};
   c.innerHTML=_dashSelector()+_dashContent();
+  if(window._gmgDash&&window._gmgDash.type==='personal')setTimeout(applyPersonalDashPrefs,0);
 }
 
 function _dashSelector(){
@@ -2353,6 +2354,10 @@ function _progressBar(val,target,color){
   return '<div style="background:#f1f5f9;border-radius:4px;height:5px;margin-top:8px"><div style="background:'+color+';border-radius:4px;height:5px;width:'+pct+'%"></div></div>';
 }
 
+
+function applyPersonalDashPrefs(){var p=JSON.parse(localStorage.getItem('gmg_p_prefs')||'{}');['kpis','tasks-engs','finance','activity'].forEach(function(k){var el=document.getElementById('pd-'+k);if(el)el.style.display=p[k]===false?'none':'';});}
+function savePersonalPref(key,val){var p=JSON.parse(localStorage.getItem('gmg_p_prefs')||'{}');p[key]=val;localStorage.setItem('gmg_p_prefs',JSON.stringify(p));applyPersonalDashPrefs();}
+function openPersonalCustomizer(){var ws=[{k:'kpis',l:'KPI Cards'},{k:'tasks-engs',l:'Tasks & Engagements'},{k:'finance',l:'Invoices & Payments'},{k:'activity',l:'Recent Activity'}];var prefs=JSON.parse(localStorage.getItem('gmg_p_prefs')||'{}');var rows=ws.map(function(w){var on=prefs[w.k]!==false;return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9"><span style="font-size:14px;color:#1e293b">'+w.l+'</span><input id="pdc-'+w.k+'" type="checkbox" '+(on?'checked':'')+' style="width:18px;height:18px;cursor:pointer"></div>';}).join('');showModal('<div style="padding:24px;min-width:300px"><h3 style="margin:0 0 6px;font-size:16px;font-weight:700;color:#1e293b">Customise Dashboard</h3><p style="font-size:12px;color:#64748b;margin:0 0 16px">Show or hide sections on your personal dashboard.</p>'+rows+'<div style="margin-top:16px;text-align:right"><button onclick="document.getElementById(\'mc\').style.display=\'none\'" style="background:#2563eb;color:#fff;border:none;border-radius:6px;padding:7px 16px;cursor:pointer;font-size:13px;font-weight:600">Done</button></div></div>');ws.forEach(function(w){var cb=document.getElementById('pdc-'+w.k);if(cb)cb.onchange=function(){savePersonalPref(w.k,this.checked);};});}
 function _dashPersonal(){
   var activeEngs=DB.engagements.filter(function(e){return e.status==='active';});
   var pendingPay=DB.mentorPayments.filter(function(p){return p.status==='pending';});
@@ -2368,8 +2373,9 @@ function _dashPersonal(){
   var html='<div class="phdr"><div><h2>Dashboard</h2><p>Good morning, '+S.user.name.split(' ')[0]+'. Here\'s your operational overview.</p></div>'
     +'<div style="display:flex;gap:8px;align-items:center">'
     +(unsyncedInv.length?'<span class="badge b-amber">⚠ '+unsyncedInv.length+' unsynced to Xero</span>':'')
-    +'</div></div>';
-  html+='<div class="kpi-grid">'
+    
+    +'<button onclick="openPersonalCustomizer()" style="background:none;border:1px solid rgba(255,255,255,0.4);color:#fff;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:12px;font-weight:600;opacity:0.85">⚙ Customise</button>'+'</div></div>';
+  html+='<div id="pd-kpis" class="kpi-grid">'
     +'<div class="kpi accent"><div class="kpi-label">YTD Revenue</div><div class="kpi-val">'+fmt(ytdInv)+'</div>'
     +'<div class="kpi-bar"><div class="kpi-bar-fill" style="width:'+ytdPct+'%"></div></div>'
     +'<div class="kpi-sub">'+ytdPct+'% of '+fmt(fyTarget)+' FY target</div></div>'
@@ -2380,7 +2386,7 @@ function _dashPersonal(){
     +'<div class="kpi"><div class="kpi-label">Open Pipeline</div><div class="kpi-val">'+fmt(pipelineVal)+'</div>'
     +'<div class="kpi-sub">'+fmt(wonVal)+' closed won YTD</div></div>'
     +'</div>';
-  html+='<div class="g2" style="margin-bottom:18px">'
+  html+='<div id="pd-tasks-engs" class="g2" style="margin-bottom:18px">'
     +'<div class="card"><div class="card-hdr"><h3>Outstanding Tasks <span class="badge b-red" style="margin-left:6px">'+overdueT.length+' overdue</span></h3></div>'
     +'<div class="card-body" style="padding:0"><table class="tbl"><thead><tr><th>Task</th><th>Type</th><th>Due</th><th>Priority</th></tr></thead><tbody>';
   todoT.concat(DB.tasks.filter(function(t){return t.status==='inprogress';})).slice(0,6).forEach(function(t){
@@ -2402,7 +2408,7 @@ function _dashPersonal(){
       +'<button class="btn btn-sm btn-outline" onclick="openEngDetail(\''+e.id+'\')">View</button></div>';
   });
   html+='</div></div></div>';
-  html+='<div class="g2">'
+  html+='<div id="pd-finance" class="g2">'
     +'<div class="card"><div class="card-hdr"><h3>Finance — Pending Actions</h3></div><div class="card-body" style="padding:0 18px">';
   if(!unsyncedInv.length&&!pendingPay.length) html+='<p style="padding:20px 0;color:var(--muted);font-size:12px;text-align:center">All synced ✓</p>';
   unsyncedInv.forEach(function(inv){
@@ -2422,7 +2428,7 @@ function _dashPersonal(){
   });
   if(pendingPay.length>3) html+='<div style="padding:8px 0;font-size:11px;color:var(--muted);text-align:center">+'+(pendingPay.length-3)+' more pending</div>';
   html+='</div></div>';
-  html+='<div class="card"><div class="card-hdr"><h3>Recent Activity</h3></div><div class="card-body" style="padding:0 18px">';
+  html+='<div id="pd-activity" class="card"><div class="card-hdr"><h3>Recent Activity</h3></div><div class="card-body" style="padding:0 18px">';
   DB.activities.slice(0,6).forEach(function(a){
     html+='<div class="act-item"><div class="act-dot">'+a.icon+'</div>'
       +'<div style="flex:1"><div style="font-size:12px">'+a.text+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px">'+a.ts+'</div></div></div>';
