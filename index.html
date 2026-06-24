@@ -6651,6 +6651,15 @@ function viewContact(id){
   renderView();
 }
 
+function saveMentorBilling(id){
+  var c=DB.contacts.find(x=>x.id===id);
+  if(!c)return;
+  c.billEntity=document.getElementById('mpBillEntity')?.value||'';
+  c.billTerms=parseInt(document.getElementById('mpBillTerms')?.value)||0;
+  c.billAddress=document.getElementById('mpBillAddress')?.value||'';
+  save();
+}
+
 function rMentorProfile(c){
   const m=DB.contacts.find(x=>x.id===S.mentorId);
   if(!m){S.view='mentors';renderView();return;}
@@ -6686,6 +6695,20 @@ function rMentorProfile(c){
     </div>
   </div>
 
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px 20px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:var(--venetian)">${engs.filter(e=>e.status==='active').length}</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px">Live Mentees</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px 20px;text-align:center">
+      <div style="font-size:28px;font-weight:700;color:var(--nearblack)">${engs.length}</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px">Historical Mentees</div>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:18px 20px;text-align:center">
+      <div style="font-size:24px;font-weight:700;color:var(--nearblack)">${m.country||''}</div>
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:4px">Country</div>
+    </div>
+  </div>
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:start">
     <!-- Left column -->
     <div>
@@ -6749,6 +6772,28 @@ function rMentorProfile(c){
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px">Notes</div>
         <div style="font-size:12px;color:var(--nearblack);line-height:1.6">${m.notes}</div>
       </div>`:''}
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Billing Entity</div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Entity</div>
+          <select id="mpBillEntity" onchange="saveMentorBilling('${m.id}')" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px">
+            <option value="">&#8212; Select &#8212;</option>
+            <option value="GMG"${m.billEntity==='GMG'?' selected':''}>GMG</option>
+            <option value="CMi"${m.billEntity==='CMi'?' selected':''}>CMi</option>
+            <option value="Merryck"${m.billEntity==='Merryck'?' selected':''}>Merryck</option>
+            <option value="ANZ"${m.billEntity==='ANZ'?' selected':''}>ANZ</option>
+            <option value="Middle East"${m.billEntity==='Middle East'?' selected':''}>Middle East</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Payment Terms (days)</div>
+          <input type="number" id="mpBillTerms" value="${m.billTerms||''}" onchange="saveMentorBilling('${m.id}')" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Billing Address</div>
+          <textarea id="mpBillAddress" rows="3" onchange="saveMentorBilling('${m.id}')" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;resize:vertical">${m.billAddress||''}</textarea>
+        </div>
+      </div>
     </div>
   </div>`;
 }
