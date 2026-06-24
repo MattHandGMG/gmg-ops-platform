@@ -6654,7 +6654,8 @@ function viewContact(id){
 function saveMentorBilling(id){
   var c=DB.contacts.find(x=>x.id===id);
   if(!c)return;
-  c.billEntity=document.getElementById('mpBillEntity')?.value||'';
+  c.billBusinessName=document.getElementById('mpBillBusinessName')?.value||'';
+  c.billVat=document.getElementById('mpBillVat')?.value||'';
   c.billTerms=parseInt(document.getElementById('mpBillTerms')?.value)||0;
   c.billAddress=document.getElementById('mpBillAddress')?.value||'';
   save();
@@ -6773,17 +6774,14 @@ function rMentorProfile(c){
         <div style="font-size:12px;color:var(--nearblack);line-height:1.6">${m.notes}</div>
       </div>`:''}
       <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Billing Entity</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Billing Details</div>
         <div style="margin-bottom:10px">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Entity</div>
-          <select id="mpBillEntity" onchange="saveMentorBilling('${m.id}')" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px">
-            <option value="">&#8212; Select &#8212;</option>
-            <option value="GMG"${m.billEntity==='GMG'?' selected':''}>GMG</option>
-            <option value="CMi"${m.billEntity==='CMi'?' selected':''}>CMi</option>
-            <option value="Merryck"${m.billEntity==='Merryck'?' selected':''}>Merryck</option>
-            <option value="ANZ"${m.billEntity==='ANZ'?' selected':''}>ANZ</option>
-            <option value="Middle East"${m.billEntity==='Middle East'?' selected':''}>Middle East</option>
-          </select>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Business / Company Name</div>
+          <input type="text" id="mpBillBusinessName" value="${m.billBusinessName||''}" onchange="saveMentorBilling('${m.id}')" placeholder="e.g. Smith Consulting Ltd" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box">
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">VAT / Tax Number</div>
+          <input type="text" id="mpBillVat" value="${m.billVat||''}" onchange="saveMentorBilling('${m.id}')" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box">
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Payment Terms (days)</div>
