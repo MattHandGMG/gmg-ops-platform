@@ -5251,6 +5251,7 @@ function openDealModal(id,defaultStage){
     </div>
     <div class="fg"><label>Notes</label><textarea id="dm-notes" rows="3">${o?o.notes:''}<\/textarea></div>
     ${renderComments('pipeline',id)}
+    ${o&&o.stage==='Closed Won'?renderDealBilling(o):''}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
       ${o&&o.stage==='Closed Won'?'<button class="btn btn-primary" style="background:#059669;color:#fff;border-color:#059669;margin-right:auto" onclick="makeEngLive(\''+id+'\')">Make Engagement Live</button>':''}
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
@@ -5259,10 +5260,22 @@ function openDealModal(id,defaultStage){
   </div>`,true);
 }
 
+function renderDealBilling(o){
+  return '<div style="margin-top:20px;border:2px solid #d1fae5;border-radius:8px;padding:16px;background:#f0fdf4">'
+    +'<div style="font-weight:700;font-size:13px;color:#059669;margin-bottom:12px">📋 Client Billing Details '
+    +'<span style="font-size:11px;font-weight:400;color:#6b7280">— save deal to persist before going live</span></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div class="fg"><label>Billing Contact</label><input id="dm-billName" placeholder="Full name" value="'+(o.billName||'')+'"></div>'
+    +'<div class="fg"><label>Billing Email</label><input id="dm-billEmail" type="email" placeholder="billing@company.com" value="'+(o.billEmail||'')+'"></div>'
+    +'<div class="fg"><label>PO / Reference No.</label><input id="dm-billRef" placeholder="Optional" value="'+(o.billRef||'')+'"></div>'
+    +'<div class="fg"><label>Payment Terms (days)</label><input id="dm-billTerms" type="number" value="'+(o.billTerms||30)+'"></div>'
+    +'<div class="fg" style="grid-column:span 2"><label>Billing Address</label><textarea id="dm-billAddress" rows="2">'+(o.billAddress||'')+'<\/textarea></div>'
+    +'</div></div>';
+}
 function saveDeal(id){
   const name=document.getElementById('dm-name').value.trim();
   if(!name)return alert('Please enter a deal name.');
-  const data={name,client:document.getElementById('dm-client').value.trim(),solution:document.getElementById('dm-sol').value,value:parseFloat(document.getElementById('dm-val').value)||0,prob:parseInt(document.getElementById('dm-prob').value)||50,stage:document.getElementById('dm-stage').value,closeDate:document.getElementById('dm-close').value,partner:document.getElementById('dm-partner').value,country:document.getElementById('dm-country').value,notes:document.getElementById('dm-notes').value.trim()};
+  const data={name,client:document.getElementById('dm-client').value.trim(),solution:document.getElementById('dm-sol').value,value:parseFloat(document.getElementById('dm-val').value)||0,prob:parseInt(document.getElementById('dm-prob').value)||50,stage:document.getElementById('dm-stage').value,closeDate:document.getElementById('dm-close').value,partner:document.getElementById('dm-partner').value,country:document.getElementById('dm-country').value,notes:document.getElementById('dm-notes').value.trim(),billName:document.getElementById('dm-billName')?.value||'',billEmail:document.getElementById('dm-billEmail')?.value||'',billRef:document.getElementById('dm-billRef')?.value||'',billTerms:parseInt(document.getElementById('dm-billTerms')?.value)||0,billAddress:document.getElementById('dm-billAddress')?.value||''};
   if(id){const o=DB.opportunities.find(x=>x.id===id);if(o)Object.assign(o,data);}
   else{DB.opportunities.push({id:uid(),...data,created:today()});addAct('◆',`New deal: ${name} — ${fmt(data.value)}`);}
   save();closeModal();renderView();
@@ -5283,7 +5296,7 @@ function makeEngLive(dealId){
   var deal=(db.opportunities||[]).find(function(x){return x.id===dealId;});
   if(!deal){alert('Deal not found.');return;}
   var eng=(db.engagements||[]).find(function(e){return e.pipelineId===dealId||(e.name&&deal.name&&e.name.toLowerCase()===deal.name.toLowerCase());});
-  if(!eng){if(!confirm('No linked engagement found for this deal.\n\nAuto-create an engagement from this deal?\n\n'+deal.name))return;if(!DB.engagements)DB.engagements=[];eng={id:uid(),name:deal.name,clientId:deal.clientId||null,client:deal.client||deal.name,pipelineId:dealId,status:'pending',entity:deal.entity||'GMG',partner:deal.partner||'',country:deal.country||'',annualFee:deal.value||0,notes:'Created from pipeline deal.',startDate:today(),created:today()};DB.engagements.push(eng);}
+  if(!eng){if(!confirm('No linked engagement found for this deal.\n\nAuto-create an engagement from this deal?\n\n'+deal.name))return;if(!DB.engagements)DB.engagements=[];eng={id:uid(),name:deal.name,clientId:deal.clientId||null,client:deal.client||deal.name,pipelineId:dealId,status:'pending',entity:deal.entity||'GMG',partner:deal.partner||'',country:deal.country||'',annualFee:deal.value||0,notes:'Created from pipeline deal.',startDate:today(),created:today(),billName:deal.billName||'',billEmail:deal.billEmail||'',billRef:deal.billRef||'',billTerms:deal.billTerms||0,billAddress:deal.billAddress||''};DB.engagements.push(eng);}
   var missing=[];
   if(!eng.billingContact)missing.push('Billing Contact');
   if(!eng.billingEmail)missing.push('Billing Email');
