@@ -3924,6 +3924,16 @@ function _orgFormFields(p){
   f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Email</label><input id="of-email" '+fi+' value="'+_orgE(v.email||'')+'" placeholder="jane@company.com"></div>';
   f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Phone</label><input id="of-phone" '+fi+' value="'+_orgE(v.phone||'')+'" placeholder="+1 555 000 0000"></div>';
   f+='<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="of-boardex"'+(v.boardex?' checked':'')+' style="width:14px;height:14px;cursor:pointer"><label for="of-boardex" style="font-size:13px;cursor:pointer">BoardEx verified</label></div>';
+  var _c=window._orgCtx?window._orgCtx.ctId:null;
+  var _d2=_c?getDB():{};
+  var _er=(_d2.engagements||[]).filter(function(e){return e.clientId===_c;});
+  var _pr=(_d2.pipeline||[]).filter(function(d){return d.clientId===_c;});
+  var _es='<option value="">-- None --</option>';
+  _er.forEach(function(e){_es+='<option value="'+e.id+'"'+(v.engId===e.id?' selected':'')+'>'+_orgE(e.name)+'</option>';});
+  var _ds='<option value="">-- None --</option>';
+  _pr.forEach(function(d){_ds+='<option value="'+d.id+'"'+(v.dealId===d.id?' selected':'')+'>'+_orgE(d.name)+'</option>';});
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Linked Engagement</label><select id="of-eng" '+fi+'>'+_es+'</select></div>';
+  f+='<div style="margin-bottom:8px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Linked Pipeline Deal</label><select id="of-deal" '+fi+'>'+_ds+'</select></div>';
   return f;
 }
 function openOrgAddModal(){
@@ -3961,6 +3971,8 @@ function saveOrgContact(pid){
   var em=document.getElementById('of-email').value.trim();
   var ph=document.getElementById('of-phone').value.trim();
   var bx=document.getElementById('of-boardex').checked;
+  var engId=document.getElementById('of-eng')?document.getElementById('of-eng').value||null:null;
+  var dealId=document.getElementById('of-deal')?document.getElementById('of-deal').value||null:null;
   var ctId=window._orgCtx?window._orgCtx.ctId:null;if(!ctId)return;
   if(!DB.contacts)DB.contacts=[];
   var ci=DB.contacts.findIndex(function(x){return x.id===ctId;});
@@ -3968,10 +3980,10 @@ function saveOrgContact(pid){
   if(!DB.contacts[ci].orgContacts)DB.contacts[ci].orgContacts=[];
   if(pid){
     DB.contacts[ci].orgContacts=DB.contacts[ci].orgContacts.map(function(p){
-      return p.id===pid?Object.assign({},p,{name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx}):p;
+      return p.id===pid?Object.assign({},p,{name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId}):p;
     });
   }else{
-    DB.contacts[ci].orgContacts.push({id:'oc_'+Date.now(),name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx});
+    DB.contacts[ci].orgContacts.push({id:'oc_'+Date.now(),name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId});
   }
   save();document.getElementById('orgModal').remove();renderView();
 }
@@ -3985,6 +3997,9 @@ function deleteOrgContact(pid){
 function rClientOrgChart(ctId,ct){
   function _e(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   window._orgCtx={ctId:ctId};
+  var _db2=getDB();
+  var _engs=(_db2.engagements||[]).filter(function(e){return e.clientId===ctId;});
+  var _pips=(_db2.pipeline||[]).filter(function(d){return d.clientId===ctId;});
   var org=ct.orgContacts||[];
   var lvNames={1:'Board/Chair',2:'C-Suite',3:'VP/SVP',4:'Director',5:'Manager'};
   var html='<div style="padding:0">';
@@ -4013,6 +4028,9 @@ function rClientOrgChart(ctId,ct){
         if(p.email)html+='<div style="font-size:10px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="mailto:'+_e(p.email)+'" style="color:#4f46e5;text-decoration:none">'+_e(p.email)+'</a></div>';
         if(p.phone)html+='<div style="font-size:10px;color:#6b7280;margin-bottom:4px">'+_e(p.phone)+'</div>';
         if(p.boardex)html+='<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;margin-bottom:4px">BoardEx</span>';
+        var _bge='';
+        if(p.engId){var _enm=(_engs||[]).find(function(e){return e.id===p.engId;});_bge='<div style="margin-top:4px"><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;background:#d1fae5;color:#065f46;white-space:nowrap">Eng: '+_orgE((_enm&&_enm.name)||'Linked')+'</span></div>';}else if(p.dealId){var _dnm=(_pips||[]).find(function(d){return d.id===p.dealId;});_bge='<div style="margin-top:4px"><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;background:#fef3c7;color:#92400e;white-space:nowrap">Deal: '+_orgE((_dnm&&_dnm.name)||'Linked')+'</span></div>';}else{_bge='<div style="margin-top:4px"><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:10px;background:#f1f5f9;color:#64748b">Potential Mentee</span></div>';}
+        html+=_bge;
         html+='<div style="display:flex;justify-content:center;gap:6px;margin-top:6px">';
         html+='<button onclick="openOrgEditModal(\''+p.id+'\') " style="font-size:10px;padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:white;cursor:pointer;color:#374151">Edit</button>';
         html+='<button onclick="deleteOrgContact(\''+p.id+'\') " style="font-size:10px;padding:3px 8px;border:1px solid #fca5a5;border-radius:4px;background:white;cursor:pointer;color:#ef4444">Del</button>';
