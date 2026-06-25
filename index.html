@@ -3431,8 +3431,8 @@ function saveLocalUser(id){
   var n=function(k){return document.getElementById(k);};
   var nm=n('au-name').value.trim();
   if(!nm){alert('Name required');return;}
-  if(!getDB().appUsers)getDB().appUsers=[];
-  getDB().appUsers=getDB().appUsers.map(function(u){return u.id===id?Object.assign({},u,{name:nm,role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?n('au-partner').value.trim():'',salesTarget:n('au-target')?parseInt(n('au-target').value)||0:0}):u;});
+  if(!DB.appUsers)DB.appUsers=[];
+  DB.appUsers=DB.appUsers.map(function(u){return u.id===id?Object.assign({},u,{name:nm,role:n('au-role').value,entity:n('au-entity').value,partnerName:n('au-partner')?n('au-partner').value.trim():'',salesTarget:n('au-target')?parseInt(n('au-target').value)||0:0}):u;});
   save();closeModal();S.view='admin';renderView();
 }
 async function saveAdminUser(userId){
