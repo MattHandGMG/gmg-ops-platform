@@ -3856,7 +3856,14 @@ function rClientDetail(c){
   var sL=['','Prospect','Qualify','Proposal','Negotiate','Closed Won','Closed Lost'];
   var dR=deals.length?deals.map(function(o){return '<tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+o.name+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+fmt(o.value)+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc"><span class="badge stage-'+(o.stage||1)+'" style="font-size:11px">'+(sL[o.stage]||'Stage '+o.stage)+'</span></td></tr>';}).join(''):'<tr><td colspan="3" style="padding:14px 12px;color:#94a3b8;font-size:13px">No pipeline deals</td></tr>';
   var eB='<button onclick="openClientEditModal(\''+ctId+'\')" style="padding:6px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:12px;color:#374151">Edit</button>';
-  c.innerHTML='<div style="padding:24px;max-width:1100px">'+
+  if(S.lastClientId!==ctId){S.clientTab='overview';S.lastClientId=ctId;}
+  if(!S.clientTab)S.clientTab='overview';
+  var _tn='<div style="border-bottom:2px solid #e5e7eb;background:white;display:flex">'+
+    '<button onclick="S.clientTab=\'overview\';renderView()" style="padding:12px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:none;border-bottom:'+(S.clientTab==='overview'?'3px solid #CE2702;color:#CE2702':'3px solid transparent;color:#6b7280')+'">Overview</button>'+
+    '<button onclick="S.clientTab=\'org\';renderView()" style="padding:12px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:none;border-bottom:'+(S.clientTab==='org'?'3px solid #CE2702;color:#CE2702':'3px solid transparent;color:#6b7280')+'">Company Org</button>'+
+    '</div>';
+  if(S.clientTab==='org'){c.innerHTML=_tn+rClientOrgChart(ctId,ct);return;}
+  c.innerHTML=_tn+'<div style="padding:24px;max-width:1100px">'+
   '<div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">'+
   '<button onclick="S.view=\'clients\';renderView()" style="padding:7px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">&#8592; Clients</button>'+
   '<div><h2 style="margin:0;font-size:20px;color:var(--txt)">'+(ct.name||'Client')+'</h2>'+
@@ -3902,6 +3909,121 @@ function rClientDetail(c){
   '<p style="font-size:12px;margin:4px 0 0;color:#94a3b8">Attach and view email threads related to this client directly here.</p>'+
   '</div></div>'+
 '</div></div></div></div>';
+}
+function _orgE(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function _orgFormFields(p){
+  var v=p||{};var lv=v.level||1;var opts='';
+  [{k:1,l:'1 - Board/Chair'},{k:2,l:'2 - C-Suite'},{k:3,l:'3 - VP/SVP'},{k:4,l:'4 - Director'},{k:5,l:'5 - Manager'}].forEach(function(o){
+    opts+='<option value="'+o.k+'"'+(lv==o.k?' selected':'')+'>'+o.l+'</option>';
+  });
+  var fi='style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box"';
+  var f='';
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Full Name *</label><input id="of-name" '+fi+' value="'+_orgE(v.name||'')+'" placeholder="Jane Smith"></div>';
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Title *</label><input id="of-title" '+fi+' value="'+_orgE(v.title||'')+'" placeholder="Chief Executive Officer"></div>';
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Level</label><select id="of-level" '+fi+'>'+opts+'</select></div>';
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Email</label><input id="of-email" '+fi+' value="'+_orgE(v.email||'')+'" placeholder="jane@company.com"></div>';
+  f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Phone</label><input id="of-phone" '+fi+' value="'+_orgE(v.phone||'')+'" placeholder="+1 555 000 0000"></div>';
+  f+='<div style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="of-boardex"'+(v.boardex?' checked':'')+' style="width:14px;height:14px;cursor:pointer"><label for="of-boardex" style="font-size:13px;cursor:pointer">BoardEx verified</label></div>';
+  return f;
+}
+function openOrgAddModal(){
+  var ctId=window._orgCtx?window._orgCtx.ctId:null;if(!ctId)return;
+  var html='<div id="orgModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center">';
+  html+='<div style="background:white;border-radius:12px;padding:28px;width:420px;max-width:95vw;max-height:90vh;overflow-y:auto">';
+  html+='<h3 style="margin:0 0 20px;font-size:16px;font-weight:600">Add Person</h3>';
+  html+=_orgFormFields(null);
+  html+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">';
+  html+='<button onclick="document.getElementById(\'orgModal\').remove()" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>';
+  html+='<button onclick="saveOrgContact(null)" style="padding:8px 16px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500">Save</button>';
+  html+='</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function openOrgEditModal(pid){
+  var ctId=window._orgCtx?window._orgCtx.ctId:null;if(!ctId)return;
+  var db=getDB();
+  var ct=(db.contacts||[]).find(function(x){return x.id===ctId;})||{};
+  var p=(ct.orgContacts||[]).find(function(x){return x.id===pid;})||{};
+  var html='<div id="orgModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center">';
+  html+='<div style="background:white;border-radius:12px;padding:28px;width:420px;max-width:95vw;max-height:90vh;overflow-y:auto">';
+  html+='<h3 style="margin:0 0 20px;font-size:16px;font-weight:600">Edit Person</h3>';
+  html+=_orgFormFields(p);
+  html+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">';
+  html+='<button onclick="document.getElementById(\'orgModal\').remove()" style="padding:8px 16px;border:1px solid #d1d5db;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>';
+  html+='<button onclick="saveOrgContact(\''+pid+'\')  " style="padding:8px 16px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500">Save</button>';
+  html+='</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',html);
+}
+function saveOrgContact(pid){
+  var nm=document.getElementById('of-name').value.trim();
+  var ti=document.getElementById('of-title').value.trim();
+  if(!nm||!ti){alert('Name and Title are required.');return;}
+  var lv=parseInt(document.getElementById('of-level').value);
+  var em=document.getElementById('of-email').value.trim();
+  var ph=document.getElementById('of-phone').value.trim();
+  var bx=document.getElementById('of-boardex').checked;
+  var ctId=window._orgCtx?window._orgCtx.ctId:null;if(!ctId)return;
+  if(!DB.contacts)DB.contacts=[];
+  var ci=DB.contacts.findIndex(function(x){return x.id===ctId;});
+  if(ci<0)return;
+  if(!DB.contacts[ci].orgContacts)DB.contacts[ci].orgContacts=[];
+  if(pid){
+    DB.contacts[ci].orgContacts=DB.contacts[ci].orgContacts.map(function(p){
+      return p.id===pid?Object.assign({},p,{name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx}):p;
+    });
+  }else{
+    DB.contacts[ci].orgContacts.push({id:'oc_'+Date.now(),name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx});
+  }
+  save();document.getElementById('orgModal').remove();renderView();
+}
+function deleteOrgContact(pid){
+  if(!confirm('Remove this person from the org chart?'))return;
+  var ctId=window._orgCtx?window._orgCtx.ctId:null;if(!ctId)return;
+  var ci=DB.contacts.findIndex(function(x){return x.id===ctId;});if(ci<0)return;
+  DB.contacts[ci].orgContacts=(DB.contacts[ci].orgContacts||[]).filter(function(p){return p.id!==pid;});
+  save();renderView();
+}
+function rClientOrgChart(ctId,ct){
+  function _e(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  window._orgCtx={ctId:ctId};
+  var org=ct.orgContacts||[];
+  var lvNames={1:'Board/Chair',2:'C-Suite',3:'VP/SVP',4:'Director',5:'Manager'};
+  var html='<div style="padding:0">';
+  html+='<div style="padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb;background:#fafafa">';
+  html+='<h3 style="margin:0;font-size:15px;font-weight:600;color:#111827">Company Org Chart</h3>';
+  html+='<button onclick="openOrgAddModal()" style="background:#CE2702;color:white;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500">+ Add Person</button>';
+  html+='</div>';
+  if(!org.length){
+    html+='<div style="padding:48px;text-align:center;color:#9ca3af"><p style="font-size:14px;margin:0 0 4px">No contacts added yet.</p>';
+    html+='<p style="font-size:13px;color:#d1d5db;margin:0">Click &quot;+ Add Person&quot; to start building the org chart.</p></div>';
+  }else{
+    html+='<div style="padding:24px 16px;overflow-x:auto">';
+    [1,2,3,4,5].forEach(function(lv){
+      var people=org.filter(function(p){return p.level===lv;});
+      if(!people.length)return;
+      people.forEach(function(p){window._orgCtx[p.id]=p;});
+      html+='<div style="text-align:center;margin-bottom:6px"><span style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#9ca3af">'+lvNames[lv]+'</span></div>';
+      if(lv>1){html+='<div style="display:flex;justify-content:center"><div style="width:2px;height:20px;background:#d1d5db"></div></div>';}
+      html+='<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-bottom:8px">';
+      people.forEach(function(p){
+        var ini=(p.name||'?').trim().split(/s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
+        html+='<div style="background:white;border:1.5px solid #e5e7eb;border-radius:10px;padding:14px 12px;width:155px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.06)">';
+        html+='<div style="width:42px;height:42px;border-radius:50%;background:#CE2702;color:white;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;margin-bottom:8px">'+ini+'</div>';
+        html+='<div style="font-size:13px;font-weight:600;color:#111827;line-height:1.3;margin-bottom:2px">'+_e(p.name)+'</div>';
+        html+='<div style="font-size:11px;color:#6b7280;margin-bottom:6px;line-height:1.3">'+_e(p.title||'')+'</div>';
+        if(p.email)html+='<div style="font-size:10px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="mailto:'+_e(p.email)+'" style="color:#4f46e5;text-decoration:none">'+_e(p.email)+'</a></div>';
+        if(p.phone)html+='<div style="font-size:10px;color:#6b7280;margin-bottom:4px">'+_e(p.phone)+'</div>';
+        if(p.boardex)html+='<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:#dbeafe;color:#1d4ed8;margin-bottom:4px">BoardEx</span>';
+        html+='<div style="display:flex;justify-content:center;gap:6px;margin-top:6px">';
+        html+='<button onclick="openOrgEditModal(\''+p.id+'\') " style="font-size:10px;padding:3px 8px;border:1px solid #d1d5db;border-radius:4px;background:white;cursor:pointer;color:#374151">Edit</button>';
+        html+='<button onclick="deleteOrgContact(\''+p.id+'\') " style="font-size:10px;padding:3px 8px;border:1px solid #fca5a5;border-radius:4px;background:white;cursor:pointer;color:#ef4444">Del</button>';
+        html+='</div></div>';
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+  return html;
 }
 function openClientEditModal(ctId){
   var db=getDB();
