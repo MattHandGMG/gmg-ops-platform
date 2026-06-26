@@ -4069,9 +4069,11 @@ function rClientDetail(c){
   var _childCts=_allCts.filter(function(c){return c.parentId===ctId;});
   function fld(l,v){return '<tr><td style="color:#64748b;font-size:13px;padding:7px 0;width:40%;border-bottom:1px solid #f8fafc">'+l+'</td><td style="font-size:13px;padding:7px 0;border-bottom:1px solid #f8fafc">'+(v||'<span style="color:#94a3b8">—</span>')+'</td></tr>';}
   var cR=fld('Name',ct.name)+fld('Role',ct.role)+fld('Email',ct.email||ct.mail)+fld('Phone',ct.phone||ct.mobile)+fld('Company',ct.company)+fld('Country',ct.country);
-  var coR=fld('Address',ct.address||ct.addr)+fld('Co. No.',ct.companyNo||ct.num)+fld('Registered In',ct.registeredIn||ct.reg)+fld('Website',ct.website);
+  var coR=fld('Address',ct.address||ct.addr)+fld('Co. No.',ct.companyNo||ct.num)+fld('Registered In',ct.registeredIn||ct.reg)+fld('Website',ct.website)+fld('Country',ct.country)+fld('Type',ct.companyType);
   var eR=engs.length?engs.map(function(e){return '<tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+e.name+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc;color:#64748b">'+(e.type||e.solution||'—')+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc;color:#64748b">'+(e.status||e.stage||'—')+'</td></tr>';}).join(''):'<tr><td colspan="3" style="padding:14px 12px;color:#94a3b8;font-size:13px">No engagements on record</td></tr>';
-  var sL=['','Prospect','Qualify','Proposal','Negotiate','Closed Won','Closed Lost'];
+var pmCount=(ct.orgContacts||[]).filter(function(p){return p.pm;}).length;
+  var engBySol={};engs.forEach(function(e){var s=e.type||e.solution||'Other';engBySol[s]=(engBySol[s]||0)+1;});
+    var sL=['','Prospect','Qualify','Proposal','Negotiate','Closed Won','Closed Lost'];
   var dR=deals.length?deals.map(function(o){return '<tr><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+o.name+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc">'+fmt(o.value)+'</td><td style="padding:9px 12px;font-size:13px;border-bottom:1px solid #f8fafc"><span class="badge stage-'+(o.stage||1)+'" style="font-size:11px">'+(sL[o.stage]||'Stage '+o.stage)+'</span></td></tr>';}).join(''):'<tr><td colspan="3" style="padding:14px 12px;color:#94a3b8;font-size:13px">No pipeline deals</td></tr>';
   var eB='<button onclick="openClientEditModal(\''+ctId+'\')" style="padding:6px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:12px;color:#374151">Edit</button>';
   if(S.lastClientId!==ctId){S.clientTab='overview';S.lastClientId=ctId;}
@@ -4105,9 +4107,13 @@ function rClientDetail(c){
   '<div>'+
   '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
   '<h3 style="margin:0 0 14px;font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em">Engagements</h3>'+
+  '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px">'+
+  (engs.length?Object.keys(engBySol).sort().map(function(s){var col=s==='Chair'?'#CE2702':s==='Executive'?'#0369a1':'#15803d';var bg=s==='Chair'?'#fff3f0':s==='Executive'?'#eff6ff':'#f0fdf4';var bd=s==='Chair'?'#fbd0c8':s==='Executive'?'#bfdbfe':'#bbf7d0';return '<div style="background:'+bg+';border:1px solid '+bd+';border-radius:8px;padding:8px 14px;text-align:center"><div style="font-size:20px;font-weight:700;color:'+col+'">'+engBySol[s]+'</div><div style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.04em">'+s+'</div></div>';}).join(''):'<span style="font-size:13px;color:#9ca3af;padding:8px 0;display:block">No active engagements</span>')+
+  (pmCount?'<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:8px;padding:8px 14px;text-align:center"><div style="font-size:20px;font-weight:700;color:#92400e">'+pmCount+'</div><div style="font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Pot. Mentees</div></div>':'')+
+  '</div>'+
   '<table style="width:100%;border-collapse:collapse"><thead><tr>'+
   '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Name</th>'+
-  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Type</th>'+
+  '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Solution</th>'+
   '<th style="text-align:left;padding:7px 12px;font-size:11px;color:#94a3b8;text-transform:uppercase;border-bottom:2px solid #f1f5f9">Status</th>'+
   '</tr></thead><tbody>'+eR+'</tbody></table></div>'+
   '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
@@ -4154,6 +4160,7 @@ function _orgFormFields(p){
   _pr.forEach(function(d){_ds+='<option value="'+d.id+'"'+(v.dealId===d.id?' selected':'')+'>'+_orgE(d.name)+'</option>';});
   f+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Linked Engagement</label><select id="of-eng" '+fi+'>'+_es+'</select></div>';
   f+='<div style="margin-bottom:8px"><label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:4px">Linked Pipeline Deal</label><select id="of-deal" '+fi+'>'+_ds+'</select></div>';
+  f+='<div style="margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9"><label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="of-pm"'+(v.pm?' checked':'')+'><span style="color:#374151">Potential Mentee</span></label></div>';
   return f;
 }
 function openOrgAddModal(){
@@ -4200,10 +4207,10 @@ function saveOrgContact(pid){
   if(!DB.contacts[ci].orgContacts)DB.contacts[ci].orgContacts=[];
   if(pid){
     DB.contacts[ci].orgContacts=DB.contacts[ci].orgContacts.map(function(p){
-      return p.id===pid?Object.assign({},p,{name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId}):p;
+      return p.id===pid?Object.assign({},p,{name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId,pm:!!(document.getElementById('of-pm')&&document.getElementById('of-pm').checked)}):p;
     });
   }else{
-    DB.contacts[ci].orgContacts.push({id:'oc_'+Date.now(),name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId});
+    DB.contacts[ci].orgContacts.push({id:'oc_'+Date.now(),name:nm,title:ti,level:lv,email:em,phone:ph,boardex:bx,engId:engId,dealId:dealId,pm:!!(document.getElementById('of-pm')&&document.getElementById('of-pm').checked)});
   }
   save();document.getElementById('orgModal').remove();renderView();
 }
