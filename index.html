@@ -5654,11 +5654,13 @@ function rPipeline(c){
 
 function openDealModal(id,defaultStage){
   const o=id?DB.opportunities.find(x=>x.id===id):null;
+  const _clients=getDB().contacts||[];
+  if(!id&&!_clients.length){showModal(`<div class="mhdr"><h3>No Client Accounts</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div><div class="mbody" style="padding:24px;text-align:center;"><p style="margin-bottom:16px;">Create a client account before adding a deal.</p><button class="btn" onclick="closeModal();S.view='clients';renderView()">Go to Clients</button></div>`);return;}
   showModal(`<div class="mhdr"><h3>${o?'Edit Deal':'New Deal'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
     <div class="fg"><label>Deal Name</label><input id="dm-name" type="text" value="${o?o.name:''}" placeholder="e.g. HSBC — Executive Mentoring"></div>
     <div class="fgrow">
-      <div class="fg"><label>Client</label><input id="dm-client" type="text" value="${o?o.client||'':''}" placeholder="Client name"></div>
+      <div class="fg"><label>Client</label><select id="dm-client" style="width:100%"><option value="">-- Select client --</option>${_clients.map(c=>'<option value="'+c.id+'"'+(o&&o.clientId===c.id?' selected':'')+'>'+c.name+(c.org?' - '+c.org:'')+'</option>').join('')}</select></div>
       <div class="fg"><label>Solution</label><select id="dm-sol">
         <option value="chair"${o&&o.solution==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!o||o.solution==='executive'?' selected':''}>Executive Mentoring</option>
@@ -5709,7 +5711,9 @@ function renderDealBilling(o){
 function saveDeal(id){
   const name=document.getElementById('dm-name').value.trim();
   if(!name)return alert('Please enter a deal name.');
-  const data={name,client:document.getElementById('dm-client').value.trim(),solution:document.getElementById('dm-sol').value,value:parseFloat(document.getElementById('dm-val').value)||0,prob:parseInt(document.getElementById('dm-prob').value)||50,stage:document.getElementById('dm-stage').value,closeDate:document.getElementById('dm-close').value,partner:document.getElementById('dm-partner').value,country:document.getElementById('dm-country').value,notes:document.getElementById('dm-notes').value.trim(),billName:document.getElementById('dm-billName')?.value||'',billEmail:document.getElementById('dm-billEmail')?.value||'',billRef:document.getElementById('dm-billRef')?.value||'',billTerms:parseInt(document.getElementById('dm-billTerms')?.value)||0,billAddress:document.getElementById('dm-billAddress')?.value||''};
+  const _selCl=document.getElementById('dm-client').value;
+  if(!_selCl)return alert('Please select a client account.');
+  const data={name,clientId:_selCl,client:(getDB().contacts||[]).find(c=>c.id===_selCl)?.name||'',solution:document.getElementById('dm-sol').value,value:parseFloat(document.getElementById('dm-val').value)||0,prob:parseInt(document.getElementById('dm-prob').value)||50,stage:document.getElementById('dm-stage').value,closeDate:document.getElementById('dm-close').value,partner:document.getElementById('dm-partner').value,country:document.getElementById('dm-country').value,notes:document.getElementById('dm-notes').value.trim(),billName:document.getElementById('dm-billName')?.value||'',billEmail:document.getElementById('dm-billEmail')?.value||'',billRef:document.getElementById('dm-billRef')?.value||'',billTerms:parseInt(document.getElementById('dm-billTerms')?.value)||0,billAddress:document.getElementById('dm-billAddress')?.value||''};
   if(id){const o=DB.opportunities.find(x=>x.id===id);if(o)Object.assign(o,data);}
   else{DB.opportunities.push({id:uid(),...data,created:today()});addAct('◆',`New deal: ${name} — ${fmt(data.value)}`);}
   save();closeModal();renderView();
