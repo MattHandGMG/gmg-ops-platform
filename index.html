@@ -5654,7 +5654,7 @@ function rPipeline(c){
 
 function openDealModal(id,defaultStage){
   const o=id?DB.opportunities.find(x=>x.id===id):null;
-  const _clients=getDB().contacts||[];
+  const _clients=(getDB().contacts||[]).filter(c=>c.type==='client');
   if(!id&&!_clients.length){showModal(`<div class="mhdr"><h3>No Client Accounts</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div><div class="mbody" style="padding:24px;text-align:center;"><p style="margin-bottom:16px;">Create a client account before adding a deal.</p><button class="btn" onclick="closeModal();S.view='clients';renderView()">Go to Clients</button></div>`);return;}
   showModal(`<div class="mhdr"><h3>${o?'Edit Deal':'New Deal'}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
