@@ -4320,7 +4320,7 @@ function openClientEditModal(ctId){
     sec('Partners Responsible')+
     (allPartners.length?'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+ptnrChecks+'</div>':'<p style="font-size:13px;color:#94a3b8;margin:0 0 12px">No partners in Admin → Users.</p>')+
     '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid #f1f5f9">'+
-    '<button onclick="document.getElementById('client-edit-ov').remove()" style="padding:9px 20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px">Cancel</button>'+
+    '<button onclick="document.getElementById(\'client-edit-ov\').remove()" style="padding:9px 20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px">Cancel</button>'+
     '<button onclick="saveClientEdit(''+ctId+'')" style="padding:9px 20px;background:#0f172a;border:none;border-radius:6px;cursor:pointer;font-size:13px;color:#fff;font-weight:600">Save Changes</button>'+
     '</div></div>';
   document.body.appendChild(ov);
@@ -4341,7 +4341,7 @@ function saveClientEdit(ctId){
     partners:selectedPartners,partner:selectedPartners[0]||''
   });
   localStorage.setItem('gmg_v2',JSON.stringify(db));
-  document.getElementById('client-edit-ov').remove();
+  document.getElementById(\'client-edit-ov\').remove();
   S.view='clientDetail';
   renderView();
 }
