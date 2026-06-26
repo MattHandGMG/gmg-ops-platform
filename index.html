@@ -3025,7 +3025,7 @@ const xi=DB.xeroInstances||{};
         +'<td style="padding:9px 8px;font-size:12px">'+(u.entity||'—')+'</td>'
         +'<td style="padding:9px 8px;font-size:12px">'+(u.salesTarget?('£'+(u.salesTarget||0).toLocaleString('en-GB')):'<span style="color:var(--muted)">—</span>')+'</td>'
         +'<td style="padding:9px 8px;font-size:12px;color:var(--muted)">'+(u.lastActive||'—')+'</td>'
-        +'<td style="padding:9px 8px;text-align:right"><button onclick="openEditUserModal(\'+u.id+\')" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer">Edit</button></td></tr>';
+        +'<td style="padding:9px 8px;text-align:right"><button onclick="openEditUserModal(\''+u.id+'\')" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 10px;font-size:11px;cursor:pointer">Edit</button></td></tr>';
     });
   });
   return html;
@@ -3137,6 +3137,26 @@ const xi=DB.xeroInstances||{};
             <label style="${labelStyle}">Client ID</label><input id="xeroMerryckClientId" value="${xi.Merryck?.clientId||''}" style="${inputStyle}" placeholder="Xero App Client ID">
             <label style="${labelStyle}">Client Secret</label><input id="xeroMerryckSecret" type="password" value="${xi.Merryck?.clientSecret||''}" style="${inputStyle}" placeholder="••••••••">
             <label style="${labelStyle}">Tenant ID</label><input id="xeroMerryckTenant" value="${xi.Merryck?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:16px">
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px;color:#1e293b">Middle East</b><label style="font-size:12px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:5px"><input type="checkbox" id="xeroMEEnabled" ${xi['Middle East']?.enabled?'checked':''}> Active</label></div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Client ID</label>
+            <input id="xeroMEClientId" value="${xi['Middle East']?.clientId||''}" style="${inputStyle}">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Client Secret</label>
+            <input id="xeroMESecret" type="password" value="${xi['Middle East']?.clientSecret||''}" style="${inputStyle}">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Tenant ID</label>
+            <input id="xeroMETenant" value="${xi['Middle East']?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
+          </div>
+          <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><b style="font-size:14px;color:#1e293b">ANZ</b><label style="font-size:12px;color:#64748b;cursor:pointer;display:flex;align-items:center;gap:5px"><input type="checkbox" id="xeroANZEnabled" ${xi.ANZ?.enabled?'checked':''}> Active</label></div>
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Client ID</label>
+            <input id="xeroANZClientId" value="${xi.ANZ?.clientId||''}" style="${inputStyle}">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Client Secret</label>
+            <input id="xeroANZSecret" type="password" value="${xi.ANZ?.clientSecret||''}" style="${inputStyle}">
+            <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;display:block">Tenant ID</label>
+            <input id="xeroANZTenant" value="${xi.ANZ?.tenantId||''}" style="${inputStyle}" placeholder="Tenant UUID">
           </div>
         </div>
         <p style="font-size:12px;color:#64748b;background:#f8fafc;border-radius:6px;padding:10px;margin:0">Invoices route to the Xero instance matching the engagement entity. Mark each instance Active once credentials are configured.</p>
@@ -3413,26 +3433,43 @@ async function createUser(){
   }
 }
 function openEditUserModal(id){
-  var u=(getDB().appUsers||[]).find(function(x){return x.id===id;});
+  var u=(DB.appUsers||[]).find(function(x){return x.id===id;});
   if(!u){alert('User not found');return;}
-  var roles=['rm','ea','partner','finance','admin','ops'];
-  var rn={rm:'Relationship Manager',ea:'Executive Assistant',partner:'Partner / Director',finance:'Finance',admin:'Admin',ops:'Operations'};
-  var entities=['GMG','CMi','Merryck','Middle East','ANZ'];
-  var ropts=roles.map(function(r){return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+rn[r]+'</option>';}).join('');
-  var eopts=entities.map(function(e){return '<option value="'+e+'"'+(u.entity===e?' selected':'')+'>'+e+'</option>';}).join('');
-  var html='<div class="mhdr"><h3>Edit User</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>'
-    +'<div class="mbody">'
-    +'<div class="fg"><label>Full Name</label><input id="au-name" class="fi" value="'+(u.name||'').replace(/"/g,'&quot;')+'"></div>'
-    +'<div class="fg"><label>Role</label><select id="au-role" class="fi">'+ropts+'</select></div>'
-    +'<div class="fg"><label>Entity</label><select id="au-entity" class="fi">'+eopts+'</select></div>'
-    +'<div class="fg"><label>Partner Name</label><input id="au-partner" class="fi" value="'+(u.partnerName||'').replace(/"/g,'&quot;')+'"></div>'
-        +'<div class="fg"><label>Sales Target (£ annual)</label><input id="au-target" class="fi" type="number" min="0" placeholder="e.g. 500000" value="'+(u.salesTarget||'')+'"></div>'
-+'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
-    +'<button class="btn btn-primary" id="au-save-btn">Save</button>'
-    +'</div></div>';
-  showModal(html);
-  document.getElementById('au-save-btn').onclick=function(){saveLocalUser(id);};
+  var fi='width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:12px';
+  var la='display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px';
+  var ov=document.createElement('div');
+  ov.id='euOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML='<div style="background:white;border-radius:12px;padding:28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px"><h3 style="margin:0;font-size:17px;font-weight:700;color:#111">Edit User</h3><button onclick="document.getElementById(\'euOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af">&#215;</button></div>'
+  +'<label style="'+la+'">Full Name</label><input id="eu-name" style="'+fi+'">'
+  +'<label style="'+la+'">Email Address</label><input id="eu-email" style="'+fi+'">'
+  +'<label style="'+la+'">Job Title</label><input id="eu-title" style="'+fi+'">'
+  +'<label style="'+la+'">New Password <span style="font-size:11px;font-weight:400;color:#9ca3af">(leave blank to keep current)</span></label>'
+  +'<input id="eu-pw" type="password" placeholder="Enter new password" style="'+fi+'">'
+  +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'
+  +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+  +'<button onclick="saveEditUser(\''+id+'\')" style="padding:9px 20px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Changes</button>'
+  +'</div></div>';
+  document.body.appendChild(ov);
+  document.getElementById('eu-name').value=u.name||'';
+  document.getElementById('eu-email').value=u.email||'';
+  document.getElementById('eu-title').value=u.title||'';
+}
+function saveEditUser(id){
+  var ci=(DB.appUsers||[]).findIndex(function(x){return x.id===id;});
+  if(ci===-1){alert('User not found');return;}
+  var nm=document.getElementById('eu-name').value.trim();
+  var em=document.getElementById('eu-email').value.trim();
+  var tt=document.getElementById('eu-title').value.trim();
+  var pw=document.getElementById('eu-pw').value;
+  if(!nm||!em){alert('Name and email are required');return;}
+  DB.appUsers[ci].name=nm;
+  DB.appUsers[ci].email=em;
+  DB.appUsers[ci].title=tt;
+  if(pw)DB.appUsers[ci].password=pw;
+  save();
+  document.getElementById('euOverlay').remove();
+  renderView();
 }
 function saveLocalUser(id){
   var n=function(k){return document.getElementById(k);};
@@ -5448,7 +5485,7 @@ function saveXeroInstances(){
   DB.xeroInstances={
     GMG:{clientId:document.getElementById('xeroGMGClientId')?.value||'',clientSecret:document.getElementById('xeroGMGSecret')?.value||'',tenantId:document.getElementById('xeroGMGTenant')?.value||'',enabled:document.getElementById('xeroGMGEnabled')?.checked||false},
     CMi:{clientId:document.getElementById('xeroCMiClientId')?.value||'',clientSecret:document.getElementById('xeroCMiSecret')?.value||'',tenantId:document.getElementById('xeroCMiTenant')?.value||'',enabled:document.getElementById('xeroCMiEnabled')?.checked||false},
-    Merryck:{clientId:document.getElementById('xeroMerryckClientId')?.value||'',clientSecret:document.getElementById('xeroMerryckSecret')?.value||'',tenantId:document.getElementById('xeroMerryckTenant')?.value||'',enabled:document.getElementById('xeroMerryckEnabled')?.checked||false}
+    Merryck:{clientId:document.getElementById('xeroMerryckClientId')?.value||'',clientSecret:document.getElementById('xeroMerryckSecret')?.value||'',tenantId:document.getElementById('xeroMerryckTenant')?.value||'',enabled:document.getElementById('xeroMerryckEnabled')?.checked||false},'Middle East':{clientId:document.getElementById('xeroMEClientId')?.value||'',clientSecret:document.getElementById('xeroMESecret')?.value||'',tenantId:document.getElementById('xeroMETenant')?.value||'',enabled:document.getElementById('xeroMEEnabled')?.checked||false},ANZ:{clientId:document.getElementById('xeroANZClientId')?.value||'',clientSecret:document.getElementById('xeroANZSecret')?.value||'',tenantId:document.getElementById('xeroANZTenant')?.value||'',enabled:document.getElementById('xeroANZEnabled')?.checked||false}
   };
   save();flashBtn('saveXeroInstancesBtn');
 }
