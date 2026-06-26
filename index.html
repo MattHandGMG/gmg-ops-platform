@@ -3750,17 +3750,16 @@ function rClients(){
   var engs=db.engagements||[];
   var clients=contacts.filter(function(c){return c.type==='client';});
   var search=S.tab.clientSearch||'';
-  var filtered=clients.filter(function(c){
-    if(!search)return true;
-    var n=(c.name||c.company||''). toLowerCase();
-    var co=(c.company||''). toLowerCase();
+  var filtered=search?clients.filter(function(c){
+    var n=(c.name||c.company||'').toLowerCase();
+    var co=(c.company||'').toLowerCase();
     return n.indexOf(search.toLowerCase())>-1||co.indexOf(search.toLowerCase())>-1;
-  });
+  }):clients;
   function getStats(cId,cName){
     var chair=0,exec=0,team=0;
     engs.forEach(function(e){
       if(e.clientId===cId||e.client===cName||(e.clientName&&e.clientName===cName)){
-        var s=(e.solution||e.serviceType||e.type||''). toLowerCase();
+        var s=(e.solution||e.serviceType||e.type||'').toLowerCase();
         if(s.indexOf('chair')>-1)chair++;
         else if(s.indexOf('exec')>-1||s.indexOf('coach')>-1)exec++;
         else if(s.indexOf('team')>-1)team++;
@@ -3769,33 +3768,100 @@ function rClients(){
     });
     return {chair:chair,exec:exec,team:team,total:chair+exec+team};
   }
-  var cards=filtered.length?filtered.map(function(c){
+  function clientCard(c,isChild){
     var stats=getStats(c.id,c.name);
-    return '<div onclick="S.currentClientId=\''+c.id+'\';S.view=\'clientDetail\';renderView()" style="cursor:pointer;background:#fff;border-radius:10px;border:1px solid #e2e8f0;padding:18px 20px;display:flex;flex-direction:column;gap:10px">'+
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between">'+
-      '<div><div style="font-size:15px;font-weight:700;color:#0f172a">'+(c.company||c.name||'—')+'</div>'+
-      (c.company&&c.name?'<div style="font-size:12px;color:#64748b;margin-top:2px">'+c.name+'</div>':'')+'</div>'+
-      '<span style="background:#f0f9ff;color:#0369a1;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px">Client</span></div>'+
-      ((c.address||c.companyNumber)?'<div style="font-size:12px;color:#64748b;border-top:1px solid #f1f5f9;padding-top:8px;display:flex;flex-direction:column;gap:3px">'+
-        (c.address?'<div>📍 '+c.address+'</div>':'')+
-        (c.companyNumber?'<div>🏢 Co. No. '+c.companyNumber+'</div>':'')+
-      '</div>':'')+
-      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border-top:1px solid #f1f5f9;padding-top:10px">'+
-      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.chair+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Chair</div></div>'+
-      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.exec+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Executive</div></div>'+
-      '<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.team+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Team</div></div>'+
-      '<div style="text-align:center;background:#eef2ff;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#4f46e5">'+stats.total+'</div><div style="font-size:10px;color:#6366f1;font-weight:500">Total</div></div>'+
-      '</div>'+
-      '<div style="border-top:1px solid #f1f5f9;padding-top:8px;display:flex;align-items:center;justify-content:space-between">'+
-      '<span style="font-size:11px;color:#94a3b8">BoardEx integration coming soon</span>'+
-      '<button onclick="alert(&#39;BoardEx integration is not yet configured.&#39;)" style="font-size:11px;background:none;border:1px solid #e2e8f0;color:#0f172a;border-radius:5px;padding:4px 10px;cursor:pointer">View Board →</button></div></div>';
-  }).join(''):
-  '<div style="text-align:center;padding:48px 20px;color:#94a3b8"><div style="font-size:13px;font-weight:500">No clients found</div></div>';
+    var bdr=isChild?'border:1px solid #bfdbfe;border-left:3px solid #3b82f6':'border:1px solid #e2e8f0';
+    var ml=isChild?';margin-left:24px':'';
+    var html='<div onclick="S.currentClientId=\''+c.id+'\';S.view=\'clientDetail\';renderView()" style="cursor:pointer;background:#fff;border-radius:10px;'+bdr+';padding:18px 20px;display:flex;flex-direction:column;gap:10px'+ml+'">';
+    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between">';
+    html+='<div><div style="font-size:15px;font-weight:700;color:#0f172a">'+(c.company||c.name||'—')+'</div>';
+    if(c.company&&c.name)html+='<div style="font-size:12px;color:#64748b;margin-top:2px">'+c.name+'</div>';
+    if(isChild)html+='<div style="font-size:11px;color:#3b82f6;margin-top:3px;font-weight:600">Subsidiary</div>';
+    html+='</div>';
+    html+='<span style="background:#f0f9ff;color:#0369a1;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px">Client</span></div>';
+    if(c.address||c.companyNumber){
+      html+='<div style="font-size:12px;color:#64748b;border-top:1px solid #f1f5f9;padding-top:8px;display:flex;flex-direction:column;gap:3px">';
+      if(c.address)html+='<div>\u{1F4CD} '+c.address+'</div>';
+      if(c.companyNumber)html+='<div>\u{1F3E2} Co. No. '+c.companyNumber+'</div>';
+      html+='</div>';
+    }
+    html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;border-top:1px solid #f1f5f9;padding-top:10px">';
+    html+='<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.chair+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Chair</div></div>';
+    html+='<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.exec+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Executive</div></div>';
+    html+='<div style="text-align:center;background:#f8fafc;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#0f172a">'+stats.team+'</div><div style="font-size:10px;color:#64748b;font-weight:500">Team</div></div>';
+    html+='<div style="text-align:center;background:#eef2ff;border-radius:7px;padding:8px 4px"><div style="font-size:16px;font-weight:700;color:#4f46e5">'+stats.total+'</div><div style="font-size:10px;color:#6366f1;font-weight:500">Total</div></div>';
+    html+='</div></div>';
+    return html;
+  }
+  var parents=clients.filter(function(c){return !c.parentId;});
+  var children=clients.filter(function(c){return !!c.parentId;});
+  var html='';
+  if(search){
+    html=filtered.length?filtered.map(function(c){return clientCard(c,!!c.parentId);}).join(''):'<div style="text-align:center;padding:48px 20px;color:#94a3b8"><div style="font-size:13px;font-weight:500">No clients found</div></div>';
+  } else if(clients.length===0){
+    html='<div style="text-align:center;padding:48px 20px;color:#94a3b8"><div style="font-size:13px;font-weight:500">No clients yet. Add your first client above.</div></div>';
+  } else {
+    var groups=parents.map(function(p){
+      var pKids=children.filter(function(c){return c.parentId===p.id;});
+      var g='<div style="display:flex;flex-direction:column;gap:8px">'+clientCard(p,false);
+      pKids.forEach(function(k){g+=clientCard(k,true);});
+      g+='</div>';
+      return g;
+    });
+    var orphans=children.filter(function(c){return !parents.find(function(p){return p.id===c.parentId;});});
+    orphans.forEach(function(o){groups.push(clientCard(o,false));});
+    html=groups.join('');
+  }
+  var pCount=parents.length;
+  var cCount=children.length;
+  var subtitle=pCount+' parent compan'+(pCount!==1?'ies':'y')+(cCount?' · '+cCount+' subsidiar'+(cCount!==1?'ies':'y'):'');
   return '<div class="lc-hdr"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'+
     '<div><h2 style="margin:0;font-size:18px;font-weight:700;color:var(--txt)">Clients</h2>'+
-    '<p style="margin:4px 0 0;font-size:12px;color:var(--muted)">'+filtered.length+' client'+(filtered.length!==1?'s':'')+'</p></div>'+
-    '<input type="text" placeholder="Search clients..." value="'+(search||'')+'" oninput="S.tab.clientSearch=this.value;renderView()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;outline:none;width:200px"></div></div>'+
-  '<div style="padding:16px 20px"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">'+cards+'</div></div>';
+    '<p style="margin:4px 0 0;font-size:12px;color:var(--muted)">'+subtitle+'</p></div>'+
+    '<div style="display:flex;align-items:center;gap:10px">'+
+    '<input type="text" placeholder="Search clients..." value="'+(search||'')+'" oninput="S.tab.clientSearch=this.value;renderView()" style="padding:7px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;outline:none;width:200px">'+
+    '<button onclick="openNewClientModal()" style="padding:7px 16px;background:#CE2702;color:white;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">+ New Client</button>'+
+    '</div></div></div>'+
+  '<div style="padding:16px 20px"><div style="display:flex;flex-direction:column;gap:16px">'+html+'</div></div>';
+}
+function openNewClientModal(){
+  var db=getDB();
+  var existingClients=(db.contacts||[]).filter(function(c){return c.type==='client';});
+  var fi='width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:12px';
+  var la='display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px';
+  var ov=document.createElement('div');
+  ov.id='ncOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
+  var parentOpts='<option value="">— None (top-level parent) —</option>'+existingClients.map(function(c){return '<option value="'+c.id+'">'+(c.company||c.name||c.id)+'</option>';}).join('');
+  ov.innerHTML='<div style="background:white;border-radius:12px;padding:28px;width:480px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25);max-height:90vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">'+
+    '<h3 style="margin:0;font-size:17px;font-weight:700;color:#111">New Client</h3>'+
+    '<button onclick="document.getElementById(\'ncOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af">&#215;</button></div>'+
+    '<label style="'+la+'">Company Name *</label><input id="nc-company" style="'+fi+'" placeholder="e.g. Acme Corp">'+
+    '<label style="'+la+'">Contact Name</label><input id="nc-name" style="'+fi+'" placeholder="e.g. Jane Smith">'+
+    '<label style="'+la+'">Address</label><input id="nc-address" style="'+fi+'" placeholder="e.g. 123 High St, London">'+
+    '<label style="'+la+'">Company Number</label><input id="nc-compno" style="'+fi+'" placeholder="e.g. 12345678">'+
+    '<label style="'+la+'">Parent Company</label><select id="nc-parent" style="'+fi+'">'+parentOpts+'</select>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'+
+    '<button onclick="document.getElementById(\'ncOverlay\').remove()" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>'+
+    '<button onclick="saveNewClient()" style="padding:9px 20px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Client</button>'+
+    '</div></div>';
+  document.body.appendChild(ov);
+}
+function saveNewClient(){
+  var company=document.getElementById('nc-company').value.trim();
+  var name=document.getElementById('nc-name').value.trim();
+  var address=document.getElementById('nc-address').value.trim();
+  var compno=document.getElementById('nc-compno').value.trim();
+  var parentId=document.getElementById('nc-parent').value.trim();
+  if(!company){alert('Company name is required');return;}
+  var nc={id:'client_'+Date.now(),type:'client',company:company,name:name,address:address,companyNumber:compno};
+  if(parentId)nc.parentId=parentId;
+  if(!DB.contacts)DB.contacts=[];
+  DB.contacts.push(nc);
+  save();
+  document.getElementById('ncOverlay').remove();
+  renderView();
 }
 function rProcurement(){
   var tab=S.tab.procEnt||'GMG';
@@ -3886,6 +3952,9 @@ function rClientDetail(c){
   var engs=(db.engagements||DB.engagements||[]).filter(function(e){return ct.company&&e.client&&e.client.toLowerCase().indexOf(ct.company.toLowerCase())>-1;});
   var deals=(DB.opportunities||[]).filter(function(o){return ct.company&&o.client&&o.client.toLowerCase().indexOf(ct.company.toLowerCase())>-1;});
   var ptnr=engs.length?(engs[0].partner||engs[0].owner||'—'):'—';
+  var _allCts=(db.contacts||[]).filter(function(c){return c.type==='client';});
+  var _parentCt=ct.parentId?(_allCts.find(function(c){return c.id===ct.parentId;})||null):null;
+  var _childCts=_allCts.filter(function(c){return c.parentId===ctId;});
   function fld(l,v){return '<tr><td style="color:#64748b;font-size:13px;padding:7px 0;width:40%;border-bottom:1px solid #f8fafc">'+l+'</td><td style="font-size:13px;padding:7px 0;border-bottom:1px solid #f8fafc">'+(v||'<span style="color:#94a3b8">—</span>')+'</td></tr>';}
   var cR=fld('Name',ct.name)+fld('Role',ct.role)+fld('Email',ct.email||ct.mail)+fld('Phone',ct.phone||ct.mobile)+fld('Company',ct.company)+fld('Country',ct.country);
   var coR=fld('Address',ct.address||ct.addr)+fld('Co. No.',ct.companyNo||ct.num)+fld('Registered In',ct.registeredIn||ct.reg)+fld('Website',ct.website);
@@ -3899,12 +3968,14 @@ function rClientDetail(c){
     '<button onclick="S.clientTab=\'overview\';renderView()" style="padding:12px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:none;border-bottom:'+(S.clientTab==='overview'?'3px solid #CE2702;color:#CE2702':'3px solid transparent;color:#6b7280')+'">Overview</button>'+
     '<button onclick="S.clientTab=\'org\';renderView()" style="padding:12px 20px;font-size:13px;font-weight:600;border:none;cursor:pointer;background:none;border-bottom:'+(S.clientTab==='org'?'3px solid #CE2702;color:#CE2702':'3px solid transparent;color:#6b7280')+'">Company Org</button>'+
     '</div>';
-  if(S.clientTab==='org'){c.innerHTML=_tn+rClientOrgChart(ctId,ct);return;}
+  if(S.clientTab==='org'){var _og='';if(_parentCt)_og+='<div style="padding:10px 20px;background:#f0f9ff;border-bottom:1px solid #bae6fd;font-size:13px;color:#0369a1">Part of: <button onclick="S.currentClientId=\''+_parentCt.id+'\';renderView()" style="background:none;border:none;color:#0369a1;font-weight:700;cursor:pointer;font-size:13px;padding:0;text-decoration:underline">'+(_parentCt.company||_parentCt.name||'')+'</button></div>';if(_childCts.length)_og+='<div style="padding:10px 20px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;font-size:13px;color:#15803d"><span style="font-weight:600">Subsidiaries: </span>'+_childCts.map(function(sc){return '<button onclick="S.currentClientId=\''+sc.id+'\';renderView()" style="background:none;border:none;color:#15803d;font-weight:700;cursor:pointer;font-size:13px;padding:0 8px 0 0;text-decoration:underline">'+(sc.company||sc.name||'—')+'</button>';}).join('')+'</div>';c.innerHTML=_tn+_og+rClientOrgChart(ctId,ct);return;}
   c.innerHTML=_tn+'<div style="padding:24px;max-width:1100px">'+
   '<div style="display:flex;align-items:center;gap:14px;margin-bottom:28px">'+
   '<button onclick="S.view=\'clients\';renderView()" style="padding:7px 14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font-size:13px;color:#374151">&#8592; Clients</button>'+
   '<div><h2 style="margin:0;font-size:20px;color:var(--txt)">'+(ct.name||'Client')+'</h2>'+
   '<p style="margin:2px 0 0;font-size:13px;color:var(--muted)">'+(ct.company||'')+(ct.role?' · '+ct.role:'')+'</p></div></div>'+
+  +(_parentCt?'<div style="margin-bottom:14px;padding:9px 16px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:13px;color:#0369a1;display:flex;align-items:center;gap:6px">Part of: <button onclick="S.currentClientId=\''+_parentCt.id+'\';renderView()" style="background:none;border:none;color:#0369a1;font-weight:700;cursor:pointer;font-size:13px;padding:0;text-decoration:underline">'+(_parentCt.company||_parentCt.name||'')+'</button></div>':'')+
+  +(_childCts.length?'<div style="margin-bottom:14px;padding:9px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#15803d"><span style="font-weight:600">Subsidiaries: </span>'+_childCts.map(function(sc){return '<button onclick="S.currentClientId=\''+sc.id+'\';renderView()" style="background:none;border:none;color:#15803d;font-weight:700;cursor:pointer;font-size:13px;padding:0 8px 0 0;text-decoration:underline">'+(sc.company||sc.name||'—')+'</button>';}).join('')+'</div>':'')+
   '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+
   '<div>'+
   '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:20px;margin-bottom:20px">'+
