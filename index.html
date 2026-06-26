@@ -4341,7 +4341,7 @@ function saveClientEdit(ctId){
     partners:selectedPartners,partner:selectedPartners[0]||''
   });
   localStorage.setItem('gmg_v2',JSON.stringify(db));
-  document.getElementById(\'client-edit-ov\').remove();
+  document.getElementById('client-edit-ov').remove();
   S.view='clientDetail';
   renderView();
 }
