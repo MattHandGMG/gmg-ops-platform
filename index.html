@@ -3042,6 +3042,99 @@ function rProposalGen(c){
     +'</div>';
 }
 
+
+function saveProposal(){
+  var d=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;});
+  if(!d||!window._generatedProposal)return;
+  if(!DB.proposals)DB.proposals=[];
+  DB.proposals.push({
+    id:'prop_'+Date.now(),
+    dealId:d.id,
+    dealName:d.name||'',
+    client:d.client||'',
+    solution:d.solution||'',
+    partner:d.partner||'',
+    country:d.country||'',
+    content:window._generatedProposal,
+    createdAt:new Date().toISOString().slice(0,10),
+    createdBy:(S.user||{}).name||''
+  });
+  save();
+  alert('Proposal saved to the Proposals database!');
+  var btn=document.getElementById('propSaveBtn');
+  if(btn)btn.style.display='none';
+}
+
+
+function viewProposalDetail(id){
+  var p=(DB.proposals||[]).find(function(pr){return pr.id===id;});
+  if(!p)return;
+  var bg=document.createElement('div');
+  bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px';
+  bg.innerHTML=`<div style="background:#fff;border-radius:8px;max-width:800px;width:100%;padding:32px;position:relative">
+<button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>
+<h2 style="margin-top:0">${p.dealName}</h2>
+<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666">
+<span><b>Client:</b> ${p.client}</span>
+<span><b>Solution:</b> ${p.solution}</span>
+<span><b>Partner:</b> ${p.partner}</span>
+<span><b>Created:</b> ${p.createdAt} by ${p.createdBy}</span>
+</div>
+<hr style="margin:12px 0">
+<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#333">${p.content}</div>
+<div style="margin-top:16px;display:flex;gap:8px">
+<button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>
+<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==+p.id+;});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById(${main}))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>
+</div>
+</div>`
+  document.body.appendChild(bg);
+  bg.onclick=function(e){if(e.target===bg)bg.remove();};
+}
+
+function rProposals(c){
+  if(!DB.proposals)DB.proposals=[];
+  var proposals=DB.proposals;
+  if(!S.propFilter)S.propFilter={};
+  var fClient=S.propFilter.client||'';
+  var fSol=S.propFilter.solution||'';
+  var fPart=S.propFilter.partner||'';
+  var fSearch=S.propFilter.search||'';
+  var clients=[...new Set(proposals.map(function(p){return p.client;}).filter(Boolean))].sort();
+  var solutions=[...new Set(proposals.map(function(p){return p.solution;}).filter(Boolean))].sort();
+  var partners=[...new Set(proposals.map(function(p){return p.partner;}).filter(Boolean))].sort();
+  var filtered=proposals.filter(function(p){
+    if(fClient&&p.client!==fClient)return false;
+    if(fSol&&p.solution!==fSol)return false;
+    if(fPart&&p.partner!==fPart)return false;
+    if(fSearch){var q=fSearch.toLowerCase();if(!(p.dealName.toLowerCase().includes(q)||p.content.toLowerCase().includes(q)))return false;}
+    return true;
+  }).sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
+  var selOpt=function(arr,cur){return arr.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');};
+  c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between"><h2>Proposals &amp; Pitches</h2><span style="font-size:12px;color:#888">'+filtered.length+' of '+proposals.length+' records</span></div>'
+  +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">'
+  +'<input type="text" placeholder="Search proposals..." value="'+fSearch+'" oninput="S.propFilter.search=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:180px">'
+  +'<select onchange="S.propFilter.client=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Clients</option>'+selOpt(clients,fClient)+'</select>'
+  +'<select onchange="S.propFilter.solution=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Solutions</option>'+selOpt(solutions,fSol)+'</select>'
+  +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
+  +(filtered.length===0?'</div><div style="text-align:center;color:#aaa;padding:60px 20px;font-size:14px">No proposals found.<br><small>Generate proposals from pipeline deals in Stage 3 (Mentee Identified).</small></div>'
+  :'</div>'+filtered.map(function(p){
+    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail('+p.id+')">'
+      +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
+      +'<h3 style="margin:0;font-size:14px">'+p.dealName+'</h3>'
+      +'<span style="font-size:11px;color:#888">'+p.createdAt+'</span>'
+      +'</div>'
+      +'<div class="card-body" style="font-size:12px">'
+      +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;color:#555">'
+      +'<span><b>Client:</b> '+p.client+'</span>'
+      +'<span><b>Solution:</b> '+p.solution+'</span>'
+      +'<span><b>Partner:</b> '+p.partner+'</span>'
+      +(p.country?'<span><b>Country:</b> '+p.country+'</span>':'')
+      +'</div>'
+      +'<div style="color:#888;font-size:11px;overflow:hidden;max-height:40px">'+p.content.slice(0,180)+'...</div>'
+      +'</div></div>';
+  }).join(''));
+}
+
 function rAdmin(c){
   const users=DB.appUsers||[];
   const rawOpts=DB.pricingOptions||[];
