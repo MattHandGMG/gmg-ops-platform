@@ -3438,7 +3438,7 @@ const xi=DB.xeroInstances||{};
   const auditHtml=auditLog.length===0
     ?`<div style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic;font-size:13px">No audit events recorded yet.</div>`
     :auditLog.slice(-20).reverse().map(a=>`<div style="display:flex;gap:16px;padding:10px 0;border-bottom:1px solid #f5f3f0;font-size:12px"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${a.ts||''}</span><span style="color:var(--nearblack)">${a.action||''}</span><span style="color:var(--muted)">${a.user||''}</span></div>`).join('');
-  const var tabProposals=(function(){
+  var tabProposals=(function(){
   var apiKey=(DB.settings||{}).proposalApiKey||'';
   var propPrompt=(DB.settings||{}).proposalPrompt||'';
   return '<div class="card" style="margin-bottom:16px">'
@@ -3446,13 +3446,13 @@ const xi=DB.xeroInstances||{};
     +'<div class="card-body">'
     +'<div class="fg">'
     +'<label style="font-weight:600;font-size:12px">Claude API Key</label>'
-    +'<input type="password" id="adminProposalKey" value="'+apiKey+'" placeholder="sk-ant-api03-..." style="font-family:monospace;width:100%;margin-top:4px;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px" oninput="saveAdminSetting('proposalApiKey',this.value)">'
+    +'<input type="password" id="adminProposalKey" value="'+apiKey+'" placeholder="sk-ant-api03-..." style="font-family:monospace;width:100%;margin-top:4px;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px" oninput="saveAdminSetting(\'proposalApiKey\',this.value)">'
     +'<small style="color:#888;font-size:11px">Required to generate proposals via Claude AI. Get yours at console.anthropic.com</small>'
     +'</div>'
     +'<div class="fg" style="margin-top:14px">'
     +'<label style="font-weight:600;font-size:12px">Proposal Prompt Template</label>'
     +'<p style="font-size:11px;color:#888;margin:4px 0 6px">Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {mentee} {notes}</p>'
-    +'<textarea id="adminProposalPrompt" rows="10" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical" oninput="saveAdminSetting('proposalPrompt',this.value)">'+propPrompt+'</textarea>'
+    +'<textarea id="adminProposalPrompt" rows="10" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical" oninput="saveAdminSetting(\'proposalPrompt\',this.value)">'+propPrompt+'</textarea>'
     +'</div>'
     +'</div>'
     +'</div>';
