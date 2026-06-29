@@ -358,6 +358,7 @@ input,select,textarea{font-family:inherit;outline:none}
   <div class="sb-nav">
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">◉</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">◆</span>Pipeline</div>
+    <div class="sb-item" data-v="proposals" onclick="nav(this)"><span class="ic">📋</span>Proposals</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">◈</span>Engagements</div>
     <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">◉</span>Clients</div>    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">◉</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">▦</span>Project Management</div>
@@ -2261,7 +2262,7 @@ function _dashSelector(){
   var svcSel='';
   if(t==='service'){
     var sv=window._gmgDash.svc||'all';
-    var svcs=[['all','All Services'],['executive','Executive Coaching'],['leadership','Leadership Dev'],['chair','Chair Mentoring'],['team','Team Effectiveness'],['group','Group Mentoring']];
+    var svcs=[['all','All Services'],['chair','Chair Mentoring'],['executive','Executive Mentoring'],['team','Team/Cohort'],['path2power','Path2Power'],['emerging','Emerging Leaders'],['bap','BAP']];
     var sopts=svcs.map(function(s){return '<option value="'+s[0]+'"'+(s[0]===sv?' selected':'')+'>'+s[1]+'</option>';}).join('');
     svcSel='<select onchange="window._gmgDash.svc=this.value;renderView()" style="border:1.5px solid #e2e8f0;border-radius:8px;padding:5px 10px;font-size:13px;background:#fff;cursor:pointer;color:#1e293b">'+sopts+'</select>';
   }
@@ -5876,8 +5877,7 @@ function rPipeline(c){
             return`<div class="lc-card" draggable="true" ondragstart="event.dataTransfer.setData('dealId','${o.id}');event.stopPropagation()" onclick="openDealModal('${o.id}')">
               <div class="lc-card-name">${o.name}</div>
               <div class="lc-card-meta">${o.client||'—'}<br>${o.partner||'—'} · ${o.country||'—'}</div>
-              <div class="lc-card-val">${fmt(o.value)}</div>${o.closeDate?'\n              <div style="font-size:11px;color:#94a3b8;margin-top:3px">Close: '+o.closeDate+'</div>':''}
-              ${stage==='Mentee Identified'?'<div style="margin:6px 0 2px;padding-top:6px;border-top:1px solid #e2e8f0"><button data-deal="'+o.id+'" onclick="event.stopPropagation();openProposalPage(this.dataset.deal)" style="width:100%;background:#e74c3c;color:#fff;border:none;padding:4px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-weight:600">&#128196; Generate Proposal/Pitch</button></div>':''}<div class="lc-card-tags"><span class="badge ${tb}" style="font-size:9px">${o.solution}</span></div>
+              <div class="lc-card-val">${fmt(o.value)}</div>${o.closeDate?'\n              <div style="font-size:11px;color:#94a3b8;margin-top:3px">Close: '+o.closeDate+'</div>':''}<div class="lc-card-tags"><span class="badge ${tb}" style="font-size:9px">${o.solution}</span></div>
             </div>`;
           }).join('')}
           <button class="lc-add" onclick="openDealModal(null,'${stage}')">+ Add</button>
@@ -5900,9 +5900,10 @@ function openDealModal(id,defaultStage){
       <div class="fg"><label>Solution</label><select id="dm-sol">
         <option value="chair"${o&&o.solution==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!o||o.solution==='executive'?' selected':''}>Executive Mentoring</option>
-        <option value="team"${o&&o.solution==='team'?' selected':''}>Team Engagement</option>
-        <option value="bap"${o&&o.solution==='bap'?' selected':''}>Board Advisor Programme (BAP)</option>
+        <option value="team"${o&&o.solution==='team'?' selected':''}>Team/Cohort</option>
+        <option value="bap"${o&&o.solution==='bap'?' selected':''}>BAP</option>
         <option value="path2power"${o&&o.solution==='path2power'?' selected':''}>Path2Power</option>
+        <option value="emerging"${o&&o.solution==='emerging'?' selected':''}>Emerging Leaders</option>
       </select></div>
     </div>
     <div class="fgrow">
@@ -5927,6 +5928,7 @@ function openDealModal(id,defaultStage){
     ${renderComments('pipeline',id)}
     ${o&&o.stage==='Closed Won'?renderDealBilling(o):''}
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+      ${o&&o.stage==='Mentee Identified'?'<button class="btn btn-primary" style="background:#e74c3c;color:#fff;border-color:#e74c3c;margin-right:auto" onclick="openProposalPage(\''+id+'\')">&#128196; Generate Proposal / Pitch</button>':''}
       ${o&&o.stage==='Closed Won'?'<button class="btn btn-primary" style="background:#059669;color:#fff;border-color:#059669;margin-right:auto" onclick="makeEngLive(\''+id+'\')">Make Engagement Live</button>':''}
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveDeal('${id||''}')">Save Deal</button>
@@ -7571,9 +7573,10 @@ function openEngModal(id){
       <div class="fg"><label>Type</label><select id="em-type" onchange="toggleEngTypeFields(this.value)">
         <option value="chair"${e&&e.type==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!e||e.type==='executive'?' selected':''}>Executive Mentoring</option>
-        <option value="team"${e&&e.type==='team'?' selected':''}>Team Engagement</option>
-        <option value="bap"${e&&e.type==='bap'?' selected':''}>Board Advisor Programme (BAP)</option>
+        <option value="team"${e&&e.type==='team'?' selected':''}>Team/Cohort</option>
+        <option value="bap"${e&&e.type==='bap'?' selected':''}>BAP</option>
         <option value="path2power"${e&&e.type==='path2power'?' selected':''}>Path2Power</option>
+        <option value="emerging"${e&&e.type==='emerging'?' selected':''}>Emerging Leaders</option>
       </select></div>
       <div class="fg"><label>Status</label><select id="em-status">
         <option value="planning"${e&&e.status==='planning'?' selected':''}>Planning</option>
