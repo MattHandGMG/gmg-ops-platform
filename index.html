@@ -5251,7 +5251,28 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
       </div>
     </div>
   </div>
+  ${e.type==='bap'?`
   <div class="card">
+    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <h3>Speaker Fees</h3>
+      <button class="btn btn-sm" onclick="addSpeakerFee('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Add Speaker Fee</button>
+    </div>
+    <div class="card-body">
+      ${(e.speakerFees||[]).length===0?'<p style="color:var(--muted);font-size:13px">No speaker fees added yet.</p>':
+        `<table class="tbl"><thead><tr><th>Speaker</th><th>Date</th><th>Amount</th><th>Notes</th><th></th></tr></thead><tbody>
+          ${(e.speakerFees||[]).map(f=>`<tr>
+            <td>${f.speaker||'-'}</td>
+            <td>${f.date||'-'}</td>
+            <td>£${(f.amount||0).toLocaleString()}</td>
+            <td>${f.notes||'-'}</td>
+            <td><button onclick="deleteSpeakerFee('${id}','${f.id}')" style="color:var(--venetian);background:none;border:none;cursor:pointer;padding:2px 6px">✕</button></td>
+          </tr>`).join('')}
+        </tbody></table>`
+      }
+    </div>
+  </div>
+`:''}
+<div class="card">
     <div class="card-hdr"><h3>Sessions</h3></div>
     <div class="card-body">
       ${sessions.length===0?'<p style="color:var(--muted);font-size:13px">No sessions logged yet.</p>':
@@ -5266,6 +5287,32 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
         </tbody></table>`}
     </div>
   </div>`;
+}
+
+function addSpeakerFee(engId){
+  const speaker=prompt('Speaker name:');
+  if(!speaker||!speaker.trim())return;
+  const amount=parseFloat(prompt('Fee amount (£):')||'0')||0;
+  const date=prompt('Date (YYYY-MM-DD):',new Date().toISOString().slice(0,10))||'';
+  const notes=prompt('Notes (optional):','')||'';
+  const db=getDB();
+  const e=db.engagements.find(x=>x.id===engId);
+  if(!e)return;
+  if(!e.speakerFees)e.speakerFees=[];
+  e.speakerFees.push({id:'sf_'+Date.now(),speaker:speaker.trim(),amount,date,notes});
+  save(db);
+  DB=getDB();
+  rEngDetail(engId);
+}
+function deleteSpeakerFee(engId,feeId){
+  if(!confirm('Delete this speaker fee?'))return;
+  const db=getDB();
+  const e=db.engagements.find(x=>x.id===engId);
+  if(!e||!e.speakerFees)return;
+  e.speakerFees=e.speakerFees.filter(f=>f.id!==feeId);
+  save(db);
+  DB=getDB();
+  rEngDetail(engId);
 }
 
 function rProjTasks(body,e,tasks){
