@@ -2958,7 +2958,34 @@ function saveAdminSetting(key,val){
   save();
 }
 
+function handlePropLayoutUpload(input,type){
+  var file=input.files[0];
+  if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var key=type==='proposal'?'proposalLayoutTemplate':'pitchLayoutTemplate';
+    saveAdminSetting(key,e.target.result);
+    saveAdminSetting(type==='proposal'?'proposalLayoutFilename':'pitchLayoutFilename',file.name);
+    alert(type.charAt(0).toUpperCase()+type.slice(1)+' layout template uploaded!');
+    rAdmin(document.getElementById('content'));
+  };
+  reader.readAsDataURL(file);
+}
+function downloadPropAsPdf(type){
+  var result=document.getElementById('propResult');
+  if(!result)return;
+  var content=result.innerText||result.textContent||'';
+  if(!content.trim()){alert('Nothing to download yet.');return;}
+  var deal=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;})||{};
+  var title=(type==='proposal'?'Proposal':'Pitch')+' — '+(deal.name||'Deal');
+  var html='<!DOCTYPE html><html><head><title>'+title+'</title><style>body{font-family:Arial,sans-serif;margin:40px;line-height:1.7;color:#1a1a2e;}h1{color:#1a1a2e;border-bottom:2px solid #1a1a2e;padding-bottom:8px;}pre{white-space:pre-wrap;font-family:inherit;font-size:14px;}@media print{body{margin:20px;}}</style></head><body><h1>'+title+'</h1><pre>'+content.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';
+  var win=window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){win.print();},500);
+}
 function openProposalPage(dealId){
+  closeModal();
   S.proposalDealId=dealId;
   S.selectedDeal=null;
   S.view='proposalGen';
@@ -3034,7 +3061,8 @@ function rProposalGen(c){
     +'<div class="card"><div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
     +'<h3>'+(isp?'Proposal':'Pitch')+' Output</h3>'
     +'<button onclick="savePropResult(\''+S.proposalDealId+'\',\''+S.propTab+'\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">💾 Save to Library</button>'
-    +'</div><div class="card-body">'
+    
+    +'<button onclick="downloadPropAsPdf(\''+S.propTab+'\')" style="background:#27ae60;border:none;color:#fff;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;margin-left:8px">⬇ Download PDF</button>'+'</div><div class="card-body">'
     +(lTmpl?'<div style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-bottom:12px">'+lTmpl+'</div>':'')
     +'<div id="propResult" contenteditable="true" style="min-height:240px;border:1px solid #ddd;border-radius:4px;padding:14px;font-size:13px;line-height:1.8;outline:none;white-space:pre-wrap;background:#fafafa">'+esc(savedResult)+'</div>'
     +'</div></div>'
@@ -3462,12 +3490,18 @@ const xi=DB.xeroInstances||{};
     +'<div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px"><p style="margin:0 0 8px;font-weight:600;color:#374151;font-size:13px">Proposal &amp; Pitch Prompt Templates</p>'
     +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Proposal Prompt Template</label>'
     +'<textarea style="width:100%;height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {notes}" oninput="saveAdminSetting(\'proposalPromptTemplate\',this.value)">'+(DB.settings&&DB.settings.proposalPromptTemplate||'')+'</textarea>'
-    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Proposal Layout Template <small style="color:#888;font-weight:400">(optional HTML shown above output)</small></label>'
-    +'<textarea style="width:100%;height:60px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Optional HTML layout. Leave blank to show output directly." oninput="saveAdminSetting(\'proposalLayoutTemplate\',this.value)">'+(DB.settings&&DB.settings.proposalLayoutTemplate||'')+'</textarea>'
+    +'<label style="font-weight:600;display:block;margin-bottom:4px">Proposal Layout Template (PDF)<small style="color:#888;font-weight:400"> (upload a PDF to use as visual reference)</small></label>'
+    +'<div style="border:1px solid #ddd;border-radius:4px;padding:8px;">'
+    +(settings.proposalLayoutTemplate?'<p style="margin:0 0 6px;color:#27ae60;font-size:13px">&#10003; '+((settings.proposalLayoutFilename)||'PDF uploaded')+' &nbsp;<button onclick="saveAdminSetting(\'proposalLayoutTemplate\',\'\');saveAdminSetting(\'proposalLayoutFilename\',\'\');rAdmin(document.getElementById(\'content\'))" style="color:#e74c3c;background:none;border:none;cursor:pointer;font-size:11px">Remove</button></p>':'')
+    +'<input type="file" accept="application/pdf" onchange="handlePropLayoutUpload(this,\'proposal\')" style="font-size:12px">'
+    +'</div>''
     +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Pitch Prompt Template</label>'
     +'<textarea style="width:100%;height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {notes}" oninput="saveAdminSetting(\'pitchPromptTemplate\',this.value)">'+(DB.settings&&DB.settings.pitchPromptTemplate||'')+'</textarea>'
-    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Pitch Layout Template <small style="color:#888;font-weight:400">(optional HTML shown above output)</small></label>'
-    +'<textarea style="width:100%;height:60px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Optional HTML layout. Leave blank to show output directly." oninput="saveAdminSetting(\'pitchLayoutTemplate\',this.value)">'+(DB.settings&&DB.settings.pitchLayoutTemplate||'')+'</textarea>'
+    +'<label style="font-weight:600;display:block;margin-bottom:4px">Pitch Layout Template (PDF)<small style="color:#888;font-weight:400"> (upload a PDF to use as visual reference)</small></label>'
+    +'<div style="border:1px solid #ddd;border-radius:4px;padding:8px;">'
+    +(settings.pitchLayoutTemplate?'<p style="margin:0 0 6px;color:#27ae60;font-size:13px">&#10003; '+((settings.pitchLayoutFilename)||'PDF uploaded')+' &nbsp;<button onclick="saveAdminSetting(\'pitchLayoutTemplate\',\'\');saveAdminSetting(\'pitchLayoutFilename\',\'\');rAdmin(document.getElementById(\'content\'))" style="color:#e74c3c;background:none;border:none;cursor:pointer;font-size:11px">Remove</button></p>':'')
+    +'<input type="file" accept="application/pdf" onchange="handlePropLayoutUpload(this,\'pitch\')" style="font-size:12px">'
+    +'</div>''
     +'</div>'
     +'</div>'
     +'</div>';
@@ -5310,6 +5344,12 @@ function rProjects(c){
   }
 }
 
+function initPlanSections(e){if(!e.planSections){e.planSections=[{id:"planning",name:"Planning & Design",icon:"📋",color:"#3498db",open:true,tasks:[]},{id:"delivery",name:"Workshop & Delivery",icon:"🚀",color:"#27ae60",open:true,tasks:[]},{id:"wrapup",name:"Wrap Up & Complete",icon:"✅",color:"#8e44ad",open:true,tasks:[]}];}return e.planSections;}
+function togglePlanSection(eId,sId){var e=(DB.engagements||[]).find(function(x){return x.id===eId;});if(!e)return;initPlanSections(e);var s=e.planSections.find(function(x){return x.id===sId;});if(s)s.open=!s.open;saveDB();var el=document.getElementById("projPlanBody");if(el)rProjPlan(el,e);}
+function addPlanTask(eId,sId){var text=prompt("New task:");if(!text||!text.trim())return;var e=(DB.engagements||[]).find(function(x){return x.id===eId;});if(!e)return;initPlanSections(e);var s=e.planSections.find(function(x){return x.id===sId;});if(!s)return;s.tasks.push({id:"pt_"+Date.now(),text:text.trim(),status:"todo"});saveDB();var el=document.getElementById("projPlanBody");if(el)rProjPlan(el,e);}
+function togglePlanTask(eId,sId,tId){var e=(DB.engagements||[]).find(function(x){return x.id===eId;});if(!e)return;var s=(e.planSections||[]).find(function(x){return x.id===sId;});if(!s)return;var t=s.tasks.find(function(x){return x.id===tId;});if(t)t.status=t.status==="done"?"todo":"done";saveDB();var el=document.getElementById("projPlanBody");if(el)rProjPlan(el,e);}
+function deletePlanTask(eId,sId,tId){if(!confirm("Delete this task?"))return;var e=(DB.engagements||[]).find(function(x){return x.id===eId;});if(!e)return;var s=(e.planSections||[]).find(function(x){return x.id===sId;});if(!s)return;s.tasks=s.tasks.filter(function(x){return x.id!==tId;});saveDB();var el=document.getElementById("projPlanBody");if(el)rProjPlan(el,e);}
+function rProjPlan(body,e){var sections=initPlanSections(e);var h="<div id=\"projPlanBody\" style=\"padding:16px\">";sections.forEach(function(sec){var done=sec.tasks.filter(function(t){return t.status==="done";}).length;var total=sec.tasks.length;var pct=total>0?Math.round((done/total)*100):0;h+="<div style=\"background:#fff;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)\">";h+="<div onclick=\"togglePlanSection('"+e.id+"','"+sec.id+"')\" style=\"display:flex;align-items:center;padding:14px 16px;cursor:pointer;background:"+sec.color+"0f;border-left:4px solid "+sec.color+";user-select:none\">";h+="<span style=\"font-size:18px;margin-right:10px\">"+sec.icon+"</span>";h+="<span style=\"font-weight:700;font-size:14px;color:#1a1a2e;flex:1\">"+sec.name+"</span>";if(total>0)h+="<span style=\"font-size:12px;color:"+sec.color+";margin-right:10px;font-weight:600\">"+done+" / "+total+" done</span>";h+="<span style=\"color:"+sec.color+";font-size:12px\">"+(sec.open?"▼":"▶")+"</span>";h+="</div>";if(total>0){h+="<div style=\"height:3px;background:#f0f0f0\"><div style=\"height:3px;background:"+sec.color+";width:"+pct+"%\"></div></div>";}if(sec.open){h+="<div style=\"padding:4px 0\">";if(sec.tasks.length===0){h+="<p style=\"color:#bbb;font-size:13px;margin:12px 16px;text-align:center\">No tasks yet — add one below.</p>";}sec.tasks.forEach(function(t){var d=t.status==="done";h+="<div style=\"display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid #f8f8f8\">";h+="<input type=\"checkbox\" "+(d?"checked ":"")+"onchange=\"togglePlanTask('"+e.id+"','"+sec.id+"','"+t.id+"')\" style=\"width:16px;height:16px;margin-right:12px;cursor:pointer;accent-color:"+sec.color+"\">";h+="<span style=\"flex:1;font-size:13px;"+(d?"text-decoration:line-through;color:#bbb":"color:#1a1a2e")+"\">"+t.text+"</span>";h+="<button onclick=\"deletePlanTask('"+e.id+"','"+sec.id+"','"+t.id+"')\" style=\"background:none;border:none;color:#ddd;cursor:pointer;font-size:13px;padding:2px 6px\" title=\"Remove\">✕</button>";h+="</div>";});h+="<div style=\"padding:10px 16px\">";h+="<button onclick=\"addPlanTask('"+e.id+"','"+sec.id+"')\" style=\"width:100%;padding:8px;background:none;border:1px dashed #ddd;border-radius:5px;color:#aaa;cursor:pointer;font-size:12px;font-weight:500\">+ Add Task</button>";h+="</div>";h+="</div>";}h+="</div>";});h+="</div>";body.innerHTML=h;}
 function rProjectDetail(c, engId){
   const e=DB.engagements.find(x=>x.id===engId);
   if(!e){S.tab.projDetail='';renderView();return;}
@@ -5332,7 +5372,8 @@ function rProjectDetail(c, engId){
     {id:'overview',label:'Overview'},
     {id:'gantt',label:'Gantt'},
     {id:'calendar',label:'Calendar'},
-    {id:'financials',label:'Financials'}
+    {id:'financials',label:'Financials'},
+    {id:'plan',label:'Plan'}
   ];
 
   c.innerHTML=`
@@ -5406,6 +5447,7 @@ function rProjectDetail(c, engId){
   else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
   else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
   else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
+  else if(tab==='plan') rProjPlan(body,e);
 
   // Comments card
   var _pc=document.createElement('div');
