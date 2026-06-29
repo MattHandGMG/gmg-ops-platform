@@ -3056,10 +3056,10 @@ function rProposals(c){
   var selOpt=function(arr,cur){return arr.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');};
   c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between"><h2>Proposals &amp; Pitches</h2><span style="font-size:12px;color:#888">'+filtered.length+' of '+proposals.length+' records</span></div>'
   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">'
-  +'<input type="text" placeholder="Search proposals..." value="'+fSearch+'" oninput="S.propFilter.search=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:180px">'
-  +'<select onchange="S.propFilter.client=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Clients</option>'+selOpt(clients,fClient)+'</select>'
-  +'<select onchange="S.propFilter.solution=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Solutions</option>'+selOpt(solutions,fSol)+'</select>'
-  +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
+  +'<input type="text" placeholder="Search proposals..." value="'+fSearch+'" oninput="S.propFilter.search=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:180px">'
+  +'<select onchange="S.propFilter.client=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Clients</option>'+selOpt(clients,fClient)+'</select>'
+  +'<select onchange="S.propFilter.solution=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Solutions</option>'+selOpt(solutions,fSol)+'</select>'
+  +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
   +(filtered.length===0?'</div><div style="text-align:center;color:#aaa;padding:60px 20px;font-size:14px">No proposals found.<br><small>Generate proposals from pipeline deals in Stage 3 (Mentee Identified).</small></div>'
   :'</div>'+filtered.map(function(p){
     return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail(''+p.id+'')">'
