@@ -4395,7 +4395,8 @@ function rEngDetail(id){
     ${action||''}
   </div>`;
 
-  const sessHtml=e.type!=='chair'?'':(enSess.length===0
+    const speakerFeesHtml=e.type!=='bap'?'':(function(){var fees=e.speakerFees||[];var rows=fees.map(function(f){return'<tr><td>'+(f.speaker||'-')+'</td><td>'+(f.date||'-')+'</td><td>£'+(f.amount||0).toLocaleString()+'</td><td>'+(f.notes||'-')+'</td><td><button data-eng="'+id+'" data-fee="'+f.id+'" onclick="deleteSpeakerFee(this.dataset.eng,this.dataset.fee)" style="color:var(--venetian);background:none;border:none;cursor:pointer">✕</button></td></tr>';}).join('');return'<div style="background:#fff;border-radius:10px;border:1px solid var(--border);margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)"><h4 style="margin:0;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Speaker Fees</h4><button data-eng="'+id+'" onclick="addSpeakerFee(this.dataset.eng)" style="background:var(--venetian);color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer">+ Add Speaker Fee</button></div><div style="padding:16px 20px">'+(fees.length?'<table class="tbl"><thead><tr><th>Speaker</th><th>Date</th><th>Amount</th><th>Notes</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>':'<p style="color:var(--muted);font-size:13px;margin:0">No speaker fees added yet.</p>')+'</div></div>';})();
+const sessHtml=e.type!=='chair'?'':(enSess.length===0
     ?`<div style="text-align:center;padding:28px 0;color:var(--muted);font-size:12px;font-style:italic">No sessions logged yet. Sessions are added by assistants and confirmed via the mobile app.</div>`
     :enSess.map((s,i)=>{
       const sc={completed:'#059669',scheduled:'#D97706',cancelled:'#9CA3AF'}[s.status]||'#9CA3AF';
@@ -4599,7 +4600,8 @@ function rEngDetail(id){
         ${sessHtml}
       </div>`:''}
 
-      <!-- Invoices & Payments -->
+            ${speakerFeesHtml}
+<!-- Invoices & Payments -->
       <div style="background:#fff;border-radius:10px;border:1px solid var(--border);padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         ${sectionHeader('Invoices & Payments',e.solution==='chair'?`<button class="btn btn-sm" onclick="openInvoiceModal(null,'${id}')" style="font-size:11px">+ New Invoice</button>`:'')}
         ${invHtml}${payHtml}
@@ -5251,27 +5253,7 @@ function rProjOverview(body,e,client,mentor,stages,tasks,sessions){
       </div>
     </div>
   </div>
-  ${e.type==='bap'?`
-  <div class="card">
-    <div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">
-      <h3>Speaker Fees</h3>
-      <button class="btn btn-sm" onclick="addSpeakerFee('${id}')" style="background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:11px">+ Add Speaker Fee</button>
-    </div>
-    <div class="card-body">
-      ${(e.speakerFees||[]).length===0?'<p style="color:var(--muted);font-size:13px">No speaker fees added yet.</p>':
-        `<table class="tbl"><thead><tr><th>Speaker</th><th>Date</th><th>Amount</th><th>Notes</th><th></th></tr></thead><tbody>
-          ${(e.speakerFees||[]).map(f=>`<tr>
-            <td>${f.speaker||'-'}</td>
-            <td>${f.date||'-'}</td>
-            <td>£${(f.amount||0).toLocaleString()}</td>
-            <td>${f.notes||'-'}</td>
-            <td><button onclick="deleteSpeakerFee('${id}','${f.id}')" style="color:var(--venetian);background:none;border:none;cursor:pointer;padding:2px 6px">✕</button></td>
-          </tr>`).join('')}
-        </tbody></table>`
-      }
-    </div>
-  </div>
-`:''}
+  
 <div class="card">
     <div class="card-hdr"><h3>Sessions</h3></div>
     <div class="card-body">
