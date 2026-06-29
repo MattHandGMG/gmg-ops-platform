@@ -3016,7 +3016,7 @@ function viewProposalDetail(id){
   var bg=document.createElement('div');
   bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px';
   bg.innerHTML='<div style="background:#fff;border-radius:8px;max-width:800px;width:100%;padding:32px;position:relative">'
-    +'<button onclick="this.closest(\'div\').parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>'
+    +'<button onclick="this.closest(\'div'\).parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>'
     +'<h2 style="margin-top:0">'+p.dealName+'</h2>'
     +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666">'
     +'<span><b>Client:</b> '+p.client+'</span>'
@@ -3027,8 +3027,8 @@ function viewProposalDetail(id){
     +'<hr style="margin:12px 0">'
     +'<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#333">'+p.content+'</div>'
     +'<div style="margin-top:16px;display:flex;gap:8px">'
-    +'<button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>'
-    +'<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==''+p.id+'';});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById('main'))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>'
+    +'<button onclick="navigator.clipboard.writeText(this.closest(\'div\').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>'
+    +'<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==''+p.id+'';});save();this.closest(\'div\').parentElement.parentElement.remove();rProposals(document.getElementById('main'))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>'
     +'</div>'
     +'</div>';
   document.body.appendChild(bg);
