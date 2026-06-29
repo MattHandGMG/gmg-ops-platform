@@ -125,6 +125,8 @@ input,select,textarea{font-family:inherit;outline:none}
 .type-chair{background:rgba(94,17,0,.1);color:var(--burnt);font-weight:700}
 .type-executive{background:rgba(206,39,2,.1);color:var(--venetian);font-weight:700}
 .type-team{background:rgba(185,83,0,.12);color:var(--cadmium);font-weight:700}
+.type-bap{background:rgba(0,102,204,.1);color:#0066CC;font-weight:700}
+.type-path2power{background:rgba(0,140,69,.1);color:#008C45;font-weight:700}
 
 /* Progress */
 .prog-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin:4px 0}
@@ -2407,7 +2409,7 @@ function _dashPersonal(){
   html+='<div class="card"><div class="card-hdr"><h3>Active Engagements</h3></div><div class="card-body" style="padding:0">';
   activeEngs.forEach(function(e){
     var mentor=DB.contacts.find(function(m){return m.id===e.mentorId;});
-    var tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+    var tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[e.type]||'b-grey';
     html+='<div style="padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">'
       +'<span class="badge '+tb+'" style="min-width:56px;justify-content:center">'+e.type+'</span>'
       +'<div style="flex:1"><div style="font-size:12px;font-weight:600">'+(e.name.length>42?e.name.slice(0,42)+'…':e.name)+'</div>'
@@ -4354,8 +4356,8 @@ function rEngDetail(id){
   const enPay=DB.mentorPayments.filter(p=>p.engId===id);
   const enFiles=(DB.engagementFiles||[]).filter(f=>f.engId===id);
 
-  const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?'Annual Value':'Total Fee';
-  const feeLabel=e.type==='chair'?'Annual Fee':e.type==='executive'?'Annual Value':'Total Fee';
+  const mainFee=e.type==='chair'?e.annualFee:e.type==='executive'?'Annual Value':e.type==='bap'?e.totalFee||0:e.type==='path2power'?e.totalFee||0:'Total Fee';
+  const feeLabel=e.type==='chair'?'Annual Fee':e.type==='executive'?'Annual Value':e.type==='bap'?'Programme Fee':e.type==='path2power'?'Programme Fee':'Total Fee';
   const totalBilled=enInv.reduce((a,i)=>a+(i.amount||0),0);
   const totalPaid=enPay.reduce((a,p)=>a+(p.amount||0),0);
 
@@ -4899,7 +4901,7 @@ function rEngagements(c){
   const active=DB.engagements.filter(e=>e.status==='active');
   const ytdRev=DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0);
   const hasFilter=statusF||typeF||partnerF;
-  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'};
   c.innerHTML=`
   <div class="phdr"><div><h2>Engagements</h2><p>${DB.engagements.length} total · ${active.length} active</p></div>
   <button class="btn btn-primary" onclick="openEngModal()">+ New Engagement</button></div>
@@ -4993,7 +4995,7 @@ function rQuoting(c){
     ${qs.length===0?`<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted)">No quotes found.</td></tr>`:
     qs.map(q=>{
       const cl=DB.contacts.find(x=>x.id===q.clientId);
-      const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[q.solution]||'b-grey';
+      const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[q.solution]||'b-grey';
       return`<tr>
         <td><div style="font-weight:600;font-size:12px">${q.name}</div><div style="font-size:10px;color:var(--muted)">${q.date||''}</div></td>
         <td><span class="badge ${tb}">${q.solution||'—'}</span></td>
@@ -5104,7 +5106,7 @@ function rProjectDetail(c, engId){
   const stBadge=e.status==='active'?'b-green':e.status==='planning'?'b-amber':'b-grey';
   const stColor=e.status==='active'?'rgba(16,185,129,.3)':e.status==='planning'?'rgba(217,119,6,.3)':'rgba(107,114,128,.3)';
   const stTextColor=e.status==='active'?'#6EE7B7':e.status==='planning'?'#FDE68A':'#D1D5DB';
-  const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type]||'b-grey';
+  const typeBadge={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[e.type]||'b-grey';
   const openTasks=tasks.filter(t=>t.status!=='done').length;
   const doneSess=sessions.filter(s=>s.status==='completed').length;
   const totalSess=e.sessionsPlanned||sessions.length||1;
@@ -5608,6 +5610,8 @@ function rPipeline(c){
       <option value="chair"${solutionF==='chair'?' selected':''}>Chair</option>
       <option value="executive"${solutionF==='executive'?' selected':''}>Executive</option>
       <option value="team"${solutionF==='team'?' selected':''}>Team</option>
+        <option value="bap"${solutionF==='bap'?' selected':''}>BAP</option>
+        <option value="path2power"${solutionF==='path2power'?' selected':''}>Path2Power</option>
     </select>
     
     ${hasFilter?`<button class="filter-clear" onclick="S.tab.plPartner='';S.tab.plCountry='';S.tab.plSolution='';renderView()">&#10005; Clear</button>`:''}
@@ -5636,7 +5640,7 @@ function rPipeline(c){
         </div>
         <div class="lc-cards">
           ${stageOpps.map(o=>{
-            const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[o.solution]||'b-grey';
+            const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[o.solution]||'b-grey';
             return`<div class="lc-card" onclick="openDealModal('${o.id}')">
               <div class="lc-card-name">${o.name}</div>
               <div class="lc-card-meta">${o.client||'—'}<br>${o.partner||'—'} · ${o.country||'—'}</div>
@@ -5665,6 +5669,8 @@ function openDealModal(id,defaultStage){
         <option value="chair"${o&&o.solution==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!o||o.solution==='executive'?' selected':''}>Executive Mentoring</option>
         <option value="team"${o&&o.solution==='team'?' selected':''}>Team Engagement</option>
+        <option value="bap"${o&&o.solution==='bap'?' selected':''}>Board Advisor Programme (BAP)</option>
+        <option value="path2power"${o&&o.solution==='path2power'?' selected':''}>Path2Power</option>
       </select></div>
     </div>
     <div class="fgrow">
@@ -6951,7 +6957,7 @@ function buildReport(type){
         <div class="kpi gold"><div class="kpi-label">Revenue</div><div class="kpi-val">${fmt(DB.clientInvoices.filter(i=>i.status==='paid').reduce((s,i)=>s+i.amount,0))}</div></div>
       </div>
       <table class="tbl"><thead><tr><th>Engagement</th><th>Type</th><th>Status</th><th>Partner</th><th>Value</th></tr></thead>
-      <tbody>${DB.engagements.map(e=>{const v=e.annualFee||e.totalFee||0;return`<tr><td style="font-weight:600">${e.name}</td><td><span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':'type-team'}">${e.type}</span></td><td><span class="badge ${e.status==='active'?'b-green':'b-amber'}">${e.status}</span></td><td>${e.partner||'—'}</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(v)}</td></tr>`}).join('')}</tbody></table>
+      <tbody>${DB.engagements.map(e=>{const v=e.annualFee||e.totalFee||0;return`<tr><td style="font-weight:600">${e.name}</td><td><span class="badge ${e.type==='chair'?'type-chair':e.type==='executive'?'type-executive':e.type==='bap'?'type-bap':e.type==='path2power'?'type-path2power':'type-team'}">${e.type}</span></td><td><span class="badge ${e.status==='active'?'b-green':'b-amber'}">${e.status}</span></td><td>${e.partner||'—'}</td><td style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:700">${fmt(v)}</td></tr>`}).join('')}</tbody></table>
     </div>`;
   } else if(type==='finance'){
     html=`<div class="mhdr"><h3>Finance Report</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
@@ -7333,6 +7339,8 @@ function openEngModal(id){
         <option value="chair"${e&&e.type==='chair'?' selected':''}>Chair Mentoring</option>
         <option value="executive"${!e||e.type==='executive'?' selected':''}>Executive Mentoring</option>
         <option value="team"${e&&e.type==='team'?' selected':''}>Team Engagement</option>
+        <option value="bap"${e&&e.type==='bap'?' selected':''}>Board Advisor Programme (BAP)</option>
+        <option value="path2power"${e&&e.type==='path2power'?' selected':''}>Path2Power</option>
       </select></div>
       <div class="fg"><label>Status</label><select id="em-status">
         <option value="planning"${e&&e.status==='planning'?' selected':''}>Planning</option>
@@ -7416,6 +7424,18 @@ function openEngModal(id){
         </label>`).join('')}
       </div>
     </div>
+    <div id="em-bap-fields" style="${e&&e.type==='bap'?'':'display:none'}">
+      <div class="fstitle" style="margin:8px 0 4px">BAP — Board Advisor Programme</div>
+      <div class="fg"><label>Programme Fee (£)</label><input id="em-bap-fee" type="number" value="${e?e.totalFee||'':''}" placeholder="0"></div>
+    </div>
+    <div id="em-path2power-fields" style="${e&&e.type==='path2power'?'':'display:none'}">
+      <div class="fstitle" style="margin:8px 0 4px">Path2Power</div>
+      <div class="fgrow">
+        <div class="fg"><label>Programme Fee (£)</label><input id="em-p2p-fee" type="number" value="${e?e.totalFee||'':''}" placeholder="0"></div>
+        <div class="fg"><label>Mentor Fee (£)</label><input id="em-p2p-mentor-fee" type="number" value="${e?e.mentorFee||'':''}" placeholder="0"></div>
+      </div>
+      <div class="fg"><label>Sessions Included</label><input id="em-p2p-sessions" type="number" value="${e?e.sessionsIncluded||'':''}" placeholder="0"></div>
+    </div>
   `,true);
 }
 
@@ -7440,6 +7460,10 @@ function toggleEngTypeFields(v){
   if(ef) ef.style.display=v==='executive'?'':'none';
   if(tf) tf.style.display=v==='team'?'':'none';
   if(cf) cf.style.display=v==='chair'?'':'none';
+  const bf=document.getElementById('em-bap-fields');
+  const pf=document.getElementById('em-path2power-fields');
+  if(bf) bf.style.display=v==='bap'?'':'none';
+  if(pf) pf.style.display=v==='path2power'?'':'none';
 }
 function saveEng(id){
   const n=v=>document.getElementById(v);
@@ -7478,6 +7502,13 @@ function saveEng(id){
     data.annualFee=data.quarterlyFee*4;
     data.retreatDate=n('em-retreat-date')?n('em-retreat-date').value:'';
     data.retreatFee=n('em-retreat-fee')?+n('em-retreat-fee').value||0:0;
+  } else if(type==='bap'){
+    data.totalFee=+n('em-bap-fee').value||0;
+    if(!data.speakerFees)data.speakerFees=[];
+  } else if(type==='path2power'){
+    data.totalFee=+n('em-p2p-fee').value||0;
+    data.mentorFee=+n('em-p2p-mentor-fee').value||0;
+    data.sessionsIncluded=+n('em-p2p-sessions').value||0;
   } else {
     data.totalFee=+n('em-total-fee').value||0;
     data.mentorFee=+n('em-mentor-fee').value||0;
@@ -7557,7 +7588,7 @@ function openEngDetail(engId){
   const usedPct=splits.reduce((s,sp)=>s+sp.percentage,0);
   const gmgPct=100-usedPct;
   const gmgAmt=fee*gmgPct/100;
-  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'};
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'};
   const stages=eng.stages||[];
   showModal(`<div class="mhdr"><h3>${eng.name}</h3><button class="mclose" onclick="closeModal()">&#10005;</button></div>
   <div class="mbody">
@@ -8102,7 +8133,7 @@ function openEngDetail(id){
   const e=DB.engagements.find(x=>x.id===id);if(!e)return;
   const cl=DB.contacts.find(c=>c.id===e.clientId);
   const mn=DB.contacts.find(m=>m.id===e.mentorId);
-  const tb={chair:'type-chair',executive:'type-executive',team:'type-team'}[e.type];
+  const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[e.type];
   const sb={active:'b-green',planning:'b-amber',completed:'b-grey',ended:'b-grey'}[e.status]||'b-grey';
   const enSess=DB.sessions.filter(s=>s.engId===id);
   const enInv=DB.clientInvoices.filter(i=>i.engId===id);
