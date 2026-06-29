@@ -3662,23 +3662,53 @@ function openEditUserModal(id){
   if(!u){alert('User not found');return;}
   var fi='width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;box-sizing:border-box;margin-bottom:12px';
   var la='display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:4px';
+  var old=document.getElementById('euOverlay');
+  if(old)old.remove();
   var ov=document.createElement('div');
   ov.id='euOverlay';
+  ov.dataset.uid=id;
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
-  ov.innerHTML='<div style="background:white;border-radius:12px;padding:28px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.25)"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px"><h3 style="margin:0;font-size:17px;font-weight:700;color:#111">Edit User</h3><button onclick="document.getElementById(\'euOverlay\').remove()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af">&#215;</button></div>'
-  +'<label style="'+la+'">Full Name</label><input id="eu-name" style="'+fi+'">'
-  +'<label style="'+la+'">Email Address</label><input id="eu-email" style="'+fi+'">'
-  +'<label style="'+la+'">Job Title</label><input id="eu-title" style="'+fi+'">'
-  +'<label style="'+la+'">New Password <span style="font-size:11px;font-weight:400;color:#9ca3af">(leave blank to keep current)</span></label>'
-  +'<input id="eu-pw" type="password" placeholder="Enter new password" style="'+fi+'">'
-  +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'
-  +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
-  +'<button onclick="saveEditUser(\''+id+'\')" style="padding:9px 20px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Changes</button>'
-  +'</div></div>';
+  var isRm=u.role==='rm';
+  var roleOpts=['admin','chair','rm','team','viewer'].map(function(r){
+    var lbl={admin:'Administrator',chair:'Chair',rm:'Partner',team:'Team Member',viewer:'Viewer'}[r]||r;
+    return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+lbl+'</option>';
+  }).join('');
+  var entityOpts=['GMG','CMi','Merryck','ANZ','Middle East'].map(function(e){
+    return '<option value="'+e+'"'+(u.entity===e?' selected':'')+'>'+e+'</option>';
+  }).join('');
+  var pd=isRm?'block':'none';
+  ov.innerHTML='<div style="background:white;border-radius:12px;padding:28px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    +'<h3 style="margin:0;font-size:16px;font-weight:700;color:#111827">Edit User</h3>'
+    +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">&times;</button>'
+    +'</div>'
+    +'<label style="'+la+'">Full Name</label><input id="eu-name" style="'+fi+'">'
+    +'<label style="'+la+'">Email Address</label><input id="eu-email" style="'+fi+'">'
+    +'<label style="'+la+'">Job Title</label><input id="eu-title" style="'+fi+'">'
+    +'<label style="'+la+'">Role</label>'
+    +'<select id="au-role" onchange="(function(){var s=document.getElementById(\'au-role\');var p=document.getElementById(\'eu-ps\');if(p)p.style.display=s.value===\'rm\'?\'block\':\'none\';})()" style="'+fi+'">'+roleOpts+'</select>'
+    +'<label style="'+la+'">Entity</label>'
+    +'<select id="au-entity" style="'+fi+'">'+entityOpts+'</select>'
+    +'<div id="eu-ps" style="display:'+pd+'">'
+    +'<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px;margin-bottom:12px">'
+    +'<div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Partner Settings</div>'
+    +'<label style="'+la+'">Partner Display Name</label><input id="au-partner" style="'+fi+'" placeholder="e.g. John Smith">'
+    +'<label style="'+la+'">Annual Sales Target (£)</label><input id="au-sales-target" type="number" style="'+fi+'" placeholder="0">'
+    +'</div></div>'
+    +'<label style="'+la+'">New Password <span style="font-size:11px;font-weight:400;color:#9ca3af">(leave blank to keep current)</span></label>'
+    +'<input id="eu-pw" type="password" placeholder="New password" style="'+fi+'">'
+    +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'
+    +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
+    +'<button onclick="saveEditUser(document.getElementById(\'euOverlay\').dataset.uid)" style="padding:9px 20px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Changes</button>'
+    +'</div></div>';
   document.body.appendChild(ov);
   document.getElementById('eu-name').value=u.name||'';
   document.getElementById('eu-email').value=u.email||'';
   document.getElementById('eu-title').value=u.title||'';
+  if(isRm){
+    document.getElementById('au-partner').value=u.partnerName||'';
+    document.getElementById('au-sales-target').value=u.salesTarget||'';
+  }
 }
 function saveEditUser(id){
   var ci=(DB.appUsers||[]).findIndex(function(x){return x.id===id;});
@@ -3687,14 +3717,25 @@ function saveEditUser(id){
   var em=document.getElementById('eu-email').value.trim();
   var tt=document.getElementById('eu-title').value.trim();
   var pw=document.getElementById('eu-pw').value;
+  var rl=document.getElementById('au-role')?document.getElementById('au-role').value:'';
+  var en=document.getElementById('au-entity')?document.getElementById('au-entity').value:'';
   if(!nm||!em){alert('Name and email are required');return;}
   DB.appUsers[ci].name=nm;
   DB.appUsers[ci].email=em;
   DB.appUsers[ci].title=tt;
+  if(rl)DB.appUsers[ci].role=rl;
+  if(en)DB.appUsers[ci].entity=en;
+  if(rl==='rm'){
+    var pn=document.getElementById('au-partner');
+    var st=document.getElementById('au-sales-target');
+    if(pn)DB.appUsers[ci].partnerName=pn.value.trim();
+    if(st)DB.appUsers[ci].salesTarget=parseFloat(st.value)||0;
+  }
   if(pw)DB.appUsers[ci].password=pw;
   save();
-  document.getElementById('euOverlay').remove();
-  renderView();
+  var ov=document.getElementById('euOverlay');
+  if(ov)ov.remove();
+  render();
 }
 function saveLocalUser(id){
   var n=function(k){return document.getElementById(k);};
