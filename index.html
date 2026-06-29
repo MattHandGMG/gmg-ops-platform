@@ -3028,7 +3028,7 @@ function viewProposalDetail(id){
 <div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#333">${p.content}</div>
 <div style="margin-top:16px;display:flex;gap:8px">
 <button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>
-<button onclick="if(confirm(${Delete this proposal?})){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==+p.id+;});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById(${main}))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>
+<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==+p.id+;});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById(${main}))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>
 </div>
 </div>`
   document.body.appendChild(bg);
