@@ -6824,7 +6824,7 @@ const SEED_REPORTS=[
 
 const SOURCES_RPT={
   engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
-  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},{icon:'📋',label:'Proposals',view:'proposals',roles:['admin','director','coordinator','partner','associate','chair']}fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
+  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
   projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
   contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
   mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
