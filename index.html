@@ -3494,7 +3494,7 @@ const xi=DB.xeroInstances||{};
     +'<div style="border:1px solid #ddd;border-radius:4px;padding:8px;">'
     +(settings.proposalLayoutTemplate?'<p style="margin:0 0 6px;color:#27ae60;font-size:13px">&#10003; '+((settings.proposalLayoutFilename)||'PDF uploaded')+' &nbsp;<button onclick="saveAdminSetting(\'proposalLayoutTemplate\',\'\');saveAdminSetting(\'proposalLayoutFilename\',\'\');rAdmin(document.getElementById(\'content\'))" style="color:#e74c3c;background:none;border:none;cursor:pointer;font-size:11px">Remove</button></p>':'')
     +'<input type="file" accept="application/pdf" onchange="handlePropLayoutUpload(this,\'proposal\')" style="font-size:12px">'
-    +'</div>''
+    +'</div>'
     +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Pitch Prompt Template</label>'
     +'<textarea style="width:100%;height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {notes}" oninput="saveAdminSetting(\'pitchPromptTemplate\',this.value)">'+(DB.settings&&DB.settings.pitchPromptTemplate||'')+'</textarea>'
     +'<label style="font-weight:600;display:block;margin-bottom:4px">Pitch Layout Template (PDF)<small style="color:#888;font-weight:400"> (upload a PDF to use as visual reference)</small></label>'
