@@ -2230,7 +2230,7 @@ function topAction(){
 function gSearch(v){S.search=v}
 function renderView(){
   const c=document.getElementById('content');
-  const r={dashboard:rDashboard,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,invoices:rInvoices,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
+  const r={dashboard:rDashboard,proposalGen:rProposalGen,proposals:rProposals,pipeline:rPipeline,engagements:rEngagements,engagementDetail:rEngDetail,clients:rClients,clientDetail:rClientDetail,procurement:rProcurement,mentors:rMentors,mentorProfile:rMentorProfile,projects:rProjects,quoting:rQuoting,finance:rFinance,invoices:rInvoices,tasks:rTasks,reports:rReports,admin:rAdmin,training:rTraining};
   if(r[S.view]){var _h=r[S.view](c);if(typeof _h==='string')c.innerHTML=_h;}
   updateNotifBadge();
 }
@@ -2950,6 +2950,186 @@ function rDashboardAdmin(c){
 async function openFeatureRequest(){var m=document.getElementById('frModal');if(m){m.style.display='flex';document.getElementById('frTitle').value='';document.getElementById('frDesc').value='';document.getElementById('frMsg').style.display='none';}}
 function closeFRModal(){var m=document.getElementById('frModal');if(m)m.style.display='none';}
 async function submitFeatureRequest(){var t=(document.getElementById('frTitle').value||'').trim();var d=(document.getElementById('frDesc').value||'').trim();var p=document.getElementById('frPriority').value;if(!t){alert('Please enter a feature title.');return;}var msg=document.getElementById('frMsg');msg.style.display='none';try{await window._sb.from('feature_requests').insert([{title:t,description:d,priority:p,created_at:new Date().toISOString(),status:'pending'}]);msg.style.display='block';msg.style.color='#16a34a';msg.textContent='✓ Request submitted! Thank you.';setTimeout(closeFRModal,2000);}catch(e){var reqs=JSON.parse(localStorage.getItem('gmg_fr')||'[]');reqs.push({title:t,description:d,priority:p,created_at:new Date().toISOString()});localStorage.setItem('gmg_fr',JSON.stringify(reqs));msg.style.display='block';msg.style.color='#16a34a';msg.textContent='✓ Request saved! Thank you.';setTimeout(closeFRModal,2000);}}
+
+function saveAdminSetting(key,val){
+  if(!DB.settings)DB.settings={};
+  DB.settings[key]=val;
+  save();
+}
+
+function openProposalPage(dealId){
+  S.proposalDealId=dealId;
+  S.view='proposalGen';
+  renderView();
+}
+
+function generateProposal(){
+  var apiKey=(DB.settings||{}).proposalApiKey||'';
+  if(!apiKey){alert('Please add a Claude API Key in Admin > Proposal Settings');return;}
+  var prompt=document.getElementById('propPromptArea')?.value||'';
+  var resultEl=document.getElementById('propResult');
+  if(resultEl)resultEl.textContent='Generating proposal, please wait...';
+  var btn=document.querySelector('[onclick="generateProposal()"]');
+  if(btn)btn.disabled=true;
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2048,messages:[{role:'user',content:prompt}]})
+  }).then(function(r){return r.json();}).then(function(data){
+    if(btn)btn.disabled=false;
+    var text=data.content&&data.content[0]?data.content[0].text:(data.error?'API Error: '+data.error.message:'No response received.');
+    if(resultEl)resultEl.textContent=text;
+    var saveBtn=document.getElementById('propSaveBtn');
+    if(saveBtn)saveBtn.style.display='inline-block';
+    window._generatedProposal=text;
+  }).catch(function(e){
+    if(btn)btn.disabled=false;
+    if(resultEl)resultEl.textContent='Error: '+e.message;
+  });
+}
+
+function saveProposal(){
+  var d=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;});
+  if(!d||!window._generatedProposal)return;
+  if(!DB.proposals)DB.proposals=[];
+  DB.proposals.push({
+    id:'prop_'+Date.now(),
+    dealId:d.id,
+    dealName:d.name||'',
+    client:d.client||'',
+    solution:d.solution||'',
+    partner:d.partner||'',
+    country:d.country||'',
+    content:window._generatedProposal,
+    createdAt:new Date().toISOString().slice(0,10),
+    createdBy:(S.user||{}).name||''
+  });
+  save();
+  alert('Proposal saved to the Proposals database!');
+  var btn=document.getElementById('propSaveBtn');
+  if(btn)btn.style.display='none';
+}
+
+function viewProposalDetail(id){
+  var p=(DB.proposals||[]).find(function(pr){return pr.id===id;});
+  if(!p)return;
+  var bg=document.createElement('div');
+  bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px';
+  bg.innerHTML='<div style="background:#fff;border-radius:8px;max-width:800px;width:100%;padding:32px;position:relative">'
+    +'<button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>'
+    +'<h2 style="margin-top:0">'+p.dealName+'</h2>'
+    +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666">'
+    +'<span><b>Client:</b> '+p.client+'</span>'
+    +'<span><b>Solution:</b> '+p.solution+'</span>'
+    +'<span><b>Partner:</b> '+p.partner+'</span>'
+    +'<span><b>Created:</b> '+p.createdAt+' by '+p.createdBy+'</span>'
+    +'</div>'
+    +'<hr style="margin:12px 0">'
+    +'<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#333">'+p.content+'</div>'
+    +'<div style="margin-top:16px;display:flex;gap:8px">'
+    +'<button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>'
+    +'<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==''+p.id+'';});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById('main'))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>'
+    +'</div>'
+    +'</div>';
+  document.body.appendChild(bg);
+  bg.onclick=function(e){if(e.target===bg)bg.remove();};
+}
+
+function rProposals(c){
+  if(!DB.proposals)DB.proposals=[];
+  var proposals=DB.proposals;
+  if(!S.propFilter)S.propFilter={};
+  var fClient=S.propFilter.client||'';
+  var fSol=S.propFilter.solution||'';
+  var fPart=S.propFilter.partner||'';
+  var fSearch=S.propFilter.search||'';
+  var clients=[...new Set(proposals.map(function(p){return p.client;}).filter(Boolean))].sort();
+  var solutions=[...new Set(proposals.map(function(p){return p.solution;}).filter(Boolean))].sort();
+  var partners=[...new Set(proposals.map(function(p){return p.partner;}).filter(Boolean))].sort();
+  var filtered=proposals.filter(function(p){
+    if(fClient&&p.client!==fClient)return false;
+    if(fSol&&p.solution!==fSol)return false;
+    if(fPart&&p.partner!==fPart)return false;
+    if(fSearch){var q=fSearch.toLowerCase();if(!(p.dealName.toLowerCase().includes(q)||p.content.toLowerCase().includes(q)))return false;}
+    return true;
+  }).sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
+  var selOpt=function(arr,cur){return arr.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');};
+  c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between"><h2>Proposals &amp; Pitches</h2><span style="font-size:12px;color:#888">'+filtered.length+' of '+proposals.length+' records</span></div>'
+  +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">'
+  +'<input type="text" placeholder="Search proposals..." value="'+fSearch+'" oninput="S.propFilter.search=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:180px">'
+  +'<select onchange="S.propFilter.client=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Clients</option>'+selOpt(clients,fClient)+'</select>'
+  +'<select onchange="S.propFilter.solution=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Solutions</option>'+selOpt(solutions,fSol)+'</select>'
+  +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById('main'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
+  +(filtered.length===0?'</div><div style="text-align:center;color:#aaa;padding:60px 20px;font-size:14px">No proposals found.<br><small>Generate proposals from pipeline deals in Stage 3 (Mentee Identified).</small></div>'
+  :'</div>'+filtered.map(function(p){
+    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail(''+p.id+'')">'
+      +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
+      +'<h3 style="margin:0;font-size:14px">'+p.dealName+'</h3>'
+      +'<span style="font-size:11px;color:#888">'+p.createdAt+'</span>'
+      +'</div>'
+      +'<div class="card-body" style="font-size:12px">'
+      +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;color:#555">'
+      +'<span><b>Client:</b> '+p.client+'</span>'
+      +'<span><b>Solution:</b> '+p.solution+'</span>'
+      +'<span><b>Partner:</b> '+p.partner+'</span>'
+      +(p.country?'<span><b>Country:</b> '+p.country+'</span>':'')
+      +'</div>'
+      +'<div style="color:#888;font-size:11px;overflow:hidden;max-height:40px">'+p.content.slice(0,180)+'...</div>'
+      +'</div></div>';
+  }).join(''));
+}
+
+function rProposalGen(c){
+  var d=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;});
+  if(!d){c.innerHTML='<div class="page-hdr"><h2>Deal not found</h2><button onclick="S.view=\'pipeline\';renderView()">Back</button></div>';return;}
+  var tmpl=(DB.settings||{}).proposalPrompt||'';
+  var filled=tmpl
+    .replace(/\{dealName\}/g,d.name||'')
+    .replace(/\{client\}/g,d.client||'')
+    .replace(/\{solution\}/g,d.solution||'')
+    .replace(/\{partner\}/g,d.partner||'')
+    .replace(/\{country\}/g,d.country||'')
+    .replace(/\{value\}/g,d.value?String(d.value):'')
+    .replace(/\{stage\}/g,d.stage||'')
+    .replace(/\{mentee\}/g,d.mentee||d.assignee||'')
+    .replace(/\{notes\}/g,d.notes||'');
+  c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;gap:12px">'
+    +'<button onclick="S.view=\'pipeline\';renderView()" style="background:none;border:1px solid #ddd;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:13px">&larr; Back</button>'
+    +'<h2 style="margin:0">Generate Proposal / Pitch</h2>'
+    +'<span style="font-size:12px;color:#888;font-weight:400">'+d.name+'</span>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">'
+    +'<div>'
+    +'<div class="card" style="margin-bottom:12px">'
+    +'<div class="card-hdr"><h3>Deal Summary</h3></div>'
+    +'<div class="card-body" style="font-size:13px;line-height:1.8">'
+    +'<div><b>Client:</b> '+(d.client||'—')+'</div>'
+    +'<div><b>Solution:</b> '+(d.solution||'—')+'</div>'
+    +'<div><b>Partner:</b> '+(d.partner||'—')+'</div>'
+    +'<div><b>Country:</b> '+(d.country||'—')+'</div>'
+    +'<div><b>Value:</b> '+(d.value?'£'+Number(d.value).toLocaleString():'—')+'</div>'
+    +'<div><b>Mentee:</b> '+(d.mentee||d.assignee||'—')+'</div>'
+    +'</div></div>'
+    +'<div class="card">'
+    +'<div class="card-hdr"><h3>Prompt</h3></div>'
+    +'<div class="card-body">'
+    +(!(DB.settings||{}).proposalPrompt?'<div style="color:#e74c3c;font-size:12px;margin-bottom:8px;padding:8px;background:#fff5f5;border-radius:4px;">No prompt template set. Configure one in Admin &gt; Proposal Settings.</div>':'')
+    +'<textarea id="propPromptArea" rows="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical">'+(filled||tmpl)+'</textarea>'
+    +'<button onclick="generateProposal()" style="margin-top:8px;background:#e74c3c;color:#fff;border:none;padding:9px 16px;border-radius:4px;cursor:pointer;font-weight:600;width:100%;font-size:13px">Generate with Claude</button>'
+    +'</div></div>'
+    +'</div>'
+    +'<div>'
+    +'<div class="card" style="height:100%;min-height:400px">'
+    +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
+    +'<h3>Generated Proposal</h3>'
+    +'<button id="propSaveBtn" onclick="saveProposal()" style="display:none;background:#27ae60;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">Save to Database</button>'
+    +'</div>'
+    +'<div class="card-body"><div id="propResult" style="min-height:300px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:#555;font-family:inherit">Click &ldquo;Generate with Claude&rdquo; to create a proposal/pitch based on the deal data above.</div></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+}
+
 function rAdmin(c){
   const users=DB.appUsers||[];
   const rawOpts=DB.pricingOptions||[];
@@ -3258,7 +3438,26 @@ const xi=DB.xeroInstances||{};
   const auditHtml=auditLog.length===0
     ?`<div style="text-align:center;padding:28px 0;color:var(--muted);font-style:italic;font-size:13px">No audit events recorded yet.</div>`
     :auditLog.slice(-20).reverse().map(a=>`<div style="display:flex;gap:16px;padding:10px 0;border-bottom:1px solid #f5f3f0;font-size:12px"><span style="color:var(--muted);white-space:nowrap;flex-shrink:0">${a.ts||''}</span><span style="color:var(--nearblack)">${a.action||''}</span><span style="color:var(--muted)">${a.user||''}</span></div>`).join('');
-  const tabSystem=`
+  const var tabProposals=(function(){
+  var apiKey=(DB.settings||{}).proposalApiKey||'';
+  var propPrompt=(DB.settings||{}).proposalPrompt||'';
+  return '<div class="card" style="margin-bottom:16px">'
+    +'<div class="card-hdr"><h3>Proposal / Pitch Settings</h3></div>'
+    +'<div class="card-body">'
+    +'<div class="fg">'
+    +'<label style="font-weight:600;font-size:12px">Claude API Key</label>'
+    +'<input type="password" id="adminProposalKey" value="'+apiKey+'" placeholder="sk-ant-api03-..." style="font-family:monospace;width:100%;margin-top:4px;padding:7px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px" oninput="saveAdminSetting('proposalApiKey',this.value)">'
+    +'<small style="color:#888;font-size:11px">Required to generate proposals via Claude AI. Get yours at console.anthropic.com</small>'
+    +'</div>'
+    +'<div class="fg" style="margin-top:14px">'
+    +'<label style="font-weight:600;font-size:12px">Proposal Prompt Template</label>'
+    +'<p style="font-size:11px;color:#888;margin:4px 0 6px">Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {mentee} {notes}</p>'
+    +'<textarea id="adminProposalPrompt" rows="10" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical" oninput="saveAdminSetting('proposalPrompt',this.value)">'+propPrompt+'</textarea>'
+    +'</div>'
+    +'</div>'
+    +'</div>';
+})();
+tabSystem=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
       <div style="${cardStyle}">
         ${sectionHead('📅','Fiscal Year','Set the start month for YTD calculations')}
@@ -3301,7 +3500,7 @@ const xi=DB.xeroInstances||{};
     {id:'integrations',label:'Integrations',content:tabIntegrations},
     {id:'notifications',label:'Notifications',content:(c)=>{}},
     {id:'templates',label:'Email Templates',content:tabTemplates},
-    {id:'system',label:'System',content:tabSystem},{id:'clientfields',label:'Client Fields',content:tabClientFields}
+    {id:'system',label:'System',content:tabSystem},{id:'proposals',label:'Proposal Settings',content:tabProposals},{id:'clientfields',label:'Client Fields',content:tabClientFields}
   ];
   const activeContent=tabs.find(t=>t.id===activeTab)?.content||tabUsers;
 
@@ -4651,7 +4850,7 @@ const sessHtml=e.type!=='chair'?'':(enSess.length===0
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px">
           <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Billing Contact</span><span style="font-size:13px">${e.billingContact||'N/A'}</span></div>
           <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Billing Email</span><span style="font-size:13px">${e.billingEmail||'N/A'}</span></div>
-          <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Payment Terms</span><span style="font-size:13px">${e.paymentTerms||'N/A'}</span></div>
+          
           <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Invoice Frequency</span><span style="font-size:13px">${e.invoiceFrequency||'N/A'}</span></div>
           <div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">Currency</span><span style="font-size:13px">${e.currency||'GBP'}</span></div>
           ${e.purchaseOrder?'<div><span style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block">PO Number</span><span style="font-size:13px">'+e.purchaseOrder+'</span></div>':''}
@@ -5670,7 +5869,7 @@ function rPipeline(c){
               <div class="lc-card-name">${o.name}</div>
               <div class="lc-card-meta">${o.client||'—'}<br>${o.partner||'—'} · ${o.country||'—'}</div>
               <div class="lc-card-val">${fmt(o.value)}</div>${o.closeDate?'\n              <div style="font-size:11px;color:#94a3b8;margin-top:3px">Close: '+o.closeDate+'</div>':''}
-              <div class="lc-card-tags"><span class="badge ${tb}" style="font-size:9px">${o.solution}</span></div>
+              ${stage==='Mentee Identified'?'<div style="margin:6px 0 2px;padding-top:6px;border-top:1px solid #e2e8f0"><button data-deal="'+o.id+'" onclick="event.stopPropagation();openProposalPage(this.dataset.deal)" style="width:100%;background:#e74c3c;color:#fff;border:none;padding:4px 6px;border-radius:4px;font-size:10px;cursor:pointer;font-weight:600">&#128196; Generate Proposal/Pitch</button></div>':''}<div class="lc-card-tags"><span class="badge ${tb}" style="font-size:9px">${o.solution}</span></div>
             </div>`;
           }).join('')}
           <button class="lc-add" onclick="openDealModal(null,'${stage}')">+ Add</button>
@@ -6617,7 +6816,7 @@ const SEED_REPORTS=[
 
 const SOURCES_RPT={
   engagements:{label:'Engagements',data:()=>DB.engagements||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',clientName:'Client',partnerName:'Partner',status:'Status',fee:'Fee',startDate:'Start Date',endDate:'End Date',mentorName:'Mentor',type:'Type',notes:'Notes'}},
-  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
+  pipeline:{label:'Pipeline',data:()=>DB.pipeline||[],dateFields:{created:'Created Date'},{icon:'📋',label:'Proposals',view:'proposals',roles:['admin','director','coordinator','partner','associate','chair']}fields:{company:'Company',stage:'Stage',value:'Value',probability:'Probability',owner:'Owner',notes:'Notes',created:'Created Date'}},
   projects:{label:'Projects',data:()=>DB.projects||[],dateFields:{startDate:'Start Date',endDate:'End Date'},fields:{name:'Name',status:'Status',client:'Client',startDate:'Start Date',endDate:'End Date'}},
   contacts:{label:'Contacts',data:()=>DB.contacts||[],dateFields:{},fields:{name:'Name',email:'Email',company:'Company',role:'Role',phone:'Phone',type:'Type'}},
   mentors:{label:'Mentors',data:()=>DB.mentors||[],dateFields:{},fields:{name:'Name',title:'Title',sector:'Sector',location:'Location',expertise:'Expertise'}},
@@ -7208,6 +7407,7 @@ function viewContact(id){
 }
 
 function saveMentorBilling(id){
+  if(!S.user||S.user.role!=='admin'){alert('Billing details can only be edited by administrators.');return;}
   var c=DB.contacts.find(x=>x.id===id);
   if(!c)return;
   c.billBusinessName=document.getElementById('mpBillBusinessName')?.value||'';
@@ -7330,7 +7530,7 @@ function rMentorProfile(c){
         <div style="font-size:12px;color:var(--nearblack);line-height:1.6">${m.notes}</div>
       </div>`:''}
       <div style="background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Billing Details</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px">Billing Details</div>${S.user&&S.user.role!=='admin'?'<div style="font-size:11px;color:#c0392b;margin:4px 0 8px;padding:4px 8px;background:#fff8f6;border-radius:4px;border:1px solid #c0392b">&#9888; Billing details are view-only. Contact an admin to make changes.</div>':''}
         <div style="margin-bottom:10px">
           <div style="font-size:11px;color:var(--muted);margin-bottom:4px">Business / Company Name</div>
           <input type="text" id="mpBillBusinessName" value="${m.billBusinessName||''}" onchange="saveMentorBilling('${m.id}')" placeholder="e.g. Smith Consulting Ltd" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;box-sizing:border-box">
@@ -7406,7 +7606,7 @@ function openEngModal(id){
       <div style="grid-column:1/-1;border-top:1px solid var(--border);padding-top:12px;margin:4px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--primary)">Client Billing</div>
       <div class="fg"><label>Billing Contact</label><input id="em-billing-contact" type="text" value="${e?e.billingContact||'':''}"></div>
       <div class="fg"><label>Billing Email</label><input id="em-billing-email" type="email" value="${e?e.billingEmail||'':''}"></div>
-      <div class="fg"><label>Payment Terms</label><select id="em-payment-terms"><option value="">-- Select --</option>${['Net 14','Net 30','Net 45','Net 60','On Receipt'].map(function(x){return '<option value="'+x+'"'+( e&&e.paymentTerms===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
+      
       <div class="fg"><label>Invoice Frequency</label><select id="em-invoice-freq"><option value="">-- Select --</option>${['Monthly','Quarterly','Bi-Annual','Annual','On Completion','Milestone-Based'].map(function(x){return '<option value="'+x+'"'+( e&&e.invoiceFrequency===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
       <div class="fg"><label>Currency</label><select id="em-currency"><option value="">-- Select --</option>${['GBP','USD','EUR','AED','SGD','AUD','CAD'].map(function(x){return '<option value="'+x+'"'+((e?e.currency||'GBP':'GBP')===x?' selected':'')+'>'+x+'</option>';}).join('')}</select></div>
       <div class="fg"><label>PO Number</label><input id="em-po-number" type="text" value="${e?e.purchaseOrder||'':''}"></div>
@@ -8038,7 +8238,7 @@ function rOrgChart(container){
     const c=RC[n.role]||'#64748b';
     const av=(n.name||'?')[0].toUpperCase();
     const kids=n._ch.length?`<div class="oc3v"></div><ul class="oc3ul">${n._ch.map(rNode).join('')}</ul>`:'';
-    return `<li class="oc3li"><div class="oc3card" onclick="window._oc3e('${n.id}')" style="--c:${c}"><div class="oc3av" style="background:${c}">${av}</div><div class="oc3info"><b class="oc3name">${n.name}</b><span class="oc3sub">${n.title||n.role}</span></div></div>${kids}</li>`;
+    return `<li class="oc3li"><div class="oc3card" onclick="window._oc3e('${n.id}')" style="--c:${c}"><div class="oc3av" style="background:${c}">${av}</div><div class="oc3info"><b class="oc3name">${n.name}</b><span class="oc3sub">${n.title||n.role}</span>${n.responsibilities?'<span class="oc3resp" style="display:block;font-size:9px;color:#7f8c8d;margin-top:2px;line-height:1.3;white-space:normal;max-width:160px">'+n.responsibilities+'</span>':''}</div></div>${kids}</li>`;
   }
 
   function render(){
@@ -8097,7 +8297,7 @@ ${content}
     const rtopts=`<option value="">— None (top level) —</option>`+users.filter(x=>x.id!==u.id).map(x=>`<option value="${x.id}"${u.reportsTo===x.id?' selected':''}>${x.name}</option>`).join('');
     const bg=document.createElement('div');
     bg.className='oc3mbg';
-    bg.innerHTML=`<div class="oc3modal"><h3>${isNew?'Add Person':'Edit Person'}</h3><label>Full Name *</label><input id="oc3fn" value="${(u.name||'').replace(/"/g,'&quot;')}"><label>Email</label><input id="oc3fe" type="email" value="${(u.email||'').replace(/"/g,'&quot;')}"><label>Job Title</label><input id="oc3ft" value="${(u.title||'').replace(/"/g,'&quot;')}"><label>Role</label><select id="oc3fr">${ropts}</select><label>Reports To</label><select id="oc3frt">${rtopts}</select><label>Phone</label><input id="oc3fp" value="${(u.phone||'').replace(/"/g,'&quot;')}"><div class="oc3mbtns">${!isNew?'<button class="oc3bdel" id="oc3dbtn">Delete</button>':''}<button class="oc3bcancel" id="oc3cbtn">Cancel</button><button class="oc3bsave" id="oc3sbtn">${isNew?'Add':'Save'}</button></div></div>`;
+    bg.innerHTML=`<div class="oc3modal"><h3>${isNew?'Add Person':'Edit Person'}</h3><label>Full Name *</label><input id="oc3fn" value="${(u.name||'').replace(/"/g,'&quot;')}"><label>Email</label><input id="oc3fe" type="email" value="${(u.email||'').replace(/"/g,'&quot;')}"><label>Job Title</label><input id="oc3ft" value="${(u.title||'').replace(/"/g,'&quot;')}"><label>Role</label><select id="oc3fr">${ropts}</select><label>Reports To</label><select id="oc3frt">${rtopts}</select><label>Phone</label><input id="oc3fp" value="${(u.phone||'').replace(/"/g,'&quot;')}"><label style="display:block;margin-top:8px;font-size:11px;font-weight:600;color:#555">Responsibilities / Description</label><textarea id="oc3fresp" rows="3" style="width:100%;margin-top:3px;padding:6px 8px;border:1px solid #ddd;border-radius:4px;font-size:12px;resize:vertical">${u.responsibilities||''}</textarea><div class="oc3mbtns">${!isNew?'<button class="oc3bdel" id="oc3dbtn">Delete</button>':''}<button class="oc3bcancel" id="oc3cbtn">Cancel</button><button class="oc3bsave" id="oc3sbtn">${isNew?'Add':'Save'}</button></div></div>`;
     document.body.appendChild(bg);
     bg.addEventListener('click',e=>{if(e.target===bg)bg.remove();});
     bg.querySelector('#oc3cbtn').onclick=()=>bg.remove();
@@ -8116,7 +8316,7 @@ ${content}
       let us=getUsers();
       if(isNew)us.push(upd);
       else us=us.map(x=>x.id===u.id?upd:x);
-      saveUsers(us);bg.remove();render();
+      u.responsibilities=document.getElementById('oc3fresp')?.value.trim()||'';saveUsers(us);bg.remove();render();
     };
   }
 
