@@ -2960,173 +2960,84 @@ function saveAdminSetting(key,val){
 
 function openProposalPage(dealId){
   S.proposalDealId=dealId;
+  S.selectedDeal=null;
   S.view='proposalGen';
   renderView();
 }
 
-function generateProposal(){
+function generateForSection(type){
   var apiKey=(DB.settings||{}).proposalApiKey||'';
   if(!apiKey){alert('Please add a Claude API Key in Admin > Proposal Settings');return;}
-  var prompt=document.getElementById('propPromptArea')?.value||'';
+  var prompt=document.getElementById('propPromptArea')?document.getElementById('propPromptArea').value||'':'';
   var resultEl=document.getElementById('propResult');
-  if(resultEl)resultEl.textContent='Generating proposal, please wait...';
-  var btn=document.querySelector('[onclick="generateProposal()"]');
-  if(btn)btn.disabled=true;
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2048,messages:[{role:'user',content:prompt}]})
-  }).then(function(r){return r.json();}).then(function(data){
-    if(btn)btn.disabled=false;
-    var text=data.content&&data.content[0]?data.content[0].text:(data.error?'API Error: '+data.error.message:'No response received.');
-    if(resultEl)resultEl.textContent=text;
-    var saveBtn=document.getElementById('propSaveBtn');
-    if(saveBtn)saveBtn.style.display='inline-block';
-    window._generatedProposal=text;
-  }).catch(function(e){
-    if(btn)btn.disabled=false;
-    if(resultEl)resultEl.textContent='Error: '+e.message;
-  });
+  if(resultEl)resultEl.innerHTML='<em style="color:#888">Generating '+type+'...</em>';
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2000,messages:[{role:'user',content:prompt}]})}).then(function(r){return r.json();}).then(function(data){if(resultEl&&data.content&&data.content[0]){resultEl.innerHTML=data.content[0].text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}else if(resultEl){resultEl.textContent='Error: '+(data.error?data.error.message:'Unknown');}}).catch(function(e){if(resultEl)resultEl.textContent='Error: '+e.message;});
 }
-
-function saveProposal(){
-  var d=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;});
-  if(!d||!window._generatedProposal)return;
-  if(!DB.proposals)DB.proposals=[];
-  DB.proposals.push({
-    id:'prop_'+Date.now(),
-    dealId:d.id,
-    dealName:d.name||'',
-    client:d.client||'',
-    solution:d.solution||'',
-    partner:d.partner||'',
-    country:d.country||'',
-    content:window._generatedProposal,
-    createdAt:new Date().toISOString().slice(0,10),
-    createdBy:(S.user||{}).name||''
-  });
+function savePropResult(dealId,type){
+  var resultEl=document.getElementById('propResult');
+  if(!resultEl)return;
+  var text=resultEl.innerText||resultEl.textContent||'';
+  if(!text.trim()){alert('Nothing to save yet.');return;}
+  var deal=(DB.opportunities||[]).find(function(o){return o.id===dealId;})||{};
+  var prop={id:'prp_'+Date.now(),dealId:dealId,type:type,content:text,created:new Date().toISOString().slice(0,10),dealName:deal.name||'',client:deal.client||'',solution:deal.solution||''};
+  if(!DB.proposalDocs)DB.proposalDocs=[];
+  var idx=DB.proposalDocs.findIndex(function(p){return p.dealId===dealId&&p.type===type;});
+  if(idx>-1)DB.proposalDocs[idx]=prop;else DB.proposalDocs.push(prop);
   save();
-  alert('Proposal saved to the Proposals database!');
-  var btn=document.getElementById('propSaveBtn');
-  if(btn)btn.style.display='none';
+  alert(type.charAt(0).toUpperCase()+type.slice(1)+' saved to library!');
 }
-
-function viewProposalDetail(id){
-  var p=(DB.proposals||[]).find(function(pr){return pr.id===id;});
-  if(!p)return;
-  var bg=document.createElement('div');
-  bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px';
-  bg.innerHTML=`<div style="background:#fff;border-radius:8px;max-width:800px;width:100%;padding:32px;position:relative">
-<button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>
-<h2 style="margin-top:0">${p.dealName}</h2>
-<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666">
-<span><b>Client:</b> ${p.client}</span>
-<span><b>Solution:</b> ${p.solution}</span>
-<span><b>Partner:</b> ${p.partner}</span>
-<span><b>Created:</b> ${p.createdAt} by ${p.createdBy}</span>
-</div>
-<hr style="margin:12px 0">
-<div style="white-space:pre-wrap;font-size:13px;line-height:1.7;color:#333">${p.content}</div>
-<div style="margin-top:16px;display:flex;gap:8px">
-<button onclick="navigator.clipboard.writeText(this.closest('div').previousElementSibling.textContent)" style="background:#3498db;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Copy</button>
-<button onclick="if(confirm('Delete this proposal?')){DB.proposals=(DB.proposals||[]).filter(function(pr){return pr.id!==+p.id+;});save();this.closest('div').parentElement.parentElement.remove();rProposals(document.getElementById(${main}))}" style="background:#e74c3c;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px">Delete</button>
-</div>
-</div>`
-  document.body.appendChild(bg);
-  bg.onclick=function(e){if(e.target===bg)bg.remove();};
-}
-
-function rProposals(c){
-  if(!DB.proposals)DB.proposals=[];
-  var proposals=DB.proposals;
-  if(!S.propFilter)S.propFilter={};
-  var fClient=S.propFilter.client||'';
-  var fSol=S.propFilter.solution||'';
-  var fPart=S.propFilter.partner||'';
-  var fSearch=S.propFilter.search||'';
-  var clients=[...new Set(proposals.map(function(p){return p.client;}).filter(Boolean))].sort();
-  var solutions=[...new Set(proposals.map(function(p){return p.solution;}).filter(Boolean))].sort();
-  var partners=[...new Set(proposals.map(function(p){return p.partner;}).filter(Boolean))].sort();
-  var filtered=proposals.filter(function(p){
-    if(fClient&&p.client!==fClient)return false;
-    if(fSol&&p.solution!==fSol)return false;
-    if(fPart&&p.partner!==fPart)return false;
-    if(fSearch){var q=fSearch.toLowerCase();if(!(p.dealName.toLowerCase().includes(q)||p.content.toLowerCase().includes(q)))return false;}
-    return true;
-  }).sort(function(a,b){return b.createdAt.localeCompare(a.createdAt);});
-  var selOpt=function(arr,cur){return arr.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');};
-  c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between"><h2>Proposals &amp; Pitches</h2><span style="font-size:12px;color:#888">'+filtered.length+' of '+proposals.length+' records</span></div>'
-  +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">'
-  +'<input type="text" placeholder="Search proposals..." value="'+fSearch+'" oninput="S.propFilter.search=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px;min-width:180px">'
-  +'<select onchange="S.propFilter.client=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Clients</option>'+selOpt(clients,fClient)+'</select>'
-  +'<select onchange="S.propFilter.solution=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Solutions</option>'+selOpt(solutions,fSol)+'</select>'
-  +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
-  +(filtered.length===0?'</div><div style="text-align:center;color:#aaa;padding:60px 20px;font-size:14px">No proposals found.<br><small>Generate proposals from pipeline deals in Stage 3 (Mentee Identified).</small></div>'
-  :'</div>'+filtered.map(function(p){
-    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail('+p.id+')">'
-      +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
-      +'<h3 style="margin:0;font-size:14px">'+p.dealName+'</h3>'
-      +'<span style="font-size:11px;color:#888">'+p.createdAt+'</span>'
-      +'</div>'
-      +'<div class="card-body" style="font-size:12px">'
-      +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px;color:#555">'
-      +'<span><b>Client:</b> '+p.client+'</span>'
-      +'<span><b>Solution:</b> '+p.solution+'</span>'
-      +'<span><b>Partner:</b> '+p.partner+'</span>'
-      +(p.country?'<span><b>Country:</b> '+p.country+'</span>':'')
-      +'</div>'
-      +'<div style="color:#888;font-size:11px;overflow:hidden;max-height:40px">'+p.content.slice(0,180)+'...</div>'
-      +'</div></div>';
-  }).join(''));
-}
-
 function rProposalGen(c){
   var d=(DB.opportunities||[]).find(function(o){return o.id===S.proposalDealId;});
   if(!d){c.innerHTML='<div class="page-hdr"><h2>Deal not found</h2><button onclick="S.view=\'pipeline\';renderView()">Back</button></div>';return;}
-  var tmpl=(DB.settings||{}).proposalPrompt||'';
-  var filled=tmpl
-    .replace(/\{dealName\}/g,d.name||'')
-    .replace(/\{client\}/g,d.client||'')
-    .replace(/\{solution\}/g,d.solution||'')
-    .replace(/\{partner\}/g,d.partner||'')
-    .replace(/\{country\}/g,d.country||'')
-    .replace(/\{value\}/g,d.value?String(d.value):'')
-    .replace(/\{stage\}/g,d.stage||'')
-    .replace(/\{mentee\}/g,d.mentee||d.assignee||'')
-    .replace(/\{notes\}/g,d.notes||'');
-  c.innerHTML='<div class="page-hdr" style="display:flex;align-items:center;gap:12px">'
-    +'<button onclick="S.view=\'pipeline\';renderView()" style="background:none;border:1px solid #ddd;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:13px">&larr; Back</button>'
-    +'<h2 style="margin:0">Generate Proposal / Pitch</h2>'
-    +'<span style="font-size:12px;color:#888;font-weight:400">'+d.name+'</span>'
+  if(!S.propTab)S.propTab='proposal';
+  var settings=DB.settings||{};
+  var propPT=settings.proposalPromptTemplate||'Write a professional proposal for {dealName} for client {client}. Service: {solution}. Value: £{value}. Partner: {partner}. Country: {country}. Notes: {notes}';
+  var pitchPT=settings.pitchPromptTemplate||'Write a compelling pitch for {dealName} for client {client}. Service: {solution}. Value: £{value}. Partner: {partner}. Country: {country}. Notes: {notes}';
+  var propLT=settings.proposalLayoutTemplate||'';
+  var pitchLT=settings.pitchLayoutTemplate||'';
+  function fill(t){return t.replace(/{dealName}/g,d.name||'').replace(/{client}/g,d.client||'').replace(/{solution}/g,d.solution||'').replace(/{partner}/g,d.partner||'').replace(/{country}/g,d.country||'').replace(/{value}/g,d.value?String(d.value):'').replace(/{stage}/g,d.stage||'').replace(/{notes}/g,d.notes||'');}
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var isp=S.propTab==='proposal';
+  var pTmpl=fill(isp?propPT:pitchPT);
+  var lTmpl=isp?propLT:pitchLT;
+  var prevDocs=DB.proposalDocs||[];
+  var prevDoc=prevDocs.find(function(p){return p.dealId===S.proposalDealId&&p.type===S.propTab;})||{};
+  var savedResult=prevDoc.content||'';
+  var tabOn='padding:10px 28px;border:none;border-bottom:3px solid #3b82f6;background:none;cursor:pointer;font-size:14px;color:#3b82f6;font-weight:600;';
+  var tabOff='padding:10px 28px;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;font-size:14px;color:#666;';
+  c.innerHTML=
+    '<div class="page-hdr" style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+    +'<button onclick="S.view=\'pipeline\';S.selectedDeal=null;renderView()" style="background:none;border:1px solid #ddd;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:13px">&larr; Back</button>'
+    +'<div><h2 style="margin:0;font-size:20px">'+d.name+'</h2><span style="font-size:12px;color:#888">'+d.client+'</span></div>'
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">'
+    +'<div style="border-bottom:1px solid #e2e8f0;margin-bottom:20px;display:flex">'
+    +'<button onclick="S.propTab=\'proposal\';rProposalGen(document.getElementById(\'content\'))" style="'+(isp?tabOn:tabOff)+'">📄 Proposal</button>'
+    +'<button onclick="S.propTab=\'pitch\';rProposalGen(document.getElementById(\'content\'))" style="'+(!isp?tabOn:tabOff)+'">🎯 Pitch</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:270px 1fr;gap:20px">'
     +'<div>'
-    +'<div class="card" style="margin-bottom:12px">'
-    +'<div class="card-hdr"><h3>Deal Summary</h3></div>'
-    +'<div class="card-body" style="font-size:13px;line-height:1.8">'
+    +'<div class="card" style="margin-bottom:12px"><div class="card-hdr"><h3>Deal Details</h3></div><div class="card-body" style="font-size:13px;line-height:2">'
     +'<div><b>Client:</b> '+(d.client||'—')+'</div>'
     +'<div><b>Solution:</b> '+(d.solution||'—')+'</div>'
+    +'<div><b>Value:</b> £'+(d.value||'—')+'</div>'
     +'<div><b>Partner:</b> '+(d.partner||'—')+'</div>'
+    +'<div><b>Stage:</b> '+(d.stage||'—')+'</div>'
     +'<div><b>Country:</b> '+(d.country||'—')+'</div>'
-    +'<div><b>Value:</b> '+(d.value?'£'+Number(d.value).toLocaleString():'—')+'</div>'
-    +'<div><b>Mentee:</b> '+(d.mentee||d.assignee||'—')+'</div>'
     +'</div></div>'
-    +'<div class="card">'
-    +'<div class="card-hdr"><h3>Prompt</h3></div>'
-    +'<div class="card-body">'
-    +(!(DB.settings||{}).proposalPrompt?'<div style="color:#e74c3c;font-size:12px;margin-bottom:8px;padding:8px;background:#fff5f5;border-radius:4px;">No prompt template set. Configure one in Admin &gt; Proposal Settings.</div>':'')
-    +'<textarea id="propPromptArea" rows="12" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical">'+(filled||tmpl)+'</textarea>'
-    +'<button onclick="generateProposal()" style="margin-top:8px;background:#e74c3c;color:#fff;border:none;padding:9px 16px;border-radius:4px;cursor:pointer;font-weight:600;width:100%;font-size:13px">Generate with Claude</button>'
-    +'</div></div>'
+    +'<div class="card"><div class="card-hdr"><h3>Notes</h3></div><div class="card-body" style="font-size:13px;color:#555;line-height:1.7">'+(d.notes||'No notes added.')+'</div></div>'
     +'</div>'
     +'<div>'
-    +'<div class="card" style="height:100%;min-height:400px">'
-    +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
-    +'<h3>Generated Proposal</h3>'
-    +'<button id="propSaveBtn" onclick="saveProposal()" style="display:none;background:#27ae60;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">Save to Database</button>'
-    +'</div>'
-    +'<div class="card-body"><div id="propResult" style="min-height:300px;font-size:13px;line-height:1.7;white-space:pre-wrap;color:#555;font-family:inherit">Click &ldquo;Generate with Claude&rdquo; to create a proposal/pitch based on the deal data above.</div></div>'
-    +'</div>'
+    +'<div class="card" style="margin-bottom:16px"><div class="card-hdr"><h3>'+(isp?'Proposal':'Pitch')+' Prompt</h3></div><div class="card-body">'
+    +'<textarea id="propPromptArea" style="width:100%;height:120px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:13px;resize:vertical;box-sizing:border-box;font-family:inherit">'+esc(pTmpl)+'</textarea>'
+    +'<div style="margin-top:10px"><button onclick="generateForSection(\''+S.propTab+'\')" style="background:#3b82f6;color:#fff;border:none;padding:9px 20px;border-radius:5px;cursor:pointer;font-weight:600;font-size:13px">✨ Generate with Claude</button></div>'
+    +'</div></div>'
+    +'<div class="card"><div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
+    +'<h3>'+(isp?'Proposal':'Pitch')+' Output</h3>'
+    +'<button onclick="savePropResult(\''+S.proposalDealId+'\',\''+S.propTab+'\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">💾 Save to Library</button>'
+    +'</div><div class="card-body">'
+    +(lTmpl?'<div style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-bottom:12px">'+lTmpl+'</div>':'')
+    +'<div id="propResult" contenteditable="true" style="min-height:240px;border:1px solid #ddd;border-radius:4px;padding:14px;font-size:13px;line-height:1.8;outline:none;white-space:pre-wrap;background:#fafafa">'+esc(savedResult)+'</div>'
+    +'</div></div>'
     +'</div>'
     +'</div>';
 }
@@ -3454,6 +3365,16 @@ const xi=DB.xeroInstances||{};
     +'<label style="font-weight:600;font-size:12px">Proposal Prompt Template</label>'
     +'<p style="font-size:11px;color:#888;margin:4px 0 6px">Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {mentee} {notes}</p>'
     +'<textarea id="adminProposalPrompt" rows="10" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;font-size:12px;font-family:monospace;resize:vertical" oninput="saveAdminSetting(\'proposalPrompt\',this.value)">'+propPrompt+'</textarea>'
+    +'</div>'
+    +'<div style="margin-top:16px;border-top:1px solid #e2e8f0;padding-top:16px"><p style="margin:0 0 8px;font-weight:600;color:#374151;font-size:13px">Proposal &amp; Pitch Prompt Templates</p>'
+    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Proposal Prompt Template</label>'
+    +'<textarea style="width:100%;height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {notes}" oninput="saveAdminSetting(\'proposalPromptTemplate\',this.value)">'+(DB.settings&&DB.settings.proposalPromptTemplate||'')+'</textarea>'
+    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Proposal Layout Template <small style="color:#888;font-weight:400">(optional HTML shown above output)</small></label>'
+    +'<textarea style="width:100%;height:60px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Optional HTML layout. Leave blank to show output directly." oninput="saveAdminSetting(\'proposalLayoutTemplate\',this.value)">'+(DB.settings&&DB.settings.proposalLayoutTemplate||'')+'</textarea>'
+    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Pitch Prompt Template</label>'
+    +'<textarea style="width:100%;height:80px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Placeholders: {dealName} {client} {solution} {partner} {country} {value} {stage} {notes}" oninput="saveAdminSetting(\'pitchPromptTemplate\',this.value)">'+(DB.settings&&DB.settings.pitchPromptTemplate||'')+'</textarea>'
+    +'<label style="display:block;font-size:12px;font-weight:500;margin:8px 0 3px;color:#555">Pitch Layout Template <small style="color:#888;font-weight:400">(optional HTML shown above output)</small></label>'
+    +'<textarea style="width:100%;height:60px;border:1px solid #ddd;border-radius:4px;padding:8px;font-size:12px;box-sizing:border-box;font-family:inherit;resize:vertical" placeholder="Optional HTML layout. Leave blank to show output directly." oninput="saveAdminSetting(\'pitchLayoutTemplate\',this.value)">'+(DB.settings&&DB.settings.pitchLayoutTemplate||'')+'</textarea>'
     +'</div>'
     +'</div>'
     +'</div>';
