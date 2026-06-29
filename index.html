@@ -3016,7 +3016,7 @@ function viewProposalDetail(id){
   var bg=document.createElement('div');
   bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;overflow-y:auto;display:flex;justify-content:center;align-items:flex-start;padding:40px 20px';
   bg.innerHTML='<div style="background:#fff;border-radius:8px;max-width:800px;width:100%;padding:32px;position:relative">'
-    +'<button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>'
+    +'<button onclick="this.closest(\'div'\).parentElement.remove()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:24px;cursor:pointer;line-height:1">&times;</button>'
     +'<h2 style="margin-top:0">'+p.dealName+'</h2>'
     +'<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;font-size:12px;color:#666">'
     +'<span><b>Client:</b> '+p.client+'</span>'
@@ -5777,6 +5777,14 @@ function saveProjTask(engId){
   DB.tasks.unshift(t);addAct('◻',`Task created: ${title}`);save();closeModal();renderView();
 }
 
+function moveDealToStage(dealId,newStage){
+  var opp=(DB.opportunities||[]).find(function(o){return o.id===dealId;});
+  if(!opp||opp.stage===newStage)return;
+  opp.stage=newStage;
+  save();
+  renderView();
+}
+
 function rPipeline(c){
   if(!DB.opportunities) DB.opportunities=[];
   // Pre-populate from saved defaults if no filters set yet
@@ -5862,10 +5870,10 @@ function rPipeline(c){
           <div class="lc-stage-name">${LC_STAGE_LABELS[stage]||stage}</div>
           <div class="lc-stage-count">${stageOpps.length} deal${stageOpps.length!==1?'s':''} · ${fmt(stageVal)}</div>
         </div>
-        <div class="lc-cards">
+        <div class="lc-cards" ondragover="event.preventDefault()" ondrop="moveDealToStage(event.dataTransfer.getData('dealId'),'${stage}')">
           ${stageOpps.map(o=>{
             const tb={chair:'type-chair',executive:'type-executive',team:'type-team',bap:'type-bap',path2power:'type-path2power'}[o.solution]||'b-grey';
-            return`<div class="lc-card" onclick="openDealModal('${o.id}')">
+            return`<div class="lc-card" draggable="true" ondragstart="event.dataTransfer.setData('dealId','${o.id}');event.stopPropagation()" onclick="openDealModal('${o.id}')">
               <div class="lc-card-name">${o.name}</div>
               <div class="lc-card-meta">${o.client||'—'}<br>${o.partner||'—'} · ${o.country||'—'}</div>
               <div class="lc-card-val">${fmt(o.value)}</div>${o.closeDate?'\n              <div style="font-size:11px;color:#94a3b8;margin-top:3px">Close: '+o.closeDate+'</div>':''}
