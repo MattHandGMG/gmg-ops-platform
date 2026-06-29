@@ -3062,7 +3062,7 @@ function rProposals(c){
   +'<select onchange="S.propFilter.partner=this.value;rProposals(document.getElementById(\'main\'))" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;font-size:12px"><option value="">All Partners</option>'+selOpt(partners,fPart)+'</select>'
   +(filtered.length===0?'</div><div style="text-align:center;color:#aaa;padding:60px 20px;font-size:14px">No proposals found.<br><small>Generate proposals from pipeline deals in Stage 3 (Mentee Identified).</small></div>'
   :'</div>'+filtered.map(function(p){
-    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail(''+p.id+'')">'
+    return '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="viewProposalDetail('+p.id+')">'
       +'<div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
       +'<h3 style="margin:0;font-size:14px">'+p.dealName+'</h3>'
       +'<span style="font-size:11px;color:#888">'+p.createdAt+'</span>'
