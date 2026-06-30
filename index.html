@@ -6705,6 +6705,7 @@ function setPhasesBillingMode(eId,mode){
   saveDB();
   renderView();
 }
+function saveDB(){try{window._dbDirty=true;}catch(e){}}
 function closePlanModal(){var m=document.querySelector('.plan-modal');if(m)m.remove();}
 function openAddPhaseModal(eId){
   var statuses=["Pending","Active","Complete","Cancelled"];
