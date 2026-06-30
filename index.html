@@ -6098,7 +6098,6 @@ function rProjectDetail(c, engId){
     {id:'calendar',label:'Calendar'},
     {id:'financials',label:'Financials'},
   {id:'plan',label:'Plan'},
-    {id:'phases',label:'Phases'}
   ];
 
   c.innerHTML=`
@@ -6173,7 +6172,7 @@ function rProjectDetail(c, engId){
   else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
   else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
   else if(tab==='plan') rProjPlan(body,e);
-  else if(tab==='phases') rProjPhases(body,e);
+  injectPhaseHeader(c,e);
 
   // Comments card
   var _pc=document.createElement('div');
@@ -6603,102 +6602,82 @@ function rProjFinancials(body,e,stages,sessions){
   </div>`;
 }
 
-function rProjPhases(body,e){
+function injectPhaseHeader(c,e){
   if(!e.phases) e.phases=[];
   if(!window._phSel) window._phSel={};
   if(!window._phTab) window._phTab={};
   var eId=e.id;
   var phases=e.phases;
-  var selPi=(window._phSel[eId]!==undefined)?window._phSel[eId]:-1;
   var total=phases.length;
-  var done=phases.filter(function(p){return p.status==="Complete";}).length;
-  var pct=total>0?Math.round((done/total)*100):0;
-  var statusColor={"Pending":"#6b7280","Active":"#3b82f6","Complete":"#10b981","On Hold":"#f59e0b"};
-  var html="";
-  html+='<div style="padding:20px">' ;
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' ;
-  html+='<h3 style="margin:0;font-size:18px;font-weight:600">Programme Phases</h3>';
-  html+='<button data-eid="'+eId+'" onclick="openAddPhaseModal(this.dataset.eid)" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">+ Add Phase</button>';
-  html+='</div>';
-  // Progress bar
-  html+='<div style="margin-bottom:20px">';
-  html+='<div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:13px;color:#6b7280">Programme Progress</span><span style="font-size:13px;font-weight:600">'+pct+'% ('+done+'/'+total+' phases complete)</span></div>';
-  html+='<div style="height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden">';
-  html+='<div style="height:100%;width:'+pct+'%;background:linear-gradient(90deg,#3b82f6,#10b981);transition:width 0.3s"></div>';
-  html+='</div>';
-  // Phase color strip
-  if(total>0){
-    html+='<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:6px">';
-    var w=Math.round(100/total);
-    for(var i=0;i<total;i++){
-      var ph=phases[i];
-      var col=statusColor[ph.status]||"#6b7280";
-      var ew=(i===total-1)?(100-w*i):w;
-      html+='<div style="width:'+ew+'%;background:'+col+';margin-right:1px;border-radius:2px" title="'+ph.name+'"></div>';
-    }
-    html+='</div>';
-  }
-  html+='</div>';
-  // Phase cards
+  var selPi=(window._phSel[eId]!==undefined)?window._phSel[eId]:-1;
+  var statusColor={"Pending":"#f59e0b","Active":"#34d399","Complete":"#a78bfa","On Hold":"#fb923c"};
+  // Build phase section in hero
+  var wrapper=c.firstElementChild;
+  if(!wrapper) return;
+  var hero=wrapper.children[0];
+  if(!hero) return;
+  // Remove any existing phase bar
+  var old=document.getElementById("phdr-"+eId);
+  if(old) old.remove();
+  var bar=document.createElement("div");
+  bar.id="phdr-"+eId;
+  bar.style.cssText="padding:0 24px 20px;margin-top:4px";
+  var bHtml='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  bHtml+='<span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em">Phases</span>';
+  bHtml+='<button data-eid="'+eId+'" onclick="openAddPhaseModal(this.dataset.eid)" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px)">+ Add Phase</button>';
+  bHtml+='</div>';
   if(total===0){
-    html+='<div style="text-align:center;padding:40px;color:#9ca3af;background:#f9fafb;border-radius:8px;border:2px dashed #e5e7eb">';
-    html+='<div style="font-size:32px;margin-bottom:8px">📋</div>';
-    html+='<div style="font-size:16px;font-weight:500;margin-bottom:4px">No phases yet</div>';
-    html+='<div style="font-size:13px">Click &ldquo;+ Add Phase&rdquo; to get started</div></div>';
+    bHtml+='<div style="font-size:13px;color:rgba(255,255,255,0.5);padding:8px 0">No phases yet — click &ldquo;+ Add Phase&rdquo; to begin.</div>';
   } else {
-    html+='<div style="display:flex;flex-direction:column;gap:8px">';
+    bHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
     for(var i=0;i<total;i++){
       var ph=phases[i];
-      var col=statusColor[ph.status]||"#6b7280";
+      var col=statusColor[ph.status]||"#94a3b8";
       var isSel=(selPi===i);
-      var bg=isSel?"#eff6ff":"#fff";
-      var border=isSel?"2px solid #3b82f6":"1px solid #e5e7eb";
-      html+='<div data-eid="'+eId+'" data-pi="'+i+'" onclick="selectPhaseBar(this.dataset.eid,parseInt(this.dataset.pi))" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:'+bg+';border:'+border+';border-radius:8px;cursor:pointer;transition:all 0.2s">';
-      html+='<div style="width:4px;height:40px;background:'+col+';border-radius:2px;flex-shrink:0"></div>';
-      html+='<div style="width:28px;height:28px;border-radius:50%;background:'+col+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;flex-shrink:0">'+( i+1)+'</div>';
-      html+='<div style="flex:1;min-width:0">';
-      html+='<div style="font-size:14px;font-weight:600;color:#111">'+ph.name+'</div>';
-      var dateStr="";
-      if(ph.startDate&&ph.endDate) dateStr=ph.startDate+" → "+ph.endDate;
-      else if(ph.startDate) dateStr="From "+ph.startDate;
-      if(dateStr) html+='<div style="font-size:12px;color:#6b7280;margin-top:2px">'+dateStr+'</div>';
-      html+='</div>';
-      html+='<span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:'+col+'22;color:'+col+'">'+ph.status+'</span>';
-      if(ph.amount) html+='<span style="font-size:13px;font-weight:600;color:#111;margin-left:8px">£'+ph.amount.toLocaleString()+'</span>';
-      html+='<span style="font-size:16px;color:#6b7280;margin-left:8px">'+( isSel?"▲":"▼")+'</span>';
-      html+='</div>';
+      var bg=isSel?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)";
+      var border=isSel?"2px solid rgba(255,255,255,0.7)":"1px solid rgba(255,255,255,0.2)";
+      bHtml+='<div data-eid="'+eId+'" data-pi="'+i+'" onclick="selectPhaseBar(this.dataset.eid,parseInt(this.dataset.pi))" style="min-width:140px;flex:1;padding:10px 14px;border-radius:8px;cursor:pointer;border:'+border+';background:'+bg+';transition:all 0.15s">';
+      bHtml+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">';
+      bHtml+='<div style="width:8px;height:8px;border-radius:50%;background:'+col+'"></div>';
+      bHtml+='<span style="font-size:12px;font-weight:700;color:#fff">Phase '+( i+1)+'</span>';
+      if(isSel) bHtml+='<span style="font-size:10px;color:rgba(255,255,255,0.6);margin-left:auto">▲ open</span>';
+      bHtml+='</div>';
+      bHtml+='<div style="font-size:12px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">'+ph.name+'</div>';
+      bHtml+='<div style="font-size:10px;color:'+col+';margin-top:2px;font-weight:600">'+ph.status+'</div>';
+      bHtml+='</div>';
     }
-    html+='</div>';
+    bHtml+='</div>';
   }
-  html+='</div>';
-  body.innerHTML=html;
-  // If a phase is selected, render the management section
+  bar.innerHTML=bHtml;
+  hero.appendChild(bar);
+  // Phase detail panel (if selected)
+  var oldPanel=document.getElementById("phpanel-"+eId);
+  if(oldPanel) oldPanel.remove();
   if(selPi>=0 && selPi<total){
     var ph=phases[selPi];
     var tabKey=eId+"-"+selPi;
     var curTab=window._phTab[tabKey]||"overview";
-    var mgmtDiv=document.createElement("div");
-    mgmtDiv.style.cssText="margin:0 20px 20px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)";
-    var mTabs=["overview","plan","gantt","financials"];
-    var mLabels={"overview":"Overview","plan":"Plan","gantt":"Gantt","financials":"Financials"};
-    var mHtml='<div style="background:linear-gradient(135deg,#1e3a5f,#2563eb);color:#fff;padding:16px 20px">';
-    mHtml+='<div style="font-size:16px;font-weight:700;margin-bottom:4px">Phase '+( selPi+1)+': '+ph.name+'</div>';
-    mHtml+='<div style="font-size:12px;opacity:0.8">Manage this phase — tasks, timeline, and financials</div>';
-    mHtml+='</div>';
-    mHtml+='<div style="display:flex;border-bottom:1px solid #e5e7eb;background:#f9fafb">';
+    var mTabs=[{id:"overview",label:"Overview"},{id:"plan",label:"Plan"},{id:"gantt",label:"Gantt"},{id:"financials",label:"Financials"}];
+    var panel=document.createElement("div");
+    panel.id="phpanel-"+eId;
+    panel.style.cssText="background:#fff;border-bottom:2px solid #e5e7eb";
+    var pHtml='<div style="background:#f8faff;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;justify-content:space-between;align-items:center">';
+    pHtml+='<div style="display:flex;align-items:center;gap:10px">';
+    pHtml+='<span style="font-size:14px;font-weight:700;color:#1e3a5f">Phase '+( selPi+1)+': '+ph.name+'</span>';
+    pHtml+='<span style="font-size:11px;font-weight:600;color:'+( statusColor[ph.status]||"#6b7280")+';background:'+( statusColor[ph.status]||"#6b7280")+ '22;padding:2px 8px;border-radius:10px">'+ph.status+'</span>';
+    pHtml+='</div>';
+    pHtml+='<div style="display:flex;gap:0">';
     for(var ti=0;ti<mTabs.length;ti++){
       var t=mTabs[ti];
-      var active=(t===curTab);
-      var tbg=active?"#fff":"transparent";
-      var tcol=active?"#2563eb":"#6b7280";
-      var tbb=active?"2px solid #2563eb":"2px solid transparent";
-      mHtml+='<button data-eid="'+eId+'" data-pi="'+selPi+'" data-tab="'+t+'" onclick="selectPhaseSubTab(this.dataset.eid,parseInt(this.dataset.pi),this.dataset.tab)" id="phtab-'+eId+'-'+selPi+'-'+t+'" style="padding:10px 18px;border:none;border-bottom:'+tbb+';background:'+tbg+';color:'+tcol+';cursor:pointer;font-size:14px;font-weight:'+(active?"600":"400")+'">'+mLabels[t]+'</button>';
+      var active=(t.id===curTab);
+      pHtml+='<button data-eid="'+eId+'" data-pi="'+selPi+'" data-tab="'+t.id+'" onclick="selectPhaseSubTab(this.dataset.eid,parseInt(this.dataset.pi),this.dataset.tab)" style="padding:8px 16px;border:none;border-bottom:'+( active?"2px solid #2563eb":"2px solid transparent")+';background:transparent;color:'+( active?"#2563eb":"#6b7280")+';cursor:pointer;font-size:13px;font-weight:'+( active?"600":"400")+'">'+t.label+'</button>';
     }
-    mHtml+='</div>';
-    mHtml+='<div id="phase-content-'+eId+'-'+selPi+'"></div>';
-    mgmtDiv.innerHTML=mHtml;
-    body.appendChild(mgmtDiv);
-    var box=document.getElementById("phase-content-"+eId+"-"+selPi);
+    pHtml+='</div></div>';
+    pHtml+='<div id="phcontent-'+eId+'-'+selPi+'"></div>';
+    panel.innerHTML=pHtml;
+    var pdBody=document.getElementById("pd-body");
+    if(pdBody&&pdBody.parentNode) pdBody.parentNode.insertBefore(panel,pdBody);
+    var box=document.getElementById("phcontent-"+eId+"-"+selPi);
     if(box){
       if(curTab==="overview") rPhaseOverview(box,e,ph,selPi);
       else if(curTab==="plan") rPhasePlan(box,e,ph,selPi);
@@ -6707,16 +6686,15 @@ function rProjPhases(body,e){
     }
   }
 }
+
 function selectPhaseBar(eId,pi){
   if(!window._phSel) window._phSel={};
   window._phSel[eId]=(window._phSel[eId]===pi)?-1:pi;
-  S.tab.projDetailTab="phases";
   renderView();
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
   window._phTab[eId+"-"+pi]=tab;
-  S.tab.projDetailTab="phases";
   renderView();
 }
 
@@ -6725,7 +6703,6 @@ function setPhasesBillingMode(eId,mode){
   if(!e) return;
   e.phasesBillingMode=mode;
   saveDB();
-  S.tab.projDetailTab="phases";
   renderView();
 }
 function openAddPhaseModal(eId){
@@ -6771,7 +6748,6 @@ function saveNewPhase(eId){
   });
   closePlanModal();
   saveDB();
-  S.tab.projDetailTab="phases";
   renderView();
 }
 function openEditPhaseModal(eId,pi){
@@ -6814,7 +6790,6 @@ function saveEditPhase(eId,pi){
   ph.amount=((document.getElementById("ph-amount")||{}).value||"");
   closePlanModal();
   saveDB();
-  S.tab.projDetailTab="phases";
   renderView();
 }
 function deletePhase(eId,pi){
@@ -6823,7 +6798,6 @@ function deletePhase(eId,pi){
   if(!confirm("Remove this phase?")) return;
   e.phases.splice(pi,1);
   saveDB();
-  S.tab.projDetailTab="phases";
   renderView();
 }function rPhaseOverview(box,e,ph,pi){
   var eId=e.id;
@@ -6958,7 +6932,7 @@ function savePhaseFinancials(eId,pi){
   if(amt) e.phases[pi].amount=parseFloat(amt.value)||0;
   if(bs) e.phases[pi].billingStatus=bs.value;
   if(bd) e.phases[pi].billedDate=bd.value;
-  saveDB(); S.tab.projDetailTab="phases"; renderView();
+  saveDB(); renderView();
 }
 function openAddPhaseTaskModal(eId,pi){
   var overlay=document.createElement("div");
@@ -6987,7 +6961,7 @@ function savePhaseTask(eId,pi){
   e.phases[pi].tasks.push({name:nm.value.trim(),priority:document.getElementById("pht-pri").value,dueDate:document.getElementById("pht-due").value,assignee:document.getElementById("pht-asn").value,done:false});
   saveDB();
   var m=document.getElementById("phase-task-modal"); if(m) m.remove();
-  S.tab.projDetailTab="phases"; renderView();
+  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; renderView();
 }
 function togglePhaseTask(eId,pi,ti,checked){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
@@ -6999,7 +6973,7 @@ function deletePhaseTask(eId,pi,ti){
   if(!e||!e.phases||!e.phases[pi]) return;
   if(!confirm("Delete this task?")) return;
   e.phases[pi].tasks.splice(ti,1); saveDB();
-  S.tab.projDetailTab="phases"; renderView();
+  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; renderView();
 }
 
 function openProjTaskModal(engId){
