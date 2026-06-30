@@ -6802,129 +6802,152 @@ function deletePhase(eId,pi){
   saveDB();
   S.view='projects';renderView();
 }function rPhaseOverview(box,e,ph,pi){
-  var eId=e.id;
-  var statusColor={"Pending":"#6b7280","Active":"#3b82f6","Complete":"#10b981","On Hold":"#f59e0b"};
-  var col=statusColor[ph.status]||"#6b7280";
-  var html='<div style="padding:20px">';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px">';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">Status</div><div style="font-size:15px;font-weight:700;color:'+col+'">'+ph.status+'</div></div>';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">Start Date</div><div style="font-size:15px;font-weight:700">'+( ph.startDate||"Not set")+'</div></div>';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">End Date</div><div style="font-size:15px;font-weight:700">'+( ph.endDate||"Not set")+'</div></div>';
-  html+='</div>';
-  if(ph.description){
-    html+='<div style="margin-bottom:20px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">Description</div><div style="font-size:14px;color:#374151;background:#f9fafb;padding:12px;border-radius:6px">'+ph.description+'</div></div>';
-  }
-  html+='<div><div style="font-size:13px;font-weight:600;margin-bottom:8px">Phase Notes</div>';
-  html+='<textarea id="ph-notes-'+eId+'-'+pi+'" style="width:100%;height:120px;border:1px solid #d1d5db;border-radius:6px;padding:10px;font-size:14px;resize:vertical;font-family:inherit;box-sizing:border-box">'+( ph.notes||"")+'</textarea>';
-  html+='<button data-eid="'+eId+'" data-pi="'+pi+'" onclick="savePhaseNotes(this.dataset.eid,parseInt(this.dataset.pi))" style="margin-top:8px;background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">Save Notes</button>';
-  html+='</div>';
-  html+='<div style="margin-top:20px;display:flex;gap:8px">';
-  html+='<button data-eid="'+eId+'" data-pi="'+pi+'" onclick="openEditPhaseModal(this.dataset.eid,parseInt(this.dataset.pi))" style="background:#f9fafb;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">✏️ Edit Phase</button>';
-  html+='<button data-eid="'+eId+'" data-pi="'+pi+'" onclick="deletePhase(this.dataset.eid,parseInt(this.dataset.pi))" style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px">🗑 Delete Phase</button>';
-  html+='</div>';
-  html+='</div>';
-  box.innerHTML=html;
-}
-function savePhaseNotes(eId,pi){
-  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
-  if(!e||!e.phases||!e.phases[pi]) return;
-  var el=document.getElementById("ph-notes-"+eId+"-"+pi);
-  if(el) e.phases[pi].notes=el.value;
-  saveDB();
-  var btn=document.querySelector("[data-eid=\""+eId+"\"][data-pi=\""+pi+"\"][onclick*=savePhaseNotes]");
-  if(btn){btn.textContent="✓ Saved";btn.style.background="#10b981";setTimeout(function(){btn.textContent="Save Notes";btn.style.background="#3b82f6";},1500);}
+  var sc={"Pending":"#f59e0b","Active":"#34d399","Complete":"#a78bfa","On Hold":"#fb923c"};
+  var col=sc[ph.status]||"#94a3b8";
+  var amt=ph.amount?parseFloat(ph.amount):0;
+  var h="<div style=\"padding:20px;\">";
+  h+="<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;\">";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Phase Name</div>";
+  h+="<div style=\"font-size:18px;font-weight:700;color:#f1f5f9;\">"+(ph.name||"Unnamed")+"</div>";
+  if(ph.desc)h+="<div style=\"color:#94a3b8;margin-top:8px;font-size:13px;line-height:1.5;\">"+ph.desc+"</div>";
+  h+="</div>";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;\">Status</div>";
+  h+="<span style=\"background:"+col+"22;color:"+col+";padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;\">"+(ph.status||"Pending")+"</span>";
+  h+="</div>";
+  h+="</div>";
+  h+="<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;\">";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Start Date</div>";
+  h+="<div style=\"font-size:16px;font-weight:600;color:#f1f5f9;\">"+(ph.start||"Not set")+"</div>";
+  h+="</div>";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">End Date</div>";
+  h+="<div style=\"font-size:16px;font-weight:600;color:#f1f5f9;\">"+(ph.end||"Not set")+"</div>";
+  h+="</div>";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Phase Budget</div>";
+  h+="<div style=\"font-size:16px;font-weight:700;color:#34d399;\">£"+amt.toLocaleString()+"</div>";
+  h+="</div>";
+  h+="</div>";
+  h+="</div>";
+  box.innerHTML=h;
 }
 function rPhasePlan(box,e,ph,pi){
-  var eId=e.id;
   var tasks=ph.tasks||[];
-  var html='<div style="padding:20px">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
-  html+='<h4 style="margin:0;font-size:15px;font-weight:600">Tasks ('+tasks.length+')</h4>';
-  html+='<button data-eid="'+eId+'" data-pi="'+pi+'" onclick="openAddPhaseTaskModal(this.dataset.eid,parseInt(this.dataset.pi))" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:8px 14px;cursor:pointer;font-size:13px">+ Add Task</button>';
-  html+='</div>';
-  if(tasks.length===0){
-    html+='<div style="text-align:center;padding:30px;color:#9ca3af;background:#f9fafb;border-radius:8px">No tasks yet. Click &ldquo;+ Add Task&rdquo; to begin.</div>';
+  var h="<div style=\"padding:20px;\">";
+  h+="<div style=\"font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:16px;\">Phase Plan</div>";
+  if(!tasks.length){
+    h+="<div style=\"text-align:center;padding:32px;color:#64748b;background:#1e293b;border-radius:8px;\">";
+    h+="<div style=\"font-size:32px;margin-bottom:8px;\">&#128203;</div>";
+    h+="<div style=\"font-size:14px;margin-bottom:4px;\">No tasks added to this phase</div>";
+    h+="<div style=\"font-size:12px;\">Tasks will appear here once added</div>";
+    h+="</div>";
   } else {
-    var pColors={"High":"#dc2626","Medium":"#f59e0b","Low":"#10b981"};
-    html+='<div style="display:flex;flex-direction:column;gap:8px">';
-    for(var i=0;i<tasks.length;i++){
-      var t=tasks[i];
-      var pc=pColors[t.priority]||"#6b7280";
-      html+='<div style="display:flex;align-items:center;gap:10px;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fff">';
-      html+='<input type="checkbox" data-eid="'+eId+'" data-pi="'+pi+'" data-ti="'+i+'" '+( t.done?"checked":"")+' onchange="togglePhaseTask(this.dataset.eid,parseInt(this.dataset.pi),parseInt(this.dataset.ti),this.checked)" style="width:16px;height:16px;cursor:pointer">';
-      html+='<div style="flex:1;min-width:0">';
-      html+='<div style="font-size:14px;font-weight:500;'+( t.done?"text-decoration:line-through;color:#9ca3af":"color:#111")+'">'+t.name+'</div>';
-      if(t.assignee||t.dueDate){
-        html+='<div style="font-size:12px;color:#6b7280;margin-top:2px">';
-        if(t.assignee) html+='<span>'+t.assignee+'</span>';
-        if(t.assignee&&t.dueDate) html+=' · ';
-        if(t.dueDate) html+='<span>Due: '+t.dueDate+'</span>';
-        html+='</div>';
-      }
-      html+='</div>';
-      if(t.priority) html+='<span style="font-size:11px;font-weight:600;color:'+pc+';background:'+pc+'22;padding:2px 8px;border-radius:10px">'+t.priority+'</span>';
-      html+='<button data-eid="'+eId+'" data-pi="'+pi+'" data-ti="'+i+'" onclick="deletePhaseTask(this.dataset.eid,parseInt(this.dataset.pi),parseInt(this.dataset.ti))" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0 4px">×</button>';
-      html+='</div>';
-    }
-    html+='</div>';
+    var done=tasks.filter(function(t){return t.done;}).length;
+    var pct=tasks.length>0?Math.round((done/tasks.length)*100):0;
+    h+="<div style=\"background:#1e293b;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;gap:16px;\">";
+    h+="<span style=\"font-size:13px;color:#94a3b8;\">"+done+" of "+tasks.length+" tasks complete</span>";
+    h+="<div style=\"flex:1;height:6px;background:#334155;border-radius:3px;overflow:hidden;\">";
+    h+="<div style=\"height:100%;width:"+pct+"%;background:#34d399;border-radius:3px;\"></div>";
+    h+="</div>";
+    h+="<span style=\"font-size:13px;color:#34d399;font-weight:600;\">"+pct+"%</span>";
+    h+="</div>";
+    h+="<div style=\"display:flex;flex-direction:column;gap:8px;\">";
+    tasks.forEach(function(t,i){
+      var op=t.done?"opacity:0.5;":"";
+      var td=t.done?"text-decoration:line-through;":"";
+      h+="<div style=\"background:#1e293b;border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:12px;"+op+"\">";
+      h+="<input type=\"checkbox\" "+(t.done?"checked":"")+" onchange=\"togglePhaseTask('"+e.id+"',"+pi+","+i+")\" style=\"cursor:pointer;\">";
+      h+="<span style=\"flex:1;color:#f1f5f9;font-size:13px;"+td+"\">"+(t.text||"Task")+"</span>";
+      if(t.assignee)h+="<span style=\"color:#94a3b8;font-size:12px;\">"+t.assignee+"</span>";
+      h+="</div>";
+    });
+    h+="</div>";
   }
-  html+='</div>';
-  box.innerHTML=html;
+  h+="</div>";
+  box.innerHTML=h;
 }
 function rPhaseGantt(box,e,ph,pi){
-  var tasks=ph.tasks||[];
-  var html='<div style="padding:20px">';
-  html+='<h4 style="margin:0 0 16px;font-size:15px;font-weight:600">Phase Gantt</h4>';
-  if(tasks.length===0){
-    html+='<div style="text-align:center;padding:30px;color:#9ca3af;background:#f9fafb;border-radius:8px">No tasks to display. Add tasks in the Plan tab.</div>';
-  } else if(!ph.startDate||!ph.endDate){
-    html+='<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:#92400e">Set phase Start and End dates (Edit Phase) for proportional bars.</div>';
-    html+='<div style="display:flex;flex-direction:column;gap:6px">';
-    for(var i=0;i<tasks.length;i++){
-      var t=tasks[i];
-      html+='<div style="display:flex;align-items:center;gap:10px"><div style="width:140px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+( t.done?"#9ca3af":"#374151")+'">'+t.name+'</div><div style="flex:1;height:20px;background:#e5e7eb;border-radius:4px;overflow:hidden"><div style="height:100%;width:50%;background:'+( t.done?"#10b981":"#3b82f6")+';border-radius:4px"></div></div></div>';
-    }
-    html+='</div>';
+  var h="<div style=\"padding:20px;\">";
+  var s=ph.start?new Date(ph.start):null;
+  var en=ph.end?new Date(ph.end):null;
+  var today=new Date();
+  if(!s||!en||isNaN(s.getTime())||isNaN(en.getTime())){
+    h+="<div style=\"text-align:center;padding:32px;color:#64748b;background:#1e293b;border-radius:8px;\">";
+    h+="<div style=\"font-size:32px;margin-bottom:8px;\">&#128197;</div>";
+    h+="<div>Set start and end dates to view the timeline</div>";
+    h+="</div>";
   } else {
-    var phStart=new Date(ph.startDate).getTime();
-    var phEnd=new Date(ph.endDate).getTime();
-    var phDur=phEnd-phStart||1;
-    html+='<div style="display:flex;flex-direction:column;gap:6px">';
-    for(var i=0;i<tasks.length;i++){
-      var t=tasks[i];
-      var left=0,width=40;
-      if(t.dueDate){var tEnd=new Date(t.dueDate).getTime();left=0;width=Math.max(5,Math.min(95,Math.round(((tEnd-phStart)/phDur)*100)));}
-      html+='<div style="display:flex;align-items:center;gap:10px"><div style="width:140px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:'+( t.done?"#9ca3af":"#374151")+';'+( t.done?"text-decoration:line-through":"")+'">'+t.name+'</div><div style="flex:1;height:20px;background:#e5e7eb;border-radius:4px;overflow:hidden;position:relative"><div style="position:absolute;left:0;width:'+width+'%;height:100%;background:'+( t.done?"#10b981":"#3b82f6")+';border-radius:4px"></div></div>'+( t.dueDate?'<div style="width:80px;font-size:11px;color:#6b7280;text-align:right">'+t.dueDate+'</div>':"")+ '</div>';
-    }
-    html+='</div>';
+    var total=Math.max(1,en-s);
+    var elapsed=Math.min(Math.max(0,today-s),total);
+    var pct=Math.round((elapsed/total)*100);
+    var dur=Math.round(total/(1000*60*60*24));
+    var rem=Math.round((en-today)/(1000*60*60*24));
+    var remCol=rem<0?"#f87171":"#34d399";
+    h+="<div style=\"background:#1e293b;border-radius:8px;padding:20px;margin-bottom:16px;\">";
+    h+="<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;\">";
+    h+="<span style=\"font-size:12px;color:#64748b;\">"+ph.start+"</span>";
+    h+="<span style=\"font-size:14px;font-weight:600;color:#f1f5f9;\">"+pct+"% elapsed</span>";
+    h+="<span style=\"font-size:12px;color:#64748b;\">"+ph.end+"</span>";
+    h+="</div>";
+    h+="<div style=\"height:14px;background:#334155;border-radius:7px;overflow:hidden;margin-bottom:16px;\">";
+    h+="<div style=\"height:100%;width:"+pct+"%;background:linear-gradient(90deg,#4f46e5,#7c3aed);border-radius:7px;\"></div>";
+    h+="</div>";
+    h+="<div style=\"display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;\">";
+    h+="<div><div style=\"font-size:22px;font-weight:700;color:#f1f5f9;\">"+dur+"</div><div style=\"font-size:11px;color:#64748b;\">Total Days</div></div>";
+    h+="<div><div style=\"font-size:22px;font-weight:700;color:"+remCol+";\">"+Math.abs(rem)+"</div><div style=\"font-size:11px;color:#64748b;\">"+(rem<0?"Days Overdue":"Days Left")+"</div></div>";
+    h+="<div><div style=\"font-size:22px;font-weight:700;color:#a78bfa;\">"+pct+"%</div><div style=\"font-size:11px;color:#64748b;\">Elapsed</div></div>";
+    h+="</div>";
+    h+="</div>";
   }
-  html+='</div>';
-  box.innerHTML=html;
+  h+="</div>";
+  box.innerHTML=h;
 }
 function rPhaseFinancials(box,e,ph,pi){
-  var eId=e.id;
-  var bsColors={"Unpaid":"#dc2626","Invoiced":"#f59e0b","Paid":"#10b981"};
-  var bsColor=bsColors[ph.billingStatus]||"#6b7280";
-  var bMode=e.phasesBillingMode||"individual";
-  var html='<div style="padding:20px">';
-  html+='<h4 style="margin:0 0 16px;font-size:15px;font-weight:600">Phase Financials</h4>';
-  if(bMode==="combined") html+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;margin-bottom:20px;font-size:13px;color:#1e40af">Combined billing mode — all phases billed together.</div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px">';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">Amount</div><div style="font-size:18px;font-weight:700">£'+( ph.amount?ph.amount.toLocaleString():"—")+'</div></div>';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">Billing Status</div><div style="font-size:15px;font-weight:700;color:'+bsColor+'">'+( ph.billingStatus||"Not set")+'</div></div>';
-  html+='<div style="background:#f9fafb;border-radius:8px;padding:14px"><div style="font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:600;margin-bottom:4px">Invoice Date</div><div style="font-size:15px;font-weight:700">'+( ph.billedDate||"—")+'</div></div>';
-  html+='</div>';
-  html+='<div style="border:1px solid #e5e7eb;border-radius:8px;padding:16px">';
-  html+='<div style="font-size:14px;font-weight:600;margin-bottom:12px">Update Billing</div>';
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
-  html+='<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Amount (£)</label><input id="ph-amt-'+eId+'-'+pi+'" type="number" value="'+( ph.amount||"")+'" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px;font-size:14px;box-sizing:border-box"></div>';
-  html+='<div><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Status</label><select id="ph-bs-'+eId+'-'+pi+'" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px;font-size:14px;box-sizing:border-box"><option '+( (ph.billingStatus||"Unpaid")==="Unpaid"?"selected":"")+'>Unpaid</option><option '+( ph.billingStatus==="Invoiced"?"selected":"")+'>Invoiced</option><option '+( ph.billingStatus==="Paid"?"selected":"")+'>Paid</option></select></div>';
-  html+='</div>';
-  html+='<div style="margin-bottom:12px"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Invoice Date</label><input id="ph-bd-'+eId+'-'+pi+'" type="date" value="'+( ph.billedDate||"")+'" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px;font-size:14px;box-sizing:border-box"></div>';
-  html+='<button data-eid="'+eId+'" data-pi="'+pi+'" onclick="savePhaseFinancials(this.dataset.eid,parseInt(this.dataset.pi))" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:10px 20px;cursor:pointer;font-size:14px;font-weight:600">Save Financials</button>';
-  html+='</div></div>';
-  box.innerHTML=html;
+  var amt=ph.amount?parseFloat(ph.amount):0;
+  var all=e.phases||[];
+  var totalBudget=all.reduce(function(s,p){return s+(p.amount?parseFloat(p.amount):0);},0);
+  var pct=totalBudget>0?Math.round((amt/totalBudget)*100):0;
+  var h="<div style=\"padding:20px;\">";
+  h+="<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;\">";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Phase Budget</div>";
+  h+="<div style=\"font-size:24px;font-weight:700;color:#34d399;\">£"+amt.toLocaleString()+"</div>";
+  h+="</div>";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Total Project Budget</div>";
+  h+="<div style=\"font-size:24px;font-weight:700;color:#f1f5f9;\">£"+totalBudget.toLocaleString()+"</div>";
+  h+="</div>";
+  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Share of Budget</div>";
+  h+="<div style=\"font-size:24px;font-weight:700;color:#a78bfa;\">"+pct+"%</div>";
+  h+="</div>";
+  h+="</div>";
+  if(all.length>1){
+    h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
+    h+="<div style=\"font-size:13px;font-weight:600;color:#f1f5f9;margin-bottom:12px;\">All Phases Breakdown</div>";
+    all.forEach(function(p,idx){
+      var a=p.amount?parseFloat(p.amount):0;
+      var pp=totalBudget>0?Math.round((a/totalBudget)*100):0;
+      var isCur=(idx===pi);
+      var nc=isCur?"#a78bfa":"#94a3b8";
+      var bc=isCur?"#a78bfa":"#4f46e5";
+      h+="<div style=\"display:flex;align-items:center;gap:12px;margin-bottom:10px;\">";
+      h+="<div style=\"width:120px;font-size:12px;color:"+nc+";font-weight:"+(isCur?"600":"400")+";white-space:nowrap;overflow:hidden;text-overflow:ellipsis;\">"+(p.name||"Phase "+(idx+1))+"</div>";
+      h+="<div style=\"flex:1;height:8px;background:#334155;border-radius:4px;overflow:hidden;\">";
+      h+="<div style=\"height:100%;width:"+pp+"%;background:"+bc+";border-radius:4px;\"></div>";
+      h+="</div>";
+      h+="<div style=\"width:60px;text-align:right;font-size:12px;color:#f1f5f9;\">£"+a.toLocaleString()+"</div>";
+      h+="</div>";
+    });
+    h+="</div>";
+  }
+  h+="</div>";
+  box.innerHTML=h;
 }
+
 function savePhaseFinancials(eId,pi){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e||!e.phases||!e.phases[pi]) return;
