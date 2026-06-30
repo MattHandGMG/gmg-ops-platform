@@ -6690,12 +6690,14 @@ function injectPhaseHeader(c,e){
 function selectPhaseBar(eId,pi){
   if(!window._phSel) window._phSel={};
   window._phSel[eId]=(window._phSel[eId]===pi)?-1:pi;
-  rProjectDetail(document.getElementById('content'),eId);
+  var e=DB.engagements.find(function(x){return x.id===eId;});
+  if(e) injectPhaseHeader(document.getElementById('content'),e);
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
   window._phTab[eId+"-"+pi]=tab;
-  rProjectDetail(document.getElementById('content'),eId);
+  var e=DB.engagements.find(function(x){return x.id===eId;});
+  if(e) injectPhaseHeader(document.getElementById('content'),e);
 }
 
 function setPhasesBillingMode(eId,mode){
