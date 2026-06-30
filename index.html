@@ -6695,9 +6695,25 @@ function selectPhaseBar(eId,pi){
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
-  window._phTab[eId+"-"+pi]=tab;
-  var e=DB.engagements.find(function(x){return x.id===eId;});
-  if(e) injectPhaseHeader(document.getElementById('content'),e);
+  window._phTab[eId+'-'+pi]=tab;
+  var box=document.getElementById('phcontent-'+eId+'-'+pi);
+  if(box){
+    var e=DB.engagements.find(function(x){return x.id===eId;});
+    if(e&&e.phases&&e.phases[pi]){
+      var ph=e.phases[pi];
+      if(tab==='overview') rPhaseOverview(box,e,ph,pi);
+      else if(tab==='plan') rPhasePlan(box,e,ph,pi);
+      else if(tab==='gantt') rPhaseGantt(box,e,ph,pi);
+      else if(tab==='financials') rPhaseFinancials(box,e,ph,pi);
+    }
+  }
+  var panel=document.getElementById('phpanel-'+eId);
+  if(panel) panel.querySelectorAll('[data-tab]').forEach(function(b){
+    var a=b.dataset.tab===tab;
+    b.style.fontWeight=a?'600':'400';
+    b.style.color=a?'rgb(37,99,235)':'rgb(107,114,128)';
+    b.style.borderBottom=a?'2px solid rgb(37,99,235)':'2px solid transparent';
+  });
 }
 
 function setPhasesBillingMode(eId,mode){
