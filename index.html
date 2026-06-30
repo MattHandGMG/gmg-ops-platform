@@ -6097,7 +6097,8 @@ function rProjectDetail(c, engId){
     {id:'gantt',label:'Gantt'},
     {id:'calendar',label:'Calendar'},
     {id:'financials',label:'Financials'},
-  {id:'plan',label:'Plan'}
+  {id:'plan',label:'Plan'},
+    {id:'phases',label:'Phases'}
   ];
 
   c.innerHTML=`
@@ -6172,6 +6173,7 @@ function rProjectDetail(c, engId){
   else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
   else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
   else if(tab==='plan') rProjPlan(body,e);
+  else if(tab==='phases') rProjPhases(body,e);
 
   // Comments card
   var _pc=document.createElement('div');
@@ -6599,6 +6601,168 @@ function rProjFinancials(body,e,stages,sessions){
       </tbody></table>`}
     </div>
   </div>`;
+}
+
+function rProjPhases(body,e){
+  if(!e.phases) e.phases=[];
+  var phases=e.phases;
+  var statusColors={Active:"#3b82f6",Pending:"#f59e0b",Complete:"#22c55e",Cancelled:"#ef4444"};
+  var billingMode=e.phasesBillingMode||"individual";
+  var isInd=billingMode==="individual";
+  var html="<div style='padding:24px'>";
+  html+="<div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px'>";
+  html+="<h2 style='margin:0;font-size:20px;font-weight:700;color:#1e293b'>Engagement Phases</h2>";
+  html+="<div style='display:flex;align-items:center;gap:10px'>";
+  html+="<span style='font-size:13px;font-weight:600;color:#64748b'>Billing mode:</span>";
+  html+="<button data-eid='"+e.id+"' data-mode='individual' onclick='setPhasesBillingMode(this.dataset.eid,this.dataset.mode)' style='padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid "+(isInd?"#3b82f6":"#e2e8f0")+";background:"+(isInd?"#3b82f6":"white")+";color:"+(isInd?"white":"#64748b")+"'>Per Phase</button>";
+  html+="<button data-eid='"+e.id+"' data-mode='combined' onclick='setPhasesBillingMode(this.dataset.eid,this.dataset.mode)' style='padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid "+(!isInd?"#3b82f6":"#e2e8f0")+";background:"+(!isInd?"#3b82f6":"white")+";color:"+(!isInd?"white":"#64748b")+"'>Combined</button>";
+  html+="</div></div>";
+  if(!isInd){
+    html+="<div style='background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:#1d4ed8'>All phases will be billed on a single combined invoice at engagement completion.</div>";
+  }
+  if(phases.length===0){
+    html+="<div style='background:#f8fafc;border:2px dashed #e2e8f0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px'>";
+    html+="<div style='font-size:32px;margin-bottom:8px'>📋</div>";
+    html+="<div style='font-weight:600;color:#475569;margin-bottom:4px'>No phases added yet</div>";
+    html+="<div style='font-size:13px;color:#94a3b8'>Add phases to track delivery milestones and billing</div>";
+    html+="</div>";
+  } else {
+    phases.forEach(function(ph,pi){
+      var sc=statusColors[ph.status]||"#6366f1";
+      html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.05)'>";
+      html+="<div style='display:flex;align-items:flex-start;justify-content:space-between;gap:12px'>";
+      html+="<div style='flex:1;min-width:0'>";
+      html+="<div style='display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap'>";
+      html+="<span style='background:#f1f5f9;color:#475569;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:700'>Phase "+(pi+1)+"</span>";
+      html+="<span style='font-weight:700;font-size:16px;color:#1e293b'>"+ph.name+"</span>";
+      html+="<span style='background:"+sc+"20;color:"+sc+";border:1px solid "+sc+"40;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600'>"+(ph.status||"Pending")+"</span>";
+      if(isInd&&ph.amount) html+="<span style='background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600'>"+formatCurrency(ph.amount)+"</span>";
+      html+="</div>";
+      if(ph.description) html+="<p style='font-size:13px;color:#475569;margin:0 0 8px'>"+ph.description+"</p>";
+      html+="<div style='display:flex;gap:16px;flex-wrap:wrap'>";
+      if(ph.startDate) html+="<span style='font-size:12px;color:#64748b'><b>Start:</b> "+ph.startDate+"</span>";
+      if(ph.endDate) html+="<span style='font-size:12px;color:#64748b'><b>End:</b> "+ph.endDate+"</span>";
+      if(isInd&&ph.billedDate) html+="<span style='font-size:12px;color:#22c55e'><b>Billed:</b> "+ph.billedDate+"</span>";
+      html+="</div></div>";
+      html+="<div style='display:flex;flex-direction:column;gap:6px;flex-shrink:0'>";
+      html+="<button data-eid='"+e.id+"' data-pi='"+pi+"' onclick='openEditPhaseModal(this.dataset.eid,parseInt(this.dataset.pi))' style='padding:6px 14px;border:1px solid #e2e8f0;border-radius:6px;background:white;cursor:pointer;font-size:12px;color:#475569;font-weight:600'>Edit</button>";
+      html+="<button data-eid='"+e.id+"' data-pi='"+pi+"' onclick='deletePhase(this.dataset.eid,parseInt(this.dataset.pi))' style='padding:6px 14px;border:1px solid #fee2e2;border-radius:6px;background:#fff5f5;cursor:pointer;font-size:12px;color:#ef4444;font-weight:600'>Remove</button>";
+      html+="</div></div></div>";
+    });
+    if(isInd){
+      var total=phases.reduce(function(s,ph){return s+parseFloat(ph.amount||0);},0);
+      if(total>0) html+="<div style='text-align:right;font-size:14px;font-weight:700;color:#1e293b;padding:8px 4px'>Total: "+formatCurrency(total)+"</div>";
+    }
+  }
+  html+="<button data-eid='"+e.id+"' onclick='openAddPhaseModal(this.dataset.eid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:12px;padding:14px;background:transparent;color:#64748b;cursor:pointer;font-size:14px;font-weight:600;width:100%'>+ Add Phase</button>";
+  html+="</div>";
+  body.innerHTML=html;
+}
+function setPhasesBillingMode(eId,mode){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  e.phasesBillingMode=mode;
+  saveDB();
+  S.tab.projDetailTab="phases";
+  renderView();
+}
+function openAddPhaseModal(eId){
+  var statuses=["Pending","Active","Complete","Cancelled"];
+  var sOpts=statuses.map(function(s){return "<option>"+s+"</option>";}).join("");
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:#fff;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)'>";
+  html+="<h3 style='margin:0 0 20px;font-size:18px;font-weight:700;color:#1e293b'>Add Phase</h3>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Phase Name *</label>";
+  html+="<input id='ph-name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:14px;box-sizing:border-box' placeholder='e.g. Discovery & Design'>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Description</label>";
+  html+="<textarea id='ph-desc' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px;min-height:60px;box-sizing:border-box;resize:vertical'></textarea>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px'>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Start Date</label><input id='ph-start' type='date' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box'></div>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>End Date</label><input id='ph-end' type='date' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box'></div>";
+  html+="</div>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px'>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Status</label><select id='ph-status' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px'>"+sOpts+"</select></div>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Billing Amount (£)</label><input id='ph-amount' type='number' min='0' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box' placeholder='0'></div>";
+  html+="</div>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:9px 18px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:13px'>Cancel</button>";
+  html+="<button data-eid='"+eId+"' onclick='saveNewPhase(this.dataset.eid)' style='padding:9px 18px;border:none;border-radius:8px;background:#3b82f6;color:white;cursor:pointer;font-size:13px;font-weight:600'>Add Phase</button>";
+  html+="</div></div></div>";
+  closePlanModal();
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function saveNewPhase(eId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  if(!e.phases) e.phases=[];
+  var name=(document.getElementById("ph-name")||{}).value||"";
+  if(!name.trim()){alert("Phase name is required.");return;}
+  e.phases.push({
+    id:"ph-"+Date.now(),
+    name:name.trim(),
+    description:((document.getElementById("ph-desc")||{}).value||"").trim(),
+    startDate:((document.getElementById("ph-start")||{}).value||""),
+    endDate:((document.getElementById("ph-end")||{}).value||""),
+    status:((document.getElementById("ph-status")||{}).value||"Pending"),
+    amount:((document.getElementById("ph-amount")||{}).value||""),
+    billedDate:""
+  });
+  closePlanModal();
+  saveDB();
+  S.tab.projDetailTab="phases";
+  renderView();
+}
+function openEditPhaseModal(eId,pi){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e||!e.phases[pi]) return;
+  var ph=e.phases[pi];
+  var statuses=["Pending","Active","Complete","Cancelled"];
+  var sOpts=statuses.map(function(s){return "<option"+(ph.status===s?" selected":"")+">"+s+"</option>";}).join("");
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:#fff;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)'>";
+  html+="<h3 style='margin:0 0 20px;font-size:18px;font-weight:700;color:#1e293b'>Edit Phase "+(pi+1)+"</h3>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Phase Name</label>";
+  html+="<input id='ph-name' value='"+(ph.name||"")+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:14px;box-sizing:border-box'>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Description</label>";
+  html+="<textarea id='ph-desc' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px;min-height:60px;box-sizing:border-box;resize:vertical'>"+(ph.description||"")+"</textarea>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px'>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Start Date</label><input id='ph-start' type='date' value='"+(ph.startDate||"")+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box'></div>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>End Date</label><input id='ph-end' type='date' value='"+(ph.endDate||"")+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box'></div>";
+  html+="</div>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px'>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Status</label><select id='ph-status' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px'>"+sOpts+"</select></div>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Billing Amount (£)</label><input id='ph-amount' type='number' min='0' value='"+(ph.amount||"")+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px;box-sizing:border-box'></div>";
+  html+="</div>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:9px 18px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:13px'>Cancel</button>";
+  html+="<button data-eid='"+eId+"' data-pi='"+pi+"' onclick='saveEditPhase(this.dataset.eid,parseInt(this.dataset.pi))' style='padding:9px 18px;border:none;border-radius:8px;background:#3b82f6;color:white;cursor:pointer;font-size:13px;font-weight:600'>Save Changes</button>";
+  html+="</div></div></div>";
+  closePlanModal();
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function saveEditPhase(eId,pi){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e||!e.phases[pi]) return;
+  var ph=e.phases[pi];
+  ph.name=((document.getElementById("ph-name")||{}).value||ph.name).trim();
+  ph.description=((document.getElementById("ph-desc")||{}).value||"").trim();
+  ph.startDate=((document.getElementById("ph-start")||{}).value||"");
+  ph.endDate=((document.getElementById("ph-end")||{}).value||"");
+  ph.status=((document.getElementById("ph-status")||{}).value||ph.status);
+  ph.amount=((document.getElementById("ph-amount")||{}).value||"");
+  closePlanModal();
+  saveDB();
+  S.tab.projDetailTab="phases";
+  renderView();
+}
+function deletePhase(eId,pi){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e||!e.phases) return;
+  if(!confirm("Remove this phase?")) return;
+  e.phases.splice(pi,1);
+  saveDB();
+  S.tab.projDetailTab="phases";
+  renderView();
 }
 function openProjTaskModal(engId){
   const e=DB.engagements.find(x=>x.id===engId);
