@@ -5464,7 +5464,6 @@ function showPlanSubTab(eId,sId,subTab){
   if(!sec.meetings) sec.meetings=[];
   if(!sec.calls) sec.calls=[];
   if(!e.cliftonStrengths) e.cliftonStrengths=[];
-  // Update sub-tab active styling
   ["tasks","meetings","calls","strengths"].forEach(function(sid){
     var el=document.getElementById("psubtab-"+eId+"-"+sId+"-"+sid);
     if(!el) return;
@@ -5474,31 +5473,50 @@ function showPlanSubTab(eId,sId,subTab){
   var box=document.getElementById("plan-sub-content-"+eId+"-"+sId);
   if(!box) return;
   var html="";
+  var priC={High:"#ef4444",Medium:"#f59e0b",Low:"#22c55e"};
   if(subTab==="tasks"){
-    // Tasks sub-tab (existing task UI)
-    var tasks=sec.tasks||[];
-    var priC={High:"#ef4444",Medium:"#f59e0b",Low:"#22c55e"};
-    if(tasks.length===0){
-      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No tasks yet.</div>";
+    // Special: complete section shows ALL done tasks across all sections
+    var tasks=[];
+    var taskSectionLabels={};
+    if(sId==="complete"){
+      sections.forEach(function(s){
+        if(s.id==="complete") return;
+        (s.tasks||[]).forEach(function(t,ti){
+          if(t.status==="done"){tasks.push({t:t,sId:s.id,sName:s.name,ti:ti});}
+        });
+      });
+      // Also include tasks directly in complete section
+      (sec.tasks||[]).forEach(function(t,ti){tasks.push({t:t,sId:"complete",sName:"Complete",ti:ti});});
     } else {
-      tasks.forEach(function(t,ti){
+      (sec.tasks||[]).forEach(function(t,ti){tasks.push({t:t,sId:sId,sName:sec.name,ti:ti});});
+    }
+    if(tasks.length===0){
+      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>"+(sId==="complete"?"No completed tasks yet. Check tasks as done in other sections.":"No tasks yet.")+"</div>";
+    } else {
+      tasks.forEach(function(item){
+        var t=item.t; var ti=item.ti; var tSid=item.sId; var tSname=item.sName;
         var done=t.status==="done";
         var pc=priC[t.priority]||"#94a3b8";
         html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
         html+="<div style='display:flex;align-items:flex-start;gap:10px'>";
-        html+="<input type='checkbox' "+(done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onchange='togglePlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),this.checked)' style='margin-top:3px;width:16px;height:16px;cursor:pointer'>";
-        html+="<div style='flex:1'>";
-        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>";
+        html+="<input type='checkbox' "+(done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+tSid+"' data-ti='"+ti+"' onchange='togglePlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),this.checked)' style='margin-top:3px;width:16px;height:16px;cursor:pointer;flex-shrink:0'>";
+        html+="<div style='flex:1;min-width:0'>";
+        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between'>";
+        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1'>";
         html+="<span style='font-weight:600;font-size:14px;color:#1e293b;"+(done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+t.text+"</span>";
         if(t.priority) html+="<span style='background:"+pc+"22;color:"+pc+";border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700'>"+t.priority+"</span>";
+        if(sId==="complete"&&tSid!=="complete") html+="<span style='background:#f1f5f9;color:#64748b;border-radius:6px;padding:2px 8px;font-size:11px'>"+tSname+"</span>";
         html+="</div>";
-        if(t.assignee) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>👤 "+t.assignee+"</div>";
-        if(t.dueDate) html+="<div style='font-size:12px;color:#64748b;margin-top:2px'>📅 "+t.dueDate+"</div>";
+        html+="<button data-eid='"+eId+"' data-sid='"+tSid+"' data-ti='"+ti+"' onclick='openEditPlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti))' style='flex-shrink:0;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#64748b'>Edit</button>";
+        html+="</div>";
+        if(t.assignee) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Assignee: "+t.assignee+"</div>";
+        if(t.dueDate) html+="<div style='font-size:12px;color:#64748b;margin-top:2px'>Due: "+t.dueDate+"</div>";
+        if(t.description) html+="<div style='font-size:12px;color:#475569;margin-top:4px;font-style:italic'>"+t.description+"</div>";
         if(t.subtasks&&t.subtasks.length){
           html+="<div style='margin-top:8px'>";
           t.subtasks.forEach(function(st,sti){
             html+="<div style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;padding:2px 0'>";
-            html+="<input type='checkbox' "+(st.done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' data-sti='"+sti+"' onchange='togglePlanSubtask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),parseInt(this.dataset.sti),this.checked)' style='width:13px;height:13px'>";
+            html+="<input type='checkbox' "+(st.done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+tSid+"' data-ti='"+ti+"' data-sti='"+sti+"' onchange='togglePlanSubtask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),parseInt(this.dataset.sti),this.checked)' style='width:13px;height:13px'>";
             html+="<span style='"+(st.done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+st.text+"</span></div>";
           });
           html+="</div>";
@@ -5506,7 +5524,9 @@ function showPlanSubTab(eId,sId,subTab){
         html+="</div></div></div>";
       });
     }
-    html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddPlanTaskModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Task</button>";
+    if(sId!=="complete"){
+      html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddPlanTaskModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Task</button>";
+    }
   } else if(subTab==="meetings"){
     var meetings=sec.meetings||[];
     if(meetings.length===0){
@@ -5515,8 +5535,11 @@ function showPlanSubTab(eId,sId,subTab){
       meetings.forEach(function(m,mi){
         html+="<div style='background:white;border:1px solid #e5e7eb;border-left:4px solid #3b82f6;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
         html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
-        html+="<div><div style='font-weight:600;font-size:14px;color:#1e293b'>"+m.title+"</div>";
-        if(m.attendees) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>👥 "+m.attendees+"</div>";
+        html+="<div style='flex:1'><div style='font-weight:600;font-size:14px;color:#1e293b'>"+m.title+"</div>";
+        if(m.mentor) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Mentor: "+m.mentor+"</div>";
+        if(m.mentee) html+="<div style='font-size:12px;color:#64748b'>Mentee: "+m.mentee+"</div>";
+        if(m.teamMember) html+="<div style='font-size:12px;color:#64748b'>GMG: "+m.teamMember+"</div>";
+        if(m.duration) html+="<div style='font-size:12px;color:#64748b'>Duration: "+m.duration+"</div>";
         if(m.notes) html+="<div style='font-size:13px;color:#475569;margin-top:6px'>"+m.notes+"</div>";
         html+="</div>";
         html+="<div style='text-align:right;font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:12px'>"+m.date+"</div>";
@@ -5532,9 +5555,11 @@ function showPlanSubTab(eId,sId,subTab){
       calls.forEach(function(cl){
         html+="<div style='background:white;border:1px solid #e5e7eb;border-left:4px solid #10b981;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
         html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
-        html+="<div><div style='font-weight:600;font-size:14px;color:#1e293b'>"+cl.title+"</div>";
-        if(cl.person) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>📞 With: "+cl.person+"</div>";
-        if(cl.duration) html+="<div style='font-size:12px;color:#64748b'>⏱ "+cl.duration+"</div>";
+        html+="<div style='flex:1'><div style='font-weight:600;font-size:14px;color:#1e293b'>"+cl.title+"</div>";
+        if(cl.callType) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Type: "+cl.callType+"</div>";
+        if(cl.mentor) html+="<div style='font-size:12px;color:#64748b'>Mentor: "+cl.mentor+"</div>";
+        if(cl.mentee) html+="<div style='font-size:12px;color:#64748b'>Mentee: "+cl.mentee+"</div>";
+        if(cl.duration) html+="<div style='font-size:12px;color:#64748b'>Duration: "+cl.duration+"</div>";
         if(cl.summary) html+="<div style='font-size:13px;color:#475569;margin-top:6px'>"+cl.summary+"</div>";
         html+="</div>";
         html+="<div style='text-align:right;font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:12px'>"+cl.date+"</div>";
@@ -5544,13 +5569,12 @@ function showPlanSubTab(eId,sId,subTab){
     html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddCallModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Log Call</button>";
   } else if(subTab==="strengths"){
     var strengths=e.cliftonStrengths||[];
-    html+="<div style='margin-bottom:16px'>";
-    html+="<h4 style='margin:0 0 12px;font-size:15px;font-weight:700;color:#1e293b'>Clifton Strength Profiles</h4>";
+    var domC={Executing:"#ef4444",Influencing:"#f59e0b",Relationship:"#22c55e",Thinking:"#3b82f6"};
+    html+="<div style='margin-bottom:16px'><h4 style='margin:0 0 12px;font-size:15px;font-weight:700;color:#1e293b'>Clifton Strength Profiles</h4>";
     if(strengths.length===0){
-      html+="<div style='color:#94a3b8;font-size:13px;padding:8px 0'>No strength profiles added yet. Add a mentee profile below.</div>";
+      html+="<div style='color:#94a3b8;font-size:13px;padding:8px 0'>No strength profiles added yet.</div>";
     } else {
       strengths.forEach(function(sp,si){
-        var domains={Executing:"#ef4444",Influencing:"#f59e0b",Relationship:"#22c55e",Thinking:"#3b82f6"};
         html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px'>";
         html+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
         html+="<div style='font-weight:700;font-size:15px;color:#1e293b'>"+sp.menteeName+"</div>";
@@ -5558,10 +5582,7 @@ function showPlanSubTab(eId,sId,subTab){
         html+="</div>";
         if(sp.top5&&sp.top5.length){
           html+="<div style='display:flex;flex-wrap:wrap;gap:6px'>";
-          sp.top5.forEach(function(st){
-            var dc=domains[st.domain]||"#6366f1";
-            html+="<div style='background:"+dc+"15;border:1px solid "+dc+"40;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;color:"+dc+"'>"+st.name+"</div>";
-          });
+          sp.top5.forEach(function(st){var dc=domC[st.domain]||"#6366f1";html+="<div style='background:"+dc+"15;border:1px solid "+dc+"40;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;color:"+dc+"'>"+st.name+"</div>";});
           html+="</div>";
         }
         if(sp.notes) html+="<div style='font-size:12px;color:#64748b;margin-top:10px'>"+sp.notes+"</div>";
@@ -5573,7 +5594,93 @@ function showPlanSubTab(eId,sId,subTab){
   }
   box.innerHTML=html;
 }
-function closePlanModal(){var o=document.querySelector(".plan-modal");if(o)o.remove();}
+function openEditPlanTask(eId,sId,tIdx){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id===sId;});
+  if(!sec||!sec.tasks[tIdx]) return;
+  var t=sec.tasks[tIdx];
+  var team=(DB.appUsers||[]).map(function(u){return u.name||u.email;});
+  var pris=["High","Medium","Low"];
+  var priOpts=pris.map(function(p){return "<option value='"+p+"'"+(t.priority===p?" selected":"")+">"+p+"</option>";}).join("");
+  var teamOpts="<option value=''>None</option>"+team.map(function(n){return "<option value='"+n+"'"+(t.assignee===n?" selected":"")+">"+n+"</option>";}).join("");
+  var stHtml="";
+  (t.subtasks||[]).forEach(function(st,sti){
+    stHtml+="<div style='display:flex;gap:8px;align-items:center;margin-bottom:6px' id='st-row-"+sti+"'>";
+    stHtml+="<input type='text' value='"+st.text+"' data-sti='"+sti+"' class='ept-st' style='flex:1;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:13px'>";
+    stHtml+="</div>";
+  });
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:#fff;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)'>";
+  html+="<h3 style='margin:0 0 20px;font-size:18px;font-weight:700;color:#1e293b'>Edit Task</h3>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Task</label>";
+  html+="<input id='ept-text' value='"+t.text+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:14px;margin-bottom:14px;box-sizing:border-box'>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Description</label>";
+  html+="<textarea id='ept-desc' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px;min-height:60px;box-sizing:border-box;resize:vertical'>"+((t.description)||"")+"</textarea>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px'>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Priority</label>";
+  html+="<select id='ept-pri' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px'>"+priOpts+"</select></div>";
+  html+="<div><label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Assignee</label>";
+  html+="<select id='ept-assignee' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-size:13px'>"+teamOpts+"</select></div>";
+  html+="</div>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:4px'>Due Date</label>";
+  html+="<input id='ept-due' type='date' value='"+(t.dueDate||"")+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:13px;margin-bottom:14px;box-sizing:border-box'>";
+  html+="<label style='font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:6px'>Subtasks</label>";
+  html+="<div id='ept-subtasks'>"+stHtml+"</div>";
+  html+="<button onclick='addEptSubtask()' style='border:1px dashed #cbd5e1;border-radius:6px;padding:5px 12px;background:transparent;color:#64748b;cursor:pointer;font-size:12px;margin-bottom:16px'>+ Add Subtask</button>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:9px 18px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;cursor:pointer;font-size:13px'>Cancel</button>";
+  html+="<button data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+tIdx+"' onclick='saveEditPlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti))' style='padding:9px 18px;border:none;border-radius:8px;background:#3b82f6;color:white;cursor:pointer;font-size:13px;font-weight:600'>Save Changes</button>";
+  html+="</div></div></div>";
+  closePlanModal();
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function addEptSubtask(){
+  var box=document.getElementById("ept-subtasks");
+  if(!box) return;
+  var idx=box.querySelectorAll(".ept-st").length;
+  var row=document.createElement("div");
+  row.style.cssText="display:flex;gap:8px;align-items:center;margin-bottom:6px";
+  var inp=document.createElement("input");
+  inp.type="text";
+  inp.className="ept-st";
+  inp.setAttribute("data-sti",idx);
+  inp.style.cssText="flex:1;border:1px solid #e2e8f0;border-radius:6px;padding:6px 10px;font-size:13px";
+  row.appendChild(inp);
+  box.appendChild(row);
+}
+function saveEditPlanTask(eId,sId,tIdx){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id===sId;});
+  if(!sec||!sec.tasks[tIdx]) return;
+  var t=sec.tasks[tIdx];
+  var textEl=document.getElementById("ept-text");
+  var descEl=document.getElementById("ept-desc");
+  var priEl=document.getElementById("ept-pri");
+  var assigneeEl=document.getElementById("ept-assignee");
+  var dueEl=document.getElementById("ept-due");
+  if(textEl) t.text=textEl.value.trim()||t.text;
+  if(descEl) t.description=descEl.value.trim();
+  if(priEl) t.priority=priEl.value;
+  if(assigneeEl) t.assignee=assigneeEl.value;
+  if(dueEl) t.dueDate=dueEl.value;
+  var stEls=document.querySelectorAll(".ept-st");
+  var newSubs=[];
+  stEls.forEach(function(inp,i){
+    var txt=inp.value.trim();
+    if(txt){
+      var existing=t.subtasks&&t.subtasks[i];
+      newSubs.push({text:txt,done:existing?existing.done:false});
+    }
+  });
+  t.subtasks=newSubs;
+  closePlanModal();
+  saveDB();
+  showPlanSubTab(eId,sId,"tasks");
+}
 function openAddMeetingModal(eId,sId){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e) return;
