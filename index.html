@@ -5380,15 +5380,31 @@ function rProjects(c){
 }
 
 function initPlanSections(e){
-  if(!e.planSections){
+  if(!e.planSections||!e.planSections.length){
     e.planSections=[
-      {id:"planning",name:"Planning & Design",icon:"[P]",color:"#3498db",open:true,tasks:[]},
-      {id:"delivery",name:"Workshop & Delivery",icon:"[W]",color:"#27ae60",open:true,tasks:[]},
-      {id:"wrapup",name:"Wrap Up & Complete",icon:"[C]",color:"#8e44ad",open:true,tasks:[]}
+      {id:'planning',name:'Planning & Design',icon:'📋',color:'#3b82f6',open:false,tasks:[],meetings:[],calls:[]},
+      {id:'delivery',name:'Workshop & Delivery',icon:'🎯',color:'#10b981',open:false,tasks:[],meetings:[],calls:[]},
+      {id:'wrapup',name:'Wrap Up',icon:'📝',color:'#f59e0b',open:false,tasks:[],meetings:[],calls:[]},
+      {id:'complete',name:'Engagement Complete',icon:'✅',color:'#6366f1',open:false,tasks:[],meetings:[],calls:[]}
     ];
+  } else {
+    var ids=['planning','delivery','wrapup','complete'];
+    var defaults={planning:'Planning & Design',delivery:'Workshop & Delivery',wrapup:'Wrap Up',complete:'Engagement Complete'};
+    var colors={planning:'#3b82f6',delivery:'#10b981',wrapup:'#f59e0b',complete:'#6366f1'};
+    var icons={planning:'📋',delivery:'🎯',wrapup:'📝',complete:'✅'};
+    ids.forEach(function(id){
+      if(!e.planSections.find(function(s){return s.id===id;})){
+        e.planSections.push({id:id,name:defaults[id],icon:icons[id],color:colors[id],open:false,tasks:[],meetings:[],calls:[]});
+      }
+    });
+    e.planSections.forEach(function(s){
+      if(!s.meetings) s.meetings=[];
+      if(!s.calls) s.calls=[];
+    });
   }
   return e.planSections;
 }
+
 function togglePlanSection(eId,sId){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e)return;
@@ -5416,43 +5432,36 @@ function showPlanTab(eId,sId){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e) return;
   var sections=initPlanSections(e);
-  var sec=sections.find(function(s){return s.id===sId;});
-  if(!sec) return;
-  // Update tab active styling
-  var tabDefs=["planning","delivery","wrapup","complete"];
   var colors={planning:"#3b82f6",delivery:"#10b981",wrapup:"#f59e0b",complete:"#6366f1"};
-  tabDefs.forEach(function(tid){
-    var el=document.getElementById("ptab-"+eId+"-"+tid);
-    if(!el) return;
-    if(tid===sId){
-      el.style.color=colors[tid];
-      el.style.borderBottom="3px solid "+colors[tid];
-      el.style.background="white";
-    } else {
-      el.style.color="#64748b";
-      el.style.borderBottom="3px solid transparent";
-      el.style.background="transparent";
-    }
-  });
-  // Render sub-nav + content
-  var content=document.getElementById("plan-content-"+eId);
-  if(!content) return;
-  var subTabs=[
-    {id:"tasks",label:"Tasks",icon:"☑"},
-    {id:"meetings",label:"Meetings",icon:"📅"},
-    {id:"calls",label:"Calls",icon:"📞"},
-    {id:"strengths",label:"Clifton Strengths",icon:"⭐"}
+  var tabs=[
+    {id:"planning",label:"Planning & Design"},
+    {id:"delivery",label:"Workshop & Delivery"},
+    {id:"wrapup",label:"Wrap Up"},
+    {id:"complete",label:"Engagement Complete"}
   ];
-  var nav="<div id='psub-"+eId+"-"+sId+"' style='display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid #e5e7eb;padding-bottom:0'>";
-  subTabs.forEach(function(st){
-    nav+="<div data-eid='"+eId+"' data-sid='"+sId+"' data-sub='"+st.id+"'"
-      +" id='psubtab-"+eId+"-"+sId+"-"+st.id+"'"
-      +" onclick='showPlanSubTab(this.dataset.eid,this.dataset.sid,this.dataset.sub)'"
-      +" style='padding:8px 14px;cursor:pointer;font-size:13px;font-weight:500;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-1px'"
-      +">"+st.icon+" "+st.label+"</div>";
+  tabs.forEach(function(tab){
+    var el=document.getElementById("plantab-"+eId+"-"+tab.id);
+    if(!el) return;
+    var active=tab.id===sId;
+    var col=colors[tab.id]||"#6366f1";
+    el.style.background=active?col:"#f1f5f9";
+    el.style.color=active?"white":"#64748b";
+    el.style.fontWeight=active?"700":"500";
   });
-  nav+="</div><div id='plan-sub-content-"+eId+"-"+sId+"'></div>";
-  content.innerHTML=nav;
+  var contentBox=document.getElementById("plan-content-"+eId);
+  if(!contentBox) return;
+  var col=colors[sId]||"#6366f1";
+  var isComplete=sId==="complete";
+  var subTabs=isComplete
+    ?[{id:"tasks",label:"Notes"},{id:"meetings",label:"Meetings"},{id:"calls",label:"Calls"},{id:"strengths",label:"Clifton Strengths"}]
+    :[{id:"tasks",label:"Tasks"},{id:"meetings",label:"Meetings"},{id:"calls",label:"Calls"},{id:"strengths",label:"Clifton Strengths"}];
+  var subNav="<div style='display:flex;gap:0;border-bottom:1px solid #e5e7eb;margin-bottom:16px'>";
+  subTabs.forEach(function(st){
+    subNav+="<button id='psubtab-"+eId+"-"+sId+"-"+st.id+"' data-eid='"+eId+"' data-sid='"+sId+"' data-sub='"+st.id+"' onclick='showPlanSubTab(this.dataset.eid,this.dataset.sid,this.dataset.sub)' style='background:none;border:none;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;color:#64748b;border-bottom:2px solid transparent'>"+st.label+"</button>";
+  });
+  subNav+="</div>";
+  subNav+="<div id='plan-sub-content-"+eId+"-"+sId+"'></div>";
+  contentBox.innerHTML=subNav;
   showPlanSubTab(eId,sId,"tasks");
 }
 function showPlanSubTab(eId,sId,subTab){
@@ -5475,46 +5484,56 @@ function showPlanSubTab(eId,sId,subTab){
   var html="";
   var priC={High:"#ef4444",Medium:"#f59e0b",Low:"#22c55e"};
   if(subTab==="tasks"){
-    var tasks=sec.tasks||[];
-    if(tasks.length===0){
-      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No tasks yet.</div>";
+    if(sId==="complete"){
+      // Notes UI for Engagement Complete
+      var currentNotes=sec.notes||"";
+      html+="<div style='margin-bottom:12px'>";
+      html+="<p style='font-size:13px;color:#64748b;margin:0 0 10px'>Record completion notes, handover details, and any final observations for this engagement.</p>";
+      html+="<textarea id='complete-notes-"+eId+"' style='width:100%;min-height:200px;border:1px solid #e2e8f0;border-radius:10px;padding:14px;font-size:14px;color:#1e293b;box-sizing:border-box;resize:vertical;font-family:inherit' placeholder='Add completion notes, outcomes, handover details...'>"+currentNotes+"</textarea>";
+      html+="</div>";
+      html+="<button data-eid='"+eId+"' onclick='saveCompleteNotes(this.dataset.eid)' style='background:#6366f1;color:white;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer'>Save Notes</button>";
     } else {
-      tasks.forEach(function(t,ti){
-        var done=t.status==="done";
-        var pc=priC[t.priority]||"#94a3b8";
-        html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
-        html+="<div style='display:flex;align-items:flex-start;gap:10px'>";
-        html+="<input type='checkbox' "+(done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onchange='togglePlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),this.checked)' style='margin-top:3px;width:16px;height:16px;cursor:pointer;flex-shrink:0'>";
-        html+="<div style='flex:1;min-width:0'>";
-        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between'>";
-        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1'>";
-        html+="<span style='font-weight:600;font-size:14px;color:#1e293b;"+(done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+t.text+"</span>";
-        if(t.priority) html+="<span style='background:"+pc+"22;color:"+pc+";border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700'>"+t.priority+"</span>";
-        html+="</div>";
-        html+="<button data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onclick='openEditPlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti))' style='flex-shrink:0;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#64748b'>Edit</button>";
-        html+="</div>";
-        if(t.assignee) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Assignee: "+t.assignee+"</div>";
-        if(t.dueDate) html+="<div style='font-size:12px;color:#64748b;margin-top:2px'>Due: "+t.dueDate+"</div>";
-        if(t.description) html+="<div style='font-size:12px;color:#475569;margin-top:4px;font-style:italic'>"+t.description+"</div>";
-        if(t.subtasks&&t.subtasks.length){
-          html+="<div style='margin-top:8px'>";
-          t.subtasks.forEach(function(st,sti){
-            html+="<div style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;padding:2px 0'>";
-            html+="<input type='checkbox' "+(st.done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' data-sti='"+sti+"' onchange='togglePlanSubtask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),parseInt(this.dataset.sti),this.checked)' style='width:13px;height:13px'>";
-            html+="<span style='"+(st.done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+st.text+"</span></div>";
-          });
+      var tasks=sec.tasks||[];
+      if(tasks.length===0){
+        html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No tasks yet.</div>";
+      } else {
+        tasks.forEach(function(t,ti){
+          var done=t.status==="done";
+          var pc=priC[t.priority]||"#94a3b8";
+          html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
+          html+="<div style='display:flex;align-items:flex-start;gap:10px'>";
+          html+="<input type='checkbox' "+(done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onchange='togglePlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),this.checked)' style='margin-top:3px;width:16px;height:16px;cursor:pointer;flex-shrink:0'>";
+          html+="<div style='flex:1;min-width:0'>";
+          html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between'>";
+          html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1'>";
+          html+="<span style='font-weight:600;font-size:14px;color:#1e293b;"+(done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+t.text+"</span>";
+          if(t.priority) html+="<span style='background:"+pc+"22;color:"+pc+";border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700'>"+t.priority+"</span>";
           html+="</div>";
-        }
-        html+="</div></div></div>";
-      });
+          html+="<button data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onclick='openEditPlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti))' style='flex-shrink:0;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer;color:#64748b'>Edit</button>";
+          html+="</div>";
+          if(t.assignee) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Assignee: "+t.assignee+"</div>";
+          if(t.dueDate) html+="<div style='font-size:12px;color:#64748b;margin-top:2px'>Due: "+t.dueDate+"</div>";
+          if(t.description) html+="<div style='font-size:12px;color:#475569;margin-top:4px;font-style:italic'>"+t.description+"</div>";
+          if(t.subtasks&&t.subtasks.length){
+            html+="<div style='margin-top:8px'>";
+            t.subtasks.forEach(function(st,sti){
+              html+="<div style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;padding:2px 0'>";
+              html+="<input type='checkbox' "+(st.done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' data-sti='"+sti+"' onchange='togglePlanSubtask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),parseInt(this.dataset.sti),this.checked)' style='width:13px;height:13px'>";
+              html+="<span style='"+(st.done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+st.text+"</span></div>";
+            });
+            html+="</div>";
+          }
+          html+="</div></div></div>";
+        });
+      }
+      html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddPlanTaskModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Task</button>";
     }
-    html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddPlanTaskModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Task</button>";
   } else if(subTab==="meetings"){
     var meetings=sec.meetings||[];
     if(meetings.length===0){
       html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No meetings logged yet.</div>";
     } else {
-      meetings.forEach(function(m,mi){
+      meetings.forEach(function(m){
         html+="<div style='background:white;border:1px solid #e5e7eb;border-left:4px solid #3b82f6;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
         html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
         html+="<div style='flex:1'><div style='font-weight:600;font-size:14px;color:#1e293b'>"+m.title+"</div>";
@@ -5663,6 +5682,20 @@ function saveEditPlanTask(eId,sId,tIdx){
   saveDB();
   showPlanSubTab(eId,sId,"tasks");
 }
+function saveCompleteNotes(eId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id==="complete";});
+  if(!sec) return;
+  var el=document.getElementById("complete-notes-"+eId);
+  if(!el) return;
+  sec.notes=el.value;
+  saveDB();
+  var btn=document.querySelector("[onclick*='saveCompleteNotes']");
+  if(btn){btn.textContent="Saved!";setTimeout(function(){btn.textContent="Save Notes";},1500);}
+}
+
 function openEditPlanTask(eId,sId,tIdx){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e) return;
