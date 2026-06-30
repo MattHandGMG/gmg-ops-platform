@@ -6690,12 +6690,12 @@ function injectPhaseHeader(c,e){
 function selectPhaseBar(eId,pi){
   if(!window._phSel) window._phSel={};
   window._phSel[eId]=(window._phSel[eId]===pi)?-1:pi;
-  S.view='projects';renderView();
+  rProjectDetail(document.getElementById('content'),eId);
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
   window._phTab[eId+"-"+pi]=tab;
-  S.view='projects';renderView();
+  rProjectDetail(document.getElementById('content'),eId);
 }
 
 function setPhasesBillingMode(eId,mode){
