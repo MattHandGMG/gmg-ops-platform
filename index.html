@@ -358,11 +358,11 @@ input,select,textarea{font-family:inherit;outline:none}
   <div class="sb-nav">
     <div class="sb-item active" data-v="dashboard" onclick="nav(this)"><span class="ic">‚óâ</span>Dashboard</div>
     <div class="sb-item" data-v="pipeline" onclick="nav(this)"><span class="ic">‚óÜ</span>Pipeline</div>
-    <div class="sb-item" data-v="proposals" onclick="nav(this)"><span class="ic">Ì†ΩÌ≥ã</span>Proposals</div>
+    <div class="sb-item" data-v="proposals" onclick="nav(this)"><span class="ic">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ</span>Proposals</div>
     <div class="sb-item" data-v="engagements" onclick="nav(this)"><span class="ic">‚óà</span>Engagements</div>
     <div class="sb-item" data-v="clients" onclick="nav(this)"><span class="ic">‚óâ</span>Clients</div>    <div class="sb-item" data-v="mentors" onclick="nav(this)"><span class="ic">‚óâ</span>Mentor Library</div>
     <div class="sb-item" data-v="projects" onclick="nav(this)"><span class="ic">‚ñ¶</span>Project Management</div>
-    <div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">Ì†ΩÌ≥ã</span>Procurement</div>
+    <div class="sb-item" data-v="procurement" onclick="nav(this)"><span class="ic">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ</span>Procurement</div>
     <div class="sb-item" data-v="quoting" onclick="nav(this)"><span class="ic">‚óé</span>Quoting</div>
     <div class="sb-item" data-v="finance" onclick="nav(this)"><span class="ic">‚óê</span>Finance</div>
     <div class="sb-item" data-v="invoices" onclick="nav(this)" style="padding-left:36px;font-size:12px"><span class="ic" style="font-size:11px">‚Ä∫</span> Invoices</div>
@@ -370,7 +370,7 @@ input,select,textarea{font-family:inherit;outline:none}
     <div class="sb-item" data-v="reports" onclick="nav(this)"><span class="ic">‚óà</span>Reports</div>
     <div class="sb-item" data-v="training" onclick="nav(this)"><span class="ic">‚óé</span>Training</div>
   </div>
-    <button onclick="openFeatureRequest()" style="display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:0 12px 10px;padding:9px 12px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.15);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Ì†ΩÌ≤° Request a Feature</button>
+    <button onclick="openFeatureRequest()" style="display:flex;align-items:center;gap:7px;width:calc(100% - 24px);margin:0 12px 10px;padding:9px 12px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.15);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Request a Feature</button>
   <div class="sb-admin" id="sb-admin-section">
   <button class="sb-admin-btn" onclick="navAdmin()">
     <span class="ic">&#9881;</span> Admin Settings
@@ -387,7 +387,7 @@ input,select,textarea{font-family:inherit;outline:none}
 </nav><div id="frModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)closeFRModal()">
   <div style="background:#fff;border-radius:16px;padding:28px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:16px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <h3 style="margin:0;font-size:16px;font-weight:700">Ì†ΩÌ≤° Request a Feature</h3>
+      <h3 style="margin:0;font-size:16px;font-weight:700">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Request a Feature</h3>
       <button onclick="closeFRModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#888;line-height:1">&times;</button>
     </div>
     <div style="margin-bottom:14px">
@@ -3025,8 +3025,8 @@ function rProposalGen(c){
     +'<div><h2 style="margin:0;font-size:20px">'+d.name+'</h2><span style="font-size:12px;color:#888">'+d.client+'</span></div>'
     +'</div>'
     +'<div style="border-bottom:1px solid #e2e8f0;margin-bottom:20px;display:flex">'
-    +'<button onclick="S.propTab=\'proposal\';rProposalGen(document.getElementById(\'content\'))" style="'+(isp?tabOn:tabOff)+'">Ì†ΩÌ≥Ñ Proposal</button>'
-    +'<button onclick="S.propTab=\'pitch\';rProposalGen(document.getElementById(\'content\'))" style="'+(!isp?tabOn:tabOff)+'">Ì†ºÌæØ Pitch</button>'
+    +'<button onclick="S.propTab=\'proposal\';rProposalGen(document.getElementById(\'content\'))" style="'+(isp?tabOn:tabOff)+'">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Proposal</button>'
+    +'<button onclick="S.propTab=\'pitch\';rProposalGen(document.getElementById(\'content\'))" style="'+(!isp?tabOn:tabOff)+'">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Pitch</button>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:270px 1fr;gap:20px">'
     +'<div>'
@@ -3047,7 +3047,7 @@ function rProposalGen(c){
     +'</div></div>'
     +'<div class="card"><div class="card-hdr" style="display:flex;justify-content:space-between;align-items:center">'
     +'<h3>'+(isp?'Proposal':'Pitch')+' Output</h3>'
-    +'<button onclick="savePropResult(\''+S.proposalDealId+'\',\''+S.propTab+'\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">Ì†ΩÌ≤æ Save to Library</button>'
+    +'<button onclick="savePropResult(\''+S.proposalDealId+'\',\''+S.propTab+'\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Save to Library</button>'
     +'</div><div class="card-body">'
     +(lTmpl?'<div style="padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;margin-bottom:12px">'+lTmpl+'</div>':'')
     +'<div id="propResult" contenteditable="true" style="min-height:240px;border:1px solid #ddd;border-radius:4px;padding:14px;font-size:13px;line-height:1.8;outline:none;white-space:pre-wrap;background:#fafafa">'+esc(savedResult)+'</div>'
@@ -3204,7 +3204,7 @@ const xi=DB.xeroInstances||{};
   ];
   const tabUsers=`
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ±•','Users',users.length+' registered user'+(users.length!==1?'s':''))}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Users',users.length+' registered user'+(users.length!==1?'s':''))}
       <div style="padding:16px 24px">
         <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
           <button onclick="openCreateUserModal()" style="background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer">+ Create User</button>
@@ -3235,7 +3235,7 @@ const xi=DB.xeroInstances||{};
       </div>
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ¥ê','Roles & Permissions','Control what each user role can access')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Roles & Permissions','Control what each user role can access')}
       <div style="padding:16px 24px">
         <div style="overflow-x:auto">
           <table style="width:100%;border-collapse:collapse;font-size:12px">
@@ -3262,14 +3262,14 @@ const xi=DB.xeroInstances||{};
     </div>`).join('');
   const tabPricing=`
     <div style="${cardStyle}">
-      ${sectionHead('Ì†æÌ∫ë','Chair Mentoring ‚Äî Client Options','4 pricing tiers available to chair clients')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Chair Mentoring ‚Äî Client Options','4 pricing tiers available to chair clients')}
       <div style="padding:4px 24px">
         <div style="display:grid;grid-template-columns:1fr 2fr 140px;gap:12px;padding:10px 0 0"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Option Name</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Description</div><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Client Min Fee</div></div>
         ${chairRows}
       </div>
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ≤∞','Chair Mentoring ‚Äî Mentor Session Fees','Fee paid to mentor per session, based on engagement year')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Chair Mentoring ‚Äî Mentor Session Fees','Fee paid to mentor per session, based on engagement year')}
       <div style="padding:20px 24px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px">
           ${[['Legacy','legacy'],['2024','y2024'],['2025','y2025'],['2026','y2026']].map(([label,key])=>`
@@ -3282,14 +3282,14 @@ const xi=DB.xeroInstances||{};
       </div>
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ≤º','Executive Mentoring','Annual minimum fees')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Executive Mentoring','Annual minimum fees')}
       <div style="padding:20px 24px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div><label style="${labelStyle}">Client Minimum Annual Fee (¬£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">¬£</span><input id="execMin" type="number" min="0" value="${minP.executive||0}" style="${inputStyle};padding-left:22px"></div><p style="font-size:11px;color:var(--muted);margin:6px 0 0">Minimum annual fee billed to client.</p></div>
         <div><label style="${labelStyle}">Mentor Annual Fee (¬£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">¬£</span><input id="execMentorMin" type="number" min="0" value="${minP.executiveMentorFee||0}" style="${inputStyle};padding-left:22px"></div><p style="font-size:11px;color:var(--muted);margin:6px 0 0">Annual fee paid to the executive mentor.</p></div>
       </div></div>
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†æÌ¥ù','Team Mentoring','Total programme fees')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Team Mentoring','Total programme fees')}
       <div style="padding:20px 24px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
         <div><label style="${labelStyle}">Client Minimum Programme Fee (¬£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">¬£</span><input id="teamMin" type="number" min="0" value="${minP.team||0}" style="${inputStyle};padding-left:22px"></div><p style="font-size:11px;color:var(--muted);margin:6px 0 0">Minimum total fee for the full programme.</p></div>
         <div><label style="${labelStyle}">Mentor Programme Fee (¬£)</label><div style="position:relative"><span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px">¬£</span><input id="teamMentorMin" type="number" min="0" value="${minP.teamMentorFee||0}" style="${inputStyle};padding-left:22px"></div><p style="font-size:11px;color:var(--muted);margin:6px 0 0">Total fee paid to the mentor for the programme.</p></div>
@@ -3303,7 +3303,7 @@ const xi=DB.xeroInstances||{};
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   const tabIntegrations=`
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ¥ó','Xero Integration','Map engagement types to Xero account codes')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Xero Integration','Map engagement types to Xero account codes')}
       <div style="padding:20px 24px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px">
           <div><label style="${labelStyle}">Chair Account Code</label><input id="xeroChair" value="${xero.chairCode||''}" style="${inputStyle}" placeholder="e.g. 200"></div>
@@ -3318,7 +3318,7 @@ const xi=DB.xeroInstances||{};
       ${saveBtn('saveXeroBtn','saveXero()')}
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ¥ó','Xero ‚Äî Instance Config','One Xero tenant per entity; invoices route automatically')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Xero ‚Äî Instance Config','One Xero tenant per entity; invoices route automatically')}
       <div style="padding:20px 24px">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:16px">
           <div style="border:1px solid #e2e8f0;border-radius:10px;padding:16px">
@@ -3395,7 +3395,7 @@ const xi=DB.xeroInstances||{};
       </div>
       ${saveBtn('saveSfBtn','saveSalesforceConfig()')}
     </div><div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ¥î','Notification Rules','Automatic alerts triggered by engagement events')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Notification Rules','Automatic alerts triggered by engagement events')}
       <div style="padding:0 24px">
         ${notifRules.map((r,i)=>`
           <div style="display:grid;grid-template-columns:1fr 80px 80px 1fr auto;gap:12px;align-items:center;padding:14px 0;border-bottom:1px solid #f5f3f0">
@@ -3431,7 +3431,7 @@ const xi=DB.xeroInstances||{};
     </div>`;
 
   // --- TAB: EMAIL TEMPLATES ---
-  const tplKeys=[['invoice','Ì†ΩÌ≥Ñ Invoice','Sent with client invoices'],['sow','Ì†ΩÌ≥ã Statement of Work','Sent with SOW documents'],['session','Ì†ΩÌ≥Ö Session Confirmation','Sent to confirm upcoming sessions']];
+  const tplKeys=[['invoice','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Invoice','Sent with client invoices'],['sow','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Statement of Work','Sent with SOW documents'],['session','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Session Confirmation','Sent to confirm upcoming sessions']];
   const tabTemplates=`
     ${tplKeys.map(([key,icon,desc])=>`
       <div style="${cardStyle}">
@@ -3489,7 +3489,7 @@ const xi=DB.xeroInstances||{};
 tabSystem=`
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
       <div style="${cardStyle}">
-        ${sectionHead('Ì†ΩÌ≥Ö','Fiscal Year','Set the start month for YTD calculations')}
+        ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Fiscal Year','Set the start month for YTD calculations')}
         <div style="padding:20px 24px">
           <label style="${labelStyle}">Fiscal Year Start Month</label>
           <select id="fyMonth" style="${inputStyle}">${fyOpts}</select>
@@ -3498,7 +3498,7 @@ tabSystem=`
         ${saveBtn('saveFYBtn','saveFY()')}
       </div>
       <div style="${cardStyle}">
-        ${sectionHead('Ì†ΩÌ≥§','Data Export','Download platform data as CSV or Excel')}
+        ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Data Export','Download platform data as CSV or Excel')}
         <div style="padding:16px 24px;display:flex;flex-direction:column;gap:10px">
           ${[
             ['Engagements','exportData(\'engagements\')'],
@@ -3512,7 +3512,7 @@ tabSystem=`
       </div>
     </div>
     <div style="${cardStyle}">
-      ${sectionHead('Ì†ΩÌ≥ã','Audit Log','Record of all significant changes to the platform')}
+      ${sectionHead('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Audit Log','Record of all significant changes to the platform')}
       <div style="padding:0 24px 4px;max-height:400px;overflow-y:auto">
         <div style="display:flex;gap:16px;padding:10px 0;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)"><span style="flex-shrink:0;width:140px">Timestamp</span><span style="flex:1">Action</span><span style="width:100px">User</span></div>
         ${auditHtml}
@@ -3521,7 +3521,7 @@ tabSystem=`
 
   const clLists=(DB.settings||{}).clientLists||{companyType:[],industry:[],ownership:[],accountSource:[],accountPriority:[]};
   function clListCard(key,label,icon){var items=clLists[key]||[];var rows=items.map(function(v,i){return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><input id="cl-'+key+'-'+i+'" value="'+v+'" style="'+inputStyle+'"><button onclick="window.removeClientListItem(\"'+key+'\",'+i+')" style="flex-shrink:0;background:#fee2e2;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;color:#991b1b">‚úï</button></div>';}).join('');return '<div style="'+cardStyle+'">'+sectionHead(icon,label,items.length+' items')+'<div style="padding:20px 24px">'+rows+'<div style="display:flex;gap:8px;margin-top:8px"><input id="cl-new-'+key+'" placeholder="Add item‚Ä¶" style="'+inputStyle+'"><button onclick="window.addClientListItem(\"'+key+'\")" style="flex-shrink:0;background:var(--venetian);color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">Add</button><button onclick="window.importClientList(\"'+ key +'\")" style="flex-shrink:0;background:#f1f5f9;color:#374151;border:1px solid #e2e8f0;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:600;cursor:pointer">‚¨Ü Import</button></div></div>'+saveBtn('cl-save-'+key,'saveClientFieldList(\"'+key+'\")')+'</div>';}
-  const tabClientFields='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+clListCard('companyType','Company Type','Ì†ºÌø¢')+clListCard('industry','Industry','Ì†ºÌø≠')+clListCard('ownership','Ownership','Ì†ΩÌ±•')+clListCard('accountSource','Account Source','Ì†ΩÌ≥•')+clListCard('accountPriority','Account Priority','‚≠ê')+'</div>';
+  const tabClientFields='<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'+clListCard('companyType','Company Type','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ')+clListCard('industry','Industry','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ')+clListCard('ownership','Ownership','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ')+clListCard('accountSource','Account Source','ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ')+clListCard('accountPriority','Account Priority','‚≠ê')+'</div>';
   // --- TABS CONFIG ---
   const tabs=[
     {id:'users',label:'Users & Roles',content:tabUsers},
@@ -4728,7 +4728,7 @@ const sessHtml=e.type!=='chair'?'':(enSess.length===0
   const filesHtml=enFiles.length===0
     ?`<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:12px;font-style:italic">No files uploaded yet.</div>`
     :enFiles.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:20px">Ì†ΩÌ≥Ñ</span>
+      <span style="font-size:20px">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ</span>
       <span style="flex:1;font-size:12px;font-weight:500">${f.name}</span>
       <button onclick="deleteEngFile('${id}','${f.id}')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:4px" title="Delete">‚úï</button>
     </div>`).join('');
@@ -5150,7 +5150,7 @@ function handleEngFileUpload(event,engId){
   reader.onload=function(ev){
     const record={id:uid(),engId:engId,name:file.name,fileType:file.type||file.name.split('.').pop(),size:file.size,uploadedAt:today(),uploadedBy:S.user?S.user.name:'Unknown',dataUrl:ev.target.result};
     DB.engFiles.push(record);
-    addAct('Ì†ΩÌ≥é','File uploaded: '+file.name);
+    addAct('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','File uploaded: '+file.name);
     save(); renderView();
   };
   reader.readAsDataURL(file);
@@ -5346,7 +5346,7 @@ function rProjects(c){
         </div>
         <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
           ${e.partner?`<span class="badge b-grey">${e.partner}</span>`:''}
-          ${e.country?`<span class="badge b-grey">Ì†ºÌºç ${e.country}</span>`:''}
+          ${e.country?`<span class="badge b-grey">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ ${e.country}</span>`:''}
           ${e.startDate?`<span class="badge b-grey">${e.startDate} ‚Üí ${e.endDate||'ongoing'}</span>`:''}
         </div>
         <div style="margin-bottom:12px">
@@ -5534,6 +5534,275 @@ function showPlanSubTab(eId,sId,subTab){
         html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
         html+="<div><div style='font-weight:600;font-size:14px;color:#1e293b'>"+cl.title+"</div>";
         if(cl.person) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>Ì†ΩÌ≥û With: "+cl.person+"</div>";
+        if(cl.duration) html+="<div style='font-size:12px;color:#64748b'>‚è± "+cl.duration+"</div>";
+        if(cl.summary) html+="<div style='font-size:13px;color:#475569;margin-top:6px'>"+cl.summary+"</div>";
+        html+="</div>";
+        html+="<div style='text-align:right;font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:12px'>"+cl.date+"</div>";
+        html+="</div></div>";
+      });
+    }
+    html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddCallModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Log Call</button>";
+  } else if(subTab==="strengths"){
+    var strengths=e.cliftonStrengths||[];
+    html+="<div style='margin-bottom:16px'>";
+    html+="<h4 style='margin:0 0 12px;font-size:15px;font-weight:700;color:#1e293b'>Clifton Strength Profiles</h4>";
+    if(strengths.length===0){
+      html+="<div style='color:#94a3b8;font-size:13px;padding:8px 0'>No strength profiles added yet. Add a mentee profile below.</div>";
+    } else {
+      strengths.forEach(function(sp,si){
+        var domains={Executing:"#ef4444",Influencing:"#f59e0b",Relationship:"#22c55e",Thinking:"#3b82f6"};
+        html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:12px'>";
+        html+="<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:12px'>";
+        html+="<div style='font-weight:700;font-size:15px;color:#1e293b'>"+sp.menteeName+"</div>";
+        html+="<button data-eid='"+eId+"' data-si='"+si+"' onclick='editCliftonProfile(this.dataset.eid,parseInt(this.dataset.si))' style='font-size:12px;background:none;border:1px solid #e2e8f0;border-radius:6px;padding:4px 10px;cursor:pointer;color:#64748b'>Edit</button>";
+        html+="</div>";
+        if(sp.top5&&sp.top5.length){
+          html+="<div style='display:flex;flex-wrap:wrap;gap:6px'>";
+          sp.top5.forEach(function(st){
+            var dc=domains[st.domain]||"#6366f1";
+            html+="<div style='background:"+dc+"15;border:1px solid "+dc+"40;border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;color:"+dc+"'>"+st.name+"</div>";
+          });
+          html+="</div>";
+        }
+        if(sp.notes) html+="<div style='font-size:12px;color:#64748b;margin-top:10px'>"+sp.notes+"</div>";
+        html+="</div>";
+      });
+    }
+    html+="</div>";
+    html+="<button data-eid='"+eId+"' onclick='openCliftonModal(this.dataset.eid)' style='border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Mentee Strength Profile</button>";
+  }
+  box.innerHTML=html;
+}
+function closePlanModal(){var o=document.querySelector(".plan-modal");if(o)o.remove();}
+function openAddMeetingModal(eId,sId){
+  var today=new Date().toISOString().slice(0,10);
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:white;border-radius:16px;padding:28px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
+  html+="<h3 style='margin:0 0 20px;font-size:17px;font-weight:700;color:#1e293b'>Log Meeting</h3>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Title</label>";
+  html+="<input id='amm-title' placeholder='e.g. Kick-off call' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px'>";
+  html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Date</label>";
+  html+="<input id='amm-date' type='date' value='"+today+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div>";
+  html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Duration</label>";
+  html+="<input id='amm-dur' placeholder='e.g. 60 mins' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div></div>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Attendees</label>";
+  html+="<input id='amm-att' placeholder='Names or roles' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Notes</label>";
+  html+="<textarea id='amm-notes' rows='3' placeholder='Key discussion points, decisions...' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical;margin-bottom:20px'></textarea>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:14px'>Cancel</button>";
+  html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='saveMeeting(this.dataset.eid,this.dataset.sid)' style='padding:10px 20px;border:none;border-radius:8px;background:#3b82f6;color:white;cursor:pointer;font-size:14px;font-weight:600'>Save Meeting</button>";
+  html+="</div></div></div>";
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function saveMeeting(eId,sId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id===sId;});
+  if(!sec) return;
+  if(!sec.meetings) sec.meetings=[];
+  var title=(document.getElementById("amm-title")||{}).value||"";
+  if(!title.trim()) return alert("Please enter a title.");
+  sec.meetings.push({id:"m"+Date.now(),title:title.trim(),
+    date:(document.getElementById("amm-date")||{}).value||"",
+    duration:(document.getElementById("amm-dur")||{}).value||"",
+    attendees:(document.getElementById("amm-att")||{}).value||"",
+    notes:(document.getElementById("amm-notes")||{}).value||""
+  });
+  save();closePlanModal();showPlanSubTab(eId,sId,"meetings");
+}
+function openAddCallModal(eId,sId){
+  var today=new Date().toISOString().slice(0,10);
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:white;border-radius:16px;padding:28px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
+  html+="<h3 style='margin:0 0 20px;font-size:17px;font-weight:700;color:#1e293b'>Log Call</h3>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Title / Purpose</label>";
+  html+="<input id='acm-title' placeholder='e.g. Monthly check-in' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px'>";
+  html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Date</label>";
+  html+="<input id='acm-date' type='date' value='"+today+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div>";
+  html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Duration</label>";
+  html+="<input id='acm-dur' placeholder='e.g. 30 mins' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div></div>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Spoke with</label>";
+  html+="<input id='acm-person' placeholder='Mentee, client, or colleague name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Summary</label>";
+  html+="<textarea id='acm-notes' rows='3' placeholder='What was discussed, any actions...' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical;margin-bottom:20px'></textarea>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:14px'>Cancel</button>";
+  html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='saveCall(this.dataset.eid,this.dataset.sid)' style='padding:10px 20px;border:none;border-radius:8px;background:#10b981;color:white;cursor:pointer;font-size:14px;font-weight:600'>Save Call</button>";
+  html+="</div></div></div>";
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function saveCall(eId,sId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id===sId;});
+  if(!sec) return;
+  if(!sec.calls) sec.calls=[];
+  var title=(document.getElementById("acm-title")||{}).value||"";
+  if(!title.trim()) return alert("Please enter a title.");
+  sec.calls.push({id:"c"+Date.now(),title:title.trim(),
+    date:(document.getElementById("acm-date")||{}).value||"",
+    duration:(document.getElementById("acm-dur")||{}).value||"",
+    person:(document.getElementById("acm-person")||{}).value||"",
+    summary:(document.getElementById("acm-notes")||{}).value||""
+  });
+  save();closePlanModal();showPlanSubTab(eId,sId,"calls");
+}
+function openCliftonModal(eId,editIdx){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  if(!e.cliftonStrengths) e.cliftonStrengths=[];
+  var editing=(typeof editIdx==="number"&&editIdx>=0)?e.cliftonStrengths[editIdx]:null;
+  var all=["Achiever","Activator","Adaptability","Analytical","Arranger","Belief","Command",
+    "Communication","Competition","Connectedness","Consistency","Context","Deliberative",
+    "Developer","Discipline","Empathy","Focus","Futuristic","Harmony","Ideation","Includer",
+    "Individualization","Input","Intellection","Learner","Maximizer","Positivity","Relator",
+    "Responsibility","Restorative","Self-Assurance","Significance","Strategic","Woo"];
+  var dm={Achiever:"E",Activator:"I",Adaptability:"R",Analytical:"T",Arranger:"E",Belief:"E",
+    Command:"I",Communication:"I",Competition:"I",Connectedness:"R",Consistency:"E",Context:"T",
+    Deliberative:"E",Developer:"R",Discipline:"E",Empathy:"R",Focus:"E",Futuristic:"T",
+    Harmony:"R",Ideation:"T",Includer:"R",Individualization:"R",Input:"T",Intellection:"T",
+    Learner:"T",Maximizer:"I",Positivity:"R",Relator:"R",Responsibility:"E",Restorative:"E",
+    "Self-Assurance":"I",Significance:"I",Strategic:"T",Woo:"I"};
+  var dc={E:"#ef4444",I:"#f59e0b",R:"#22c55e",T:"#3b82f6"};
+  var dn={E:"Executing",I:"Influencing",R:"Relationship",T:"Thinking"};
+  var sel=editing&&editing.top5?editing.top5.map(function(s){return s.name;}):[];
+  var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center'>";
+  html+="<div style='background:white;border-radius:16px;padding:28px;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
+  html+="<h3 style='margin:0 0 6px;font-size:17px;font-weight:700;color:#1e293b'>"+(editing?"Edit":"Add")+" Clifton Strength Profile</h3>";
+  html+="<p style='margin:0 0 16px;font-size:13px;color:#64748b'>Select up to 5 top strengths for this mentee.</p>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Mentee Name</label>";
+  html+="<input id='cs-name' value='"+(editing?editing.menteeName:"")+"' placeholder='Mentee full name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:16px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:8px'>Top Strengths (select up to 5)</label>";
+  html+="<div style='display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px'>";
+  all.forEach(function(s){
+    var d=dm[s]||"T"; var c=dc[d]||"#6366f1";
+    var isSel=sel.indexOf(s)>=0;
+    var bg=isSel?c:"white";
+    var fg=isSel?"white":c;
+    var cls=isSel?"cs-sel":"";
+    html+="<div class='"+cls+"' data-str='"+s+"' data-dom='"+d+"'"
+      +" onclick='toggleCliftonStr(this)'"
+      +" style='padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid "+c+";background:"+bg+";color:"+fg+"'>"+s+"</div>";
+  });
+  html+="</div>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Notes</label>";
+  html+="<textarea id='cs-notes' rows='2' placeholder='Observations about this mentee...' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical;margin-bottom:20px'>"+(editing&&editing.notes?editing.notes:"")+"</textarea>";
+  html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
+  html+="<button onclick='closePlanModal()' style='padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:14px'>Cancel</button>";
+  var eidx=(typeof editIdx==="number"&&editIdx>=0)?editIdx:-1;
+  html+="<button data-eid='"+eId+"' data-idx='"+eidx+"' onclick='saveClifton(this.dataset.eid,parseInt(this.dataset.idx))' style='padding:10px 20px;border:none;border-radius:8px;background:#6366f1;color:white;cursor:pointer;font-size:14px;font-weight:600'>Save Profile</button>";
+  html+="</div></div></div>";
+  document.body.insertAdjacentHTML("beforeend",html);
+}
+function toggleCliftonStr(el){
+  var dc={E:"#ef4444",I:"#f59e0b",R:"#22c55e",T:"#3b82f6"};
+  var selected=document.querySelectorAll(".plan-modal .cs-sel");
+  var isSel=el.classList.contains("cs-sel");
+  if(!isSel&&selected.length>=5){alert("Max 5 strengths. Deselect one first.");return;}
+  var d=el.dataset.dom||"T"; var c=dc[d]||"#6366f1";
+  if(isSel){el.classList.remove("cs-sel");el.style.background="white";el.style.color=c;}
+  else{el.classList.add("cs-sel");el.style.background=c;el.style.color="white";}
+}
+function saveClifton(eId,editIdx){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  if(!e.cliftonStrengths) e.cliftonStrengths=[];
+  var name=(document.getElementById("cs-name")||{}).value||"";
+  if(!name.trim()) return alert("Please enter mentee name.");
+  var dn={E:"Executing",I:"Influencing",R:"Relationship",T:"Thinking"};
+  var selEls=document.querySelectorAll(".plan-modal .cs-sel");
+  var top5=[];
+  selEls.forEach(function(el){top5.push({name:el.dataset.str,domain:dn[el.dataset.dom]||"Thinking"});});
+  var profile={menteeName:name.trim(),top5:top5,notes:(document.getElementById("cs-notes")||{}).value||""};
+  if(editIdx>=0&&editIdx<e.cliftonStrengths.length){e.cliftonStrengths[editIdx]=profile;}
+  else{e.cliftonStrengths.push(profile);}
+  save();closePlanModal();showPlanSubTab(eId,"planning","strengths");
+}
+function editCliftonProfile(eId,idx){openCliftonModal(eId,idx);}
+function showPlanSubTab(eId,sId,subTab){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
+  var sections=initPlanSections(e);
+  var sec=sections.find(function(s){return s.id===sId;});
+  if(!sec) return;
+  if(!sec.meetings) sec.meetings=[];
+  if(!sec.calls) sec.calls=[];
+  if(!e.cliftonStrengths) e.cliftonStrengths=[];
+  // Update sub-tab active styling
+  ["tasks","meetings","calls","strengths"].forEach(function(sid){
+    var el=document.getElementById("psubtab-"+eId+"-"+sId+"-"+sid);
+    if(!el) return;
+    if(sid===subTab){el.style.color="#3b82f6";el.style.borderBottom="2px solid #3b82f6";}
+    else{el.style.color="#64748b";el.style.borderBottom="2px solid transparent";}
+  });
+  var box=document.getElementById("plan-sub-content-"+eId+"-"+sId);
+  if(!box) return;
+  var html="";
+  if(subTab==="tasks"){
+    // Tasks sub-tab (existing task UI)
+    var tasks=sec.tasks||[];
+    var priC={High:"#ef4444",Medium:"#f59e0b",Low:"#22c55e"};
+    if(tasks.length===0){
+      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No tasks yet.</div>";
+    } else {
+      tasks.forEach(function(t,ti){
+        var done=t.status==="done";
+        var pc=priC[t.priority]||"#94a3b8";
+        html+="<div style='background:white;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
+        html+="<div style='display:flex;align-items:flex-start;gap:10px'>";
+        html+="<input type='checkbox' "+(done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' onchange='togglePlanTask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),this.checked)' style='margin-top:3px;width:16px;height:16px;cursor:pointer'>";
+        html+="<div style='flex:1'>";
+        html+="<div style='display:flex;align-items:center;gap:8px;flex-wrap:wrap'>";
+        html+="<span style='font-weight:600;font-size:14px;color:#1e293b;"+(done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+t.text+"</span>";
+        if(t.priority) html+="<span style='background:"+pc+"22;color:"+pc+";border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700'>"+t.priority+"</span>";
+        html+="</div>";
+        if(t.assignee) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ "+t.assignee+"</div>";
+        if(t.dueDate) html+="<div style='font-size:12px;color:#64748b;margin-top:2px'>ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ "+t.dueDate+"</div>";
+        if(t.subtasks&&t.subtasks.length){
+          html+="<div style='margin-top:8px'>";
+          t.subtasks.forEach(function(st,sti){
+            html+="<div style='display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;padding:2px 0'>";
+            html+="<input type='checkbox' "+(st.done?"checked ":"")+"data-eid='"+eId+"' data-sid='"+sId+"' data-ti='"+ti+"' data-sti='"+sti+"' onchange='togglePlanSubtask(this.dataset.eid,this.dataset.sid,parseInt(this.dataset.ti),parseInt(this.dataset.sti),this.checked)' style='width:13px;height:13px'>";
+            html+="<span style='"+(st.done?"text-decoration:line-through;color:#94a3b8":"")+"'>"+st.text+"</span></div>";
+          });
+          html+="</div>";
+        }
+        html+="</div></div></div>";
+      });
+    }
+    html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddPlanTaskModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Add Task</button>";
+  } else if(subTab==="meetings"){
+    var meetings=sec.meetings||[];
+    if(meetings.length===0){
+      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No meetings logged yet.</div>";
+    } else {
+      meetings.forEach(function(m,mi){
+        html+="<div style='background:white;border:1px solid #e5e7eb;border-left:4px solid #3b82f6;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
+        html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
+        html+="<div><div style='font-weight:600;font-size:14px;color:#1e293b'>"+m.title+"</div>";
+        if(m.attendees) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ "+m.attendees+"</div>";
+        if(m.notes) html+="<div style='font-size:13px;color:#475569;margin-top:6px'>"+m.notes+"</div>";
+        html+="</div>";
+        html+="<div style='text-align:right;font-size:11px;color:#94a3b8;white-space:nowrap;margin-left:12px'>"+m.date+"</div>";
+        html+="</div></div>";
+      });
+    }
+    html+="<button data-eid='"+eId+"' data-sid='"+sId+"' onclick='openAddMeetingModal(this.dataset.eid,this.dataset.sid)' style='margin-top:8px;border:2px dashed #cbd5e1;border-radius:10px;padding:10px 18px;background:transparent;color:#64748b;cursor:pointer;font-size:13px;font-weight:600;width:100%'>+ Log Meeting</button>";
+  } else if(subTab==="calls"){
+    var calls=sec.calls||[];
+    if(calls.length===0){
+      html+="<div style='color:#94a3b8;font-size:13px;padding:12px 0'>No calls logged yet.</div>";
+    } else {
+      calls.forEach(function(cl){
+        html+="<div style='background:white;border:1px solid #e5e7eb;border-left:4px solid #10b981;border-radius:10px;padding:14px 16px;margin-bottom:10px'>";
+        html+="<div style='display:flex;justify-content:space-between;align-items:start'>";
+        html+="<div><div style='font-weight:600;font-size:14px;color:#1e293b'>"+cl.title+"</div>";
+        if(cl.person) html+="<div style='font-size:12px;color:#64748b;margin-top:4px'>ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ With: "+cl.person+"</div>";
         if(cl.duration) html+="<div style='font-size:12px;color:#64748b'>‚è± "+cl.duration+"</div>";
         if(cl.summary) html+="<div style='font-size:13px;color:#475569;margin-top:6px'>"+cl.summary+"</div>";
         html+="</div>";
@@ -6546,7 +6815,7 @@ function openDealModal(id,defaultStage){
 
 function renderDealBilling(o){
   return '<div style="margin-top:20px;border:2px solid #d1fae5;border-radius:8px;padding:16px;background:#f0fdf4">'
-    +'<div style="font-weight:700;font-size:13px;color:#059669;margin-bottom:12px">Ì†ΩÌ≥ã Client Billing Details '
+    +'<div style="font-weight:700;font-size:13px;color:#059669;margin-bottom:12px">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Client Billing Details '
     +'<span style="font-size:11px;font-weight:400;color:#6b7280">‚Äî save deal to persist before going live</span></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
     +'<div class="fg"><label>Billing Contact</label><input id="dm-billName" placeholder="Full name" value="'+(o.billName||'')+'"></div>'
@@ -7663,7 +7932,7 @@ function saveRpt(){
     DB.savedReports.push({id:uid(),name,src:rpt.src,fields:[...rpt.fields],filters:JSON.parse(JSON.stringify(rpt.filters)),sort:{...rpt.sort},dateF:rpt.dateF,dateFrom:rpt.dateFrom,dateTo:rpt.dateTo,createdBy:S.user.id,createdByName:S.user.name,createdAt:now,updatedAt:now});
   }
   save();
-  addAct('Ì†ΩÌ≥ä','Saved report: '+name);
+  addAct('ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ','Saved report: '+name);
   S.tab.rpt.view='list';
   S.tab.rpt.editId=null;
   renderView();
@@ -8793,7 +9062,7 @@ function rTraining(c){
       const opts=q.opts.map((o,oi)=>'<label style="display:flex;align-items:flex-start;gap:8px;padding:6px 8px;border-radius:4px;cursor:pointer;margin-bottom:4px;border:1px solid var(--border);background:var(--white)" id="ql-'+mod.id+'-'+qi+'-'+oi+'"><input type="radio" name="q-'+mod.id+'-'+qi+'" value="'+oi+'" style="margin-top:2px;flex-shrink:0"><span style="font-size:12px">'+o+'</span></label>').join('');
       return '<div style="margin-bottom:16px" id="qblock-'+mod.id+'-'+qi+'"><div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--nearblack)">'+(qi+1)+'. '+q.q+'</div>'+opts+'<div id="qfb-'+mod.id+'-'+qi+'" style="font-size:11px;margin-top:4px;display:none"></div></div>';
     }).join('');
-    return '<div class="card" style="margin-bottom:12px;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:'+(isOpen?'1px solid var(--border)':'none')+'" onclick="S.tab.trainOpen=S.tab.trainOpen===\''+mod.id+'\'?null:\''+mod.id+'\';renderView()"><div style="width:36px;height:36px;background:var(--narrow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+mod.icon+'</div><div style="flex:1"><div style="font-weight:700;font-size:14px;font-family:Georgia,serif;margin-bottom:3px">'+mod.title+'</div><div style="font-size:11px;color:var(--muted)">'+mod.summary+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:200px">'+roleBadges+'</div><div style="font-size:18px;color:var(--muted);margin-left:12px;transition:.2s;transform:'+(isOpen?'rotate(90deg)':'rotate(0deg)')+'">‚Ä∫</div></div>'+(isOpen?'<div style="padding:20px"><div class="tabs" style="margin-bottom:16px"><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?'':' active')+'" onclick="S.tab.trainTab=\''+mod.id+'-guide\';renderView()">Ì†ΩÌ≥ñ Guide</div><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?' active':'')+'" onclick="S.tab.trainTab=\''+mod.id+'-quiz\';renderView()">‚úè Quiz</div></div>'+(S.tab.trainTab===mod.id+'-quiz'?'<div style="max-width:640px">'+quizHtml+'<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-primary" onclick="checkTrainingQuiz(\''+mod.id+'\','+JSON.stringify(mod.quiz)+')">Check Answers</button><button class="btn btn-outline" onclick="resetTrainingQuiz(\''+mod.id+'\','+mod.quiz.length+')">Reset</button></div><div id="quiz-score-'+mod.id+'" style="margin-top:12px;font-size:13px"></div></div>':'<div class="sop-content" style="line-height:1.7;font-size:13px;max-width:720px">'+mod.sop+'</div>')+'</div>':'')+'</div>';
+    return '<div class="card" style="margin-bottom:12px;overflow:hidden"><div style="padding:16px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;border-bottom:'+(isOpen?'1px solid var(--border)':'none')+'" onclick="S.tab.trainOpen=S.tab.trainOpen===\''+mod.id+'\'?null:\''+mod.id+'\';renderView()"><div style="width:36px;height:36px;background:var(--narrow);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+mod.icon+'</div><div style="flex:1"><div style="font-weight:700;font-size:14px;font-family:Georgia,serif;margin-bottom:3px">'+mod.title+'</div><div style="font-size:11px;color:var(--muted)">'+mod.summary+'</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:200px">'+roleBadges+'</div><div style="font-size:18px;color:var(--muted);margin-left:12px;transition:.2s;transform:'+(isOpen?'rotate(90deg)':'rotate(0deg)')+'">‚Ä∫</div></div>'+(isOpen?'<div style="padding:20px"><div class="tabs" style="margin-bottom:16px"><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?'':' active')+'" onclick="S.tab.trainTab=\''+mod.id+'-guide\';renderView()">ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ Guide</div><div class="tab'+(S.tab.trainTab===mod.id+'-quiz'?' active':'')+'" onclick="S.tab.trainTab=\''+mod.id+'-quiz\';renderView()">‚úè Quiz</div></div>'+(S.tab.trainTab===mod.id+'-quiz'?'<div style="max-width:640px">'+quizHtml+'<div style="display:flex;gap:10px;margin-top:16px"><button class="btn btn-primary" onclick="checkTrainingQuiz(\''+mod.id+'\','+JSON.stringify(mod.quiz)+')">Check Answers</button><button class="btn btn-outline" onclick="resetTrainingQuiz(\''+mod.id+'\','+mod.quiz.length+')">Reset</button></div><div id="quiz-score-'+mod.id+'" style="margin-top:12px;font-size:13px"></div></div>':'<div class="sop-content" style="line-height:1.7;font-size:13px;max-width:720px">'+mod.sop+'</div>')+'</div>':'')+'</div>';
   }).join('');
 
   const _vt='<div class="tabs" style="margin-bottom:20px"><div class="tab active" onclick="S.tab.trainView=\'modules\';renderView()">&#128218; Training Modules</div><div class="tab" onclick="S.tab.trainView=\'org\';S.tab.trainOpen=null;renderView()">&#127970; Team Directory</div></div>';c.innerHTML='<div class="phdr"><div><h2>Training & Onboarding</h2><p>Process guides, knowledge checks, and team directory</p></div></div>'+_vt+'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">'+Object.entries(ROLE_LABELS).map(([k,v])=>'<button class="btn '+(role===k?'btn-primary':'btn-outline')+'" style="font-size:12px;padding:6px 14px" onclick="S.tab.trainRole=\''+k+'\';S.tab.trainOpen=null;renderView()">'+v+'</button>').join('')+'</div><div style="margin-bottom:8px;font-size:12px;color:var(--muted)">'+filtered.length+' module'+(filtered.length!==1?'s':'')+' for <strong>'+ROLE_LABELS[role]+'</strong> ‚Äî click any module to expand</div>'+moduleHtml+'<style>.sop-content h4{font-family:Georgia,serif;font-size:15px;margin:16px 0 6px;color:var(--nearblack)}.sop-content p{margin-bottom:10px;color:#333}.sop-content ul,.sop-content ol{padding-left:20px;margin-bottom:10px;color:#333}.sop-content li{margin-bottom:4px}.sop-content strong{color:var(--nearblack)}.sop-content em{color:var(--cadmium)}</style>';
