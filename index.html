@@ -5575,19 +5575,32 @@ function showPlanSubTab(eId,sId,subTab){
 }
 function closePlanModal(){var o=document.querySelector(".plan-modal");if(o)o.remove();}
 function openAddMeetingModal(eId,sId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
   var today=new Date().toISOString().slice(0,10);
+  // Build participant options
+  var mentors=(DB.contacts||[]).filter(function(c){return c.type==="mentor";});
+  var team=DB.appUsers||[];
+  var mentorOpts=mentors.map(function(m){return "<option value='"+m.name+"'>"+m.name+"</option>";}).join("");
+  var teamOpts=team.map(function(u){return "<option value='"+u.name+"'>"+u.name+" (GMG)</option>";}).join("");
   var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center'>";
-  html+="<div style='background:white;border-radius:16px;padding:28px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
+  html+="<div style='background:white;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
   html+="<h3 style='margin:0 0 20px;font-size:17px;font-weight:700;color:#1e293b'>Log Meeting</h3>";
   html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Title</label>";
-  html+="<input id='amm-title' placeholder='e.g. Kick-off call' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<input id='amm-title' placeholder='e.g. Monthly coaching session' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
   html+="<div style='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px'>";
   html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Date</label>";
   html+="<input id='amm-date' type='date' value='"+today+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div>";
   html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Duration</label>";
   html+="<input id='amm-dur' placeholder='e.g. 60 mins' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div></div>";
-  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Attendees</label>";
-  html+="<input id='amm-att' placeholder='Names or roles' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>Mentor</label>";
+  html+="<select id='amm-mentor' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:12px'>";
+  html+="<option value=''>-- Select mentor --</option>"+mentorOpts+"</select>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>Mentee / Client</label>";
+  html+="<input id='amm-mentee' placeholder='Mentee name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:12px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>GMG Team Member (optional)</label>";
+  html+="<select id='amm-team' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<option value=''>-- None --</option>"+teamOpts+"</select>";
   html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Notes</label>";
   html+="<textarea id='amm-notes' rows='3' placeholder='Key discussion points, decisions...' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical;margin-bottom:20px'></textarea>";
   html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
@@ -5605,18 +5618,28 @@ function saveMeeting(eId,sId){
   if(!sec.meetings) sec.meetings=[];
   var title=(document.getElementById("amm-title")||{}).value||"";
   if(!title.trim()) return alert("Please enter a title.");
+  var mentor=(document.getElementById("amm-mentor")||{}).value||"";
+  var mentee=(document.getElementById("amm-mentee")||{}).value||"";
+  var team=(document.getElementById("amm-team")||{}).value||"";
+  var parts=[mentor,mentee,team].filter(Boolean).join(", ");
   sec.meetings.push({id:"m"+Date.now(),title:title.trim(),
     date:(document.getElementById("amm-date")||{}).value||"",
     duration:(document.getElementById("amm-dur")||{}).value||"",
-    attendees:(document.getElementById("amm-att")||{}).value||"",
+    mentor:mentor,mentee:mentee,teamMember:team,attendees:parts,
     notes:(document.getElementById("amm-notes")||{}).value||""
   });
   save();closePlanModal();showPlanSubTab(eId,sId,"meetings");
 }
 function openAddCallModal(eId,sId){
+  var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
+  if(!e) return;
   var today=new Date().toISOString().slice(0,10);
+  var mentors=(DB.contacts||[]).filter(function(c){return c.type==="mentor";});
+  var team=DB.appUsers||[];
+  var mentorOpts=mentors.map(function(m){return "<option value='"+m.name+"'>"+m.name+"</option>";}).join("");
+  var teamOpts=team.map(function(u){return "<option value='"+u.name+"'>"+u.name+" (GMG)</option>";}).join("");
   var html="<div class='plan-modal' style='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center'>";
-  html+="<div style='background:white;border-radius:16px;padding:28px;width:460px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
+  html+="<div style='background:white;border-radius:16px;padding:28px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)'>";
   html+="<h3 style='margin:0 0 20px;font-size:17px;font-weight:700;color:#1e293b'>Log Call</h3>";
   html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Title / Purpose</label>";
   html+="<input id='acm-title' placeholder='e.g. Monthly check-in' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
@@ -5625,9 +5648,15 @@ function openAddCallModal(eId,sId){
   html+="<input id='acm-date' type='date' value='"+today+"' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div>";
   html+="<div><label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Duration</label>";
   html+="<input id='acm-dur' placeholder='e.g. 30 mins' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box'></div></div>";
-  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Spoke with</label>";
-  html+="<input id='acm-person' placeholder='Mentee, client, or colleague name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
-  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Summary</label>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>Mentor</label>";
+  html+="<select id='acm-mentor' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:12px'>";
+  html+="<option value=''>-- Select mentor --</option>"+mentorOpts+"</select>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>Mentee / Client</label>";
+  html+="<input id='acm-mentee' placeholder='Mentee name' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:12px'>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:6px'>Call type</label>";
+  html+="<select id='acm-type' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:14px'>";
+  html+="<option value='Mentor-Mentee'>Mentor with Mentee</option><option value='GMG-Mentor'>GMG with Mentor</option><option value='GMG-Mentee'>GMG with Mentee</option><option value='Three-way'>Three-way (Mentor, Mentee, GMG)</option><option value='Other'>Other</option></select>";
+  html+="<label style='font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px'>Notes / Summary</label>";
   html+="<textarea id='acm-notes' rows='3' placeholder='What was discussed, any actions...' style='width:100%;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;box-sizing:border-box;resize:vertical;margin-bottom:20px'></textarea>";
   html+="<div style='display:flex;gap:10px;justify-content:flex-end'>";
   html+="<button onclick='closePlanModal()' style='padding:10px 20px;border:1px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:14px'>Cancel</button>";
@@ -5644,10 +5673,14 @@ function saveCall(eId,sId){
   if(!sec.calls) sec.calls=[];
   var title=(document.getElementById("acm-title")||{}).value||"";
   if(!title.trim()) return alert("Please enter a title.");
+  var mentor=(document.getElementById("acm-mentor")||{}).value||"";
+  var mentee=(document.getElementById("acm-mentee")||{}).value||"";
+  var callType=(document.getElementById("acm-type")||{}).value||"";
+  var person=[mentor,mentee].filter(Boolean).join(" & ");
   sec.calls.push({id:"c"+Date.now(),title:title.trim(),
     date:(document.getElementById("acm-date")||{}).value||"",
     duration:(document.getElementById("acm-dur")||{}).value||"",
-    person:(document.getElementById("acm-person")||{}).value||"",
+    mentor:mentor,mentee:mentee,callType:callType,person:person,
     summary:(document.getElementById("acm-notes")||{}).value||""
   });
   save();closePlanModal();showPlanSubTab(eId,sId,"calls");
