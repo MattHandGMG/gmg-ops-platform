@@ -2654,70 +2654,59 @@ function _dashPartner(ctx){
       +'</div>';
   }).join('');
   var cards=partnerData.map(function(p){
+    var pct=p.pct||0;
+    var hue=pct<=50?25+(pct/50)*20:pct<=80?45+((pct-50)/30)*40:Math.min(142,85+((pct-80)/20)*57);
+    var perfCol='hsl('+Math.round(hue)+',75%,38%)';
+    var perfBg='hsl('+Math.round(hue)+',70%,95%)';
+    var barCol='hsl('+Math.round(hue)+',75%,45%)';
     var initials=p.name.split(' ').filter(Boolean).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase();
-    var vsCol=p.vsTarget===null?'var(--muted)':(p.vsTarget>=0?'#16a34a':'#dc2626');
-    var vsText=p.vsTarget===null?'No target set':(p.vsTarget>=0?'+'+fmtC(p.vsTarget)+' above target':fmtC(Math.abs(p.vsTarget))+' under target');
-    var barPct=p.pct;
-    var barCol=barPct>=100?'#16a34a':barPct>=75?'#2563eb':barPct>=50?'#d97706':'#dc2626';
-    var metrics=[['Outstanding',p.outstanding],['Committed',p.committed],['Pipeline',p.pipeline]];
-    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px">'
+    var noTgt=!p.target;
+    var aboveBelow=p.vsTarget>=0?' ahead':' behind';
+    var aboveBelowCol=p.vsTarget>=0?'#16a34a':'#dc2626';
+    return '<div style="background:white;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.06)">'
+      +'<div style="border-left:5px solid '+perfCol+';padding:18px 20px">'
       +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
-      +'<div style="width:40px;height:40px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#2563eb;flex-shrink:0">'+initials+'</div>'
-      +'<div><div style="font-size:15px;font-weight:600;margin-bottom:2px">'+p.name+'</div>'
-      +'<div style="font-size:12px;color:var(--muted)">'+p.activeEngs+' active engagement'+(p.activeEngs!==1?'s':'')+'</div></div>'
+      +'<div style="width:40px;height:40px;border-radius:50%;background:'+perfBg+';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:'+perfCol+'">'+initials+'</div>'
+      +'<div style="flex:1"><div style="font-size:15px;font-weight:600;color:#111827;margin-bottom:2px">'+p.name+'</div>'
+      +'<div style="font-size:12px;color:#6b7280">'+p.activeEngs+' active engagement'+(p.activeEngs!==1?'s':'')+'</div></div>'
+      +(noTgt
+        ?'<div style="font-size:11px;background:#f3f4f6;color:#9ca3af;padding:4px 10px;border-radius:20px">No target set</div>'
+        :'<div style="text-align:right"><div style="font-size:24px;font-weight:700;color:'+perfCol+'">'+pct+'%</div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.5px">attained</div></div>'
+      )
       +'</div>'
-      +(p.target
-  ?'<div style="margin-bottom:14px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<div><div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">YTD REVENUE</div>'
-    +'<div style="font-size:22px;font-weight:800;color:#1e293b">'+fmtC(p.ytdRev)+'</div></div>'
-    +'<div style="text-align:right"><span style="display:inline-block;background:'+barCol+';color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">'+barPct+'%</span>'
-    +'<div style="font-size:10px;color:var(--muted);margin-top:2px">of '+fmtC(p.target)+'</div></div>'
-    +'</div>'
-    +'<div style="background:#f1f5f9;border-radius:4px;height:6px;overflow:hidden;margin-bottom:5px">'
-    +'<div style="background:'+barCol+';height:6px;border-radius:4px;width:'+barPct+'%"></div>'
-    +'</div>'
-    +'<div style="font-size:11px;font-weight:600;color:'+vsCol+'">'+vsText+'</div>'
-    +'</div>'
-  :'<div style="margin-bottom:14px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em">YTD REVENUE</span>'
-    +'<span style="font-size:22px;font-weight:800;color:#1e293b">'+fmtC(p.ytdRev)+'</span>'
-    +'</div>'
-    +'<div style="font-size:11px;color:var(--muted);margin-top:5px">No annual target — set in Admin → Users</div>'
-    +'</div>'
-)
-      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'
-      +metrics.map(function(m){
-        return '<div style="background:#f8fafc;border-radius:8px;padding:10px;text-align:center">'
-          +'<div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">'+m[0]+'</div>'
-          +'<div style="font-size:15px;font-weight:700">'+fmtC(m[1])+'</div>'
-          +'</div>';
-      }).join('')
+      +(noTgt?''
+        :'<div style="background:#f3f4f6;border-radius:4px;height:7px;margin-bottom:16px;overflow:hidden">'
+          +'<div style="height:100%;width:'+Math.min(100,pct)+'%;background:'+barCol+';border-radius:4px"></div></div>'
+      )
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+      +'<div style="background:#f9fafb;border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">YTD Revenue</div>'
+      +'<div style="font-size:15px;font-weight:700;color:#111827">'+fmtC(p.ytdRev)+'</div></div>'
+      +(noTgt
+        ?'<div style="background:#f9fafb;border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Committed</div><div style="font-size:15px;font-weight:700;color:#111827">'+fmtC(p.committed)+'</div></div>'
+        :'<div style="background:#f9fafb;border-radius:8px;padding:10px 12px"><div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Annual Target</div><div style="font-size:15px;font-weight:700;color:#111827">'+fmtC(p.target)+'</div></div>'
+      )
+      +'<div style="background:#f9fafb;border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Pipeline</div>'
+      +'<div style="font-size:15px;font-weight:700;color:#111827">'+fmtC(p.pipeline)+'</div></div>'
+      +'<div style="background:#f9fafb;border-radius:8px;padding:10px 12px">'
+      +'<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Outstanding</div>'
+      +'<div style="font-size:15px;font-weight:700;color:#111827">'+fmtC(p.outstanding)+'</div></div>'
+      +'</div>'
+      +(noTgt?''
+        :'<div style="margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">'
+          +'<span style="font-size:12px;color:#6b7280">vs annual target</span>'
+          +'<span style="font-size:13px;font-weight:600;color:'+aboveBelowCol+'">'+(p.vsTarget>=0?'+':'')+fmtC(Math.abs(p.vsTarget||0))+aboveBelow+'</span>'
+          +'</div>'
+      )
       +'</div></div>';
   }).join('');
-  var html='<div style="padding:24px">'
-    +'<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px">'
-    +'<div><h2 style="font-size:18px;font-weight:700;margin:0 0 3px">Partner Sales Dashboard</h2>'
-    +'<p style="font-size:13px;color:var(--muted);margin:0">YTD actuals vs target · '+yr+'</p></div>'
-    +'</div>'
-    +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px">'+kpiCards+'</div>'
-    +(partnerData.length
-      ?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px">'+cards+'</div>'
-      :'<div style="padding:40px;text-align:center;color:var(--muted)">No partner users found.</div>')
-    +'<p style="font-size:11px;color:var(--muted);margin-top:16px">Revenue from paid invoices YTD. Set partner targets in Admin → Users.</p>'
+  var h='<div style="padding:24px">'
+    +'<div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:24px">'+kpiCards+'</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">'+cards+'</div>'
     +'</div>';
-  return html;
+  return h;
 }
-
-function _saveCustomDash(){
-  var keys=['personal_kpis','my_engs','pipeline','group_kpis','entity_breakdown','team_summary'];
-  var sel=keys.filter(function(k){var el=document.getElementById('cw_'+k);return el&&el.checked;});
-  var db=getDB();db.customDash={widgets:sel};
-  localStorage.setItem('gmg_v2',JSON.stringify(db));
-  alert('Layout saved!');
-}
-
 function _dashSetTargets(){
   var db=getDB();
   var t=db.dashTargets||{};
@@ -3669,45 +3658,59 @@ function openEditUserModal(id){
   ov.dataset.uid=id;
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center';
   var isRm=u.role==='rm';
+  var hasTarget=isRm&&(u.salesTarget>0||u.hasTarget);
   var roleOpts=['admin','chair','rm','team','viewer'].map(function(r){
-    var lbl={admin:'Administrator',chair:'Chair',rm:'Partner',team:'Team Member',viewer:'Viewer'}[r]||r;
+    var lbl={admin:'Admin',chair:'Chair',rm:'Partner / Relationship Manager',team:'Team',viewer:'Viewer'}[r]||r;
     return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+lbl+'</option>';
   }).join('');
   var entityOpts=['GMG','CMi','Merryck','ANZ','Middle East'].map(function(e){
     return '<option value="'+e+'"'+(u.entity===e?' selected':'')+'>'+e+'</option>';
   }).join('');
-  var pd=isRm?'block':'none';
-  ov.innerHTML='<div style="background:white;border-radius:12px;padding:28px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25)">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
-    +'<h3 style="margin:0;font-size:16px;font-weight:700;color:#111827">Edit User</h3>'
-    +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">&times;</button>'
-    +'</div>'
-    +'<label style="'+la+'">Full Name</label><input id="eu-name" style="'+fi+'">'
-    +'<label style="'+la+'">Email Address</label><input id="eu-email" style="'+fi+'">'
-    +'<label style="'+la+'">Job Title</label><input id="eu-title" style="'+fi+'">'
-    +'<label style="'+la+'">Role</label>'
-    +'<select id="au-role" onchange="(function(){var s=document.getElementById(\'au-role\');var p=document.getElementById(\'eu-ps\');if(p)p.style.display=s.value===\'rm\'?\'block\':\'none\';})()" style="'+fi+'">'+roleOpts+'</select>'
-    +'<label style="'+la+'">Entity</label>'
-    +'<select id="au-entity" style="'+fi+'">'+entityOpts+'</select>'
-    +'<div id="eu-ps" style="display:'+pd+'">'
-    +'<div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:14px;margin-bottom:12px">'
-    +'<div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Partner Settings</div>'
-    +'<label style="'+la+'">Partner Display Name</label><input id="au-partner" style="'+fi+'" placeholder="e.g. John Smith">'
-    +'<label style="'+la+'">Annual Sales Target (£)</label><input id="au-sales-target" type="number" style="'+fi+'" placeholder="0">'
-    +'</div></div>'
-    +'<label style="'+la+'">New Password <span style="font-size:11px;font-weight:400;color:#9ca3af">(leave blank to keep current)</span></label>'
-    +'<input id="eu-pw" type="password" placeholder="New password" style="'+fi+'">'
-    +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'
-    +'<button onclick="document.getElementById(\'euOverlay\').remove()" style="padding:9px 20px;border:1px solid #e5e7eb;border-radius:6px;background:white;cursor:pointer;font-size:13px">Cancel</button>'
-    +'<button onclick="saveEditUser(document.getElementById(\'euOverlay\').dataset.uid)" style="padding:9px 20px;background:#CE2702;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">Save Changes</button>'
-    +'</div></div>';
+  var pdDisplay=isRm?'block':'none';
+  var tgDisplay=hasTarget?'block':'none';
+  ov.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px 32px;width:480px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'+
+    '<h3 style="margin:0 0 20px;font-size:17px;color:#111827">Edit User</h3>'+
+    '<label style="'+la+'">Full Name</label>'+
+    '<input id="eu-name" style="'+fi+'" value="">'+
+    '<label style="'+la+'">Email</label>'+
+    '<input id="eu-email" style="'+fi+'" value="">'+
+    '<label style="'+la+'">Job Title</label>'+
+    '<input id="eu-title" style="'+fi+'" value="">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'+
+      '<div><label style="'+la+'">Role</label>'+
+      '<select id="au-role" style="'+fi+'" onchange="(function(){var r=this.value;var s=document.getElementById(\'eu-ps\');if(s)s.style.display=(r===\'rm\'?\'block\':\'none\')})(this)">'+roleOpts+'</select></div>'+
+      '<div><label style="'+la+'">Entity</label>'+
+      '<select id="au-entity" style="'+fi+'">'+entityOpts+'</select></div>'+
+    '</div>'+
+    '<div id="eu-ps" style="display:'+pdDisplay+';background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin-bottom:12px">'+
+      '<p style="margin:0 0 12px;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em">Partner Settings</p>'+
+      '<label style="'+la+'">Partner Name</label>'+
+      '<input id="au-partner" style="'+fi+'" placeholder="e.g. John Smith">'+
+      '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:12px">'+
+        '<input type="checkbox" id="eu-has-target" onchange="document.getElementById(\'eu-target-row\').style.display=this.checked?\'block\':\'none\'">'+
+        '<span style="font-size:13px;font-weight:600;color:#374151">Has annual sales target</span>'+
+      '</label>'+
+      '<div id="eu-target-row" style="display:'+tgDisplay+'">'+
+        '<label style="'+la+'">Annual Sales Target (£)</label>'+
+        '<input id="au-sales-target" type="number" style="'+fi+'" placeholder="e.g. 500000">'+
+      '</div>'+
+    '</div>'+
+    '<label style="'+la+'">New Password <span style="font-weight:400;color:#9ca3af">(leave blank to keep current)</span></label>'+
+    '<input id="eu-pw" type="password" style="'+fi+'" placeholder="">'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">'+
+      '<button onclick="document.getElementById(\'euOverlay\').remove()" style="padding:9px 18px;border:1px solid #d1d5db;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">Cancel</button>'+
+      '<button onclick="saveEditUser(document.getElementById(\'euOverlay\').dataset.uid)" style="padding:9px 18px;border:none;border-radius:6px;background:#CE2702;color:#fff;font-size:13px;font-weight:600;cursor:pointer">Save Changes</button>'+
+    '</div>'+
+  '</div>';
   document.body.appendChild(ov);
   document.getElementById('eu-name').value=u.name||'';
   document.getElementById('eu-email').value=u.email||'';
   document.getElementById('eu-title').value=u.title||'';
   if(isRm){
     document.getElementById('au-partner').value=u.partnerName||'';
-    document.getElementById('au-sales-target').value=u.salesTarget||'';
+    var ht=document.getElementById('eu-has-target');
+    if(ht){ht.checked=hasTarget;}
+    if(u.salesTarget){document.getElementById('au-sales-target').value=u.salesTarget;}
   }
 }
 function saveEditUser(id){
@@ -3725,11 +3728,19 @@ function saveEditUser(id){
   DB.appUsers[ci].title=tt;
   if(rl)DB.appUsers[ci].role=rl;
   if(en)DB.appUsers[ci].entity=en;
-  if(rl==='rm'){
+  var effectiveRole=rl||DB.appUsers[ci].role;
+  if(effectiveRole==='rm'){
     var pn=document.getElementById('au-partner');
-    var st=document.getElementById('au-sales-target');
     if(pn)DB.appUsers[ci].partnerName=pn.value.trim();
-    if(st)DB.appUsers[ci].salesTarget=parseFloat(st.value)||0;
+    var ht=document.getElementById('eu-has-target');
+    var htChecked=ht?ht.checked:false;
+    DB.appUsers[ci].hasTarget=htChecked;
+    if(htChecked){
+      var st=document.getElementById('au-sales-target');
+      DB.appUsers[ci].salesTarget=st?parseFloat(st.value)||0:0;
+    } else {
+      DB.appUsers[ci].salesTarget=0;
+    }
   }
   if(pw)DB.appUsers[ci].password=pw;
   save();
@@ -5385,59 +5396,107 @@ function addPlanTask(eId,sId){
   var el=document.getElementById("projPlanBody");
   if(el)rProjPlan(el,e);
 }
-function togglePlanTask(eId,sId,tId){
+function showPlanTab(eId,sId){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e)return;
-  var s=(e.planSections||[]).find(function(x){return x.id===sId;});
-  if(!s)return;
-  var t=s.tasks.find(function(x){return x.id===tId;});
-  if(t)t.status=t.status==="done"?"todo":"done";
-  saveDB();
-  var el=document.getElementById("projPlanBody");
-  if(el)rProjPlan(el,e);
+  initPlanSections(e);
+  var sections=e.planSections||[];
+  var ids=['planning','delivery','wrapup','complete'];
+  ids.forEach(function(id){
+    var btn=document.getElementById('ptab-'+id);
+    if(!btn)return;
+    btn.style.borderBottom=id===sId?'2px solid #CE2702':'2px solid transparent';
+    btn.style.color=id===sId?'#CE2702':'#6b7280';
+    btn.style.fontWeight=id===sId?'700':'400';
+    btn.style.background=id===sId?'white':'#f9fafb';
+  });
+  var content=document.getElementById('planTabContent');
+  if(!content)return;
+  var h='';
+  if(sId==='complete'){
+    var any=false;
+    sections.forEach(function(sec){
+      var dt=sec.tasks.filter(function(t){return t.status==='done';});
+      if(!dt.length)return;
+      any=true;
+      h+='<div style="margin-bottom:16px"><div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">'+sec.name+'</div>';
+      dt.forEach(function(t){
+        h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-bottom:6px">'
+          +'<span style="color:#16a34a;font-size:15px;font-weight:700">✓</span>'
+          +'<span style="font-size:13px;color:#6b7280;text-decoration:line-through">'+t.text+'</span>'
+          +'</div>';
+      });
+      h+='</div>';
+    });
+    if(!any)h='<div style="text-align:center;padding:48px;color:#9ca3af;font-size:14px">No completed tasks yet</div>';
+  } else {
+    var sec=sections.find(function(s){return s.id===sId;});
+    if(!sec){h='<div style="text-align:center;padding:40px;color:#9ca3af">Section not found</div>';}
+    else{
+      var done=sec.tasks.filter(function(t){return t.status==='done';}).length;
+      var tot=sec.tasks.length;
+      var pct=tot?Math.round(done/tot*100):0;
+      h='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+        +'<span style="font-size:13px;color:#6b7280">'+done+' of '+tot+' tasks complete</span>'
+        +'<span style="font-size:13px;font-weight:700;color:#CE2702">'+pct+'%</span>'
+        +'</div>'
+        +'<div style="height:6px;background:#f3f4f6;border-radius:3px;margin-bottom:20px;overflow:hidden">'
+        +'<div style="height:100%;width:'+pct+'%;background:#CE2702;border-radius:3px"></div></div>';
+      if(!tot){h+='<div style="text-align:center;padding:32px;color:#9ca3af;font-size:14px">No tasks yet — add one below</div>';}
+      else{
+        sec.tasks.forEach(function(t,i){
+          var ok=t.status==='done';
+          h+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;'
+            +(ok?'background:#f0fdf4;border:1px solid #bbf7d0;':'background:white;border:1px solid #e5e7eb;')
+            +'border-radius:8px;margin-bottom:6px;cursor:pointer" onclick="togglePlanTask(\''+eId+'\',\''+sId+'\','+i+')">'
+            +'<div style="width:18px;height:18px;border-radius:4px;border:2px solid '+(ok?'#16a34a':'#d1d5db')+';background:'+(ok?'#16a34a':'white')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+            +(ok?'<span style="color:white;font-size:10px;font-weight:700">✓</span>':'')
+            +'</div>'
+            +'<span style="font-size:13px;color:'+(ok?'#9ca3af':'#374151')+';'+(ok?'text-decoration:line-through':'')+';flex:1">'+(t.text||'')+'</span>'
+            +'</div>';
+        });
+      }
+      h+='<button onclick="addPlanTask(\''+eId+'\',\''+sId+'\')" style="margin-top:12px;width:100%;padding:10px;border:2px dashed #e5e7eb;border-radius:8px;background:none;color:#9ca3af;font-size:13px;cursor:pointer;box-sizing:border-box">+ Add task</button>';
+    }
+  }
+  content.innerHTML=h;
 }
-function deletePlanTask(eId,sId,tId){
-  if(!confirm("Delete this task?"))return;
+function togglePlanTask(eId,sId,idx){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
   if(!e)return;
-  var s=(e.planSections||[]).find(function(x){return x.id===sId;});
-  if(!s)return;
-  s.tasks=s.tasks.filter(function(x){return x.id!==tId;});
-  saveDB();
-  var el=document.getElementById("projPlanBody");
-  if(el)rProjPlan(el,e);
+  initPlanSections(e);
+  var sec=(e.planSections||[]).find(function(s){return s.id===sId;});
+  if(!sec||!sec.tasks[idx])return;
+  sec.tasks[idx].status=sec.tasks[idx].status==='done'?'pending':'done';
+  save();
+  showPlanTab(eId,sId);
 }
 function rProjPlan(body,e){
   var sections=initPlanSections(e);
-  var h='<div id="projPlanBody" style="padding:16px">';
-  sections.forEach(function(sec){
-    var done=sec.tasks.filter(function(t){return t.status==="done";}).length;
-    var total=sec.tasks.length;
-    var pct=total>0?Math.round((done/total)*100):0;
-    h+='<div style="background:#fff;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:12px;overflow:hidden">';
-    h+='<div onclick="togglePlanSection(\''  +e.id+  '\',\''  +sec.id+  '\')" style="display:flex;align-items:center;padding:14px 16px;cursor:pointer;background:'  +sec.color+  '1a;border-left:4px solid '  +sec.color+  ';user-select:none">';
-    h+='<span style="font-weight:700;font-size:14px;color:#1a1a2e;flex:1">'  +sec.name+  '</span>';
-    if(total>0)h+='<span style="font-size:12px;color:'  +sec.color+  ';margin-right:10px;font-weight:600">'  +done+  ' / '  +total+  ' done</span>';
-    h+='<span style="color:'  +sec.color+  ';font-size:12px">'  +(sec.open?"&#9660;":"&#9654;")+  '</span>';
-    h+='</div>';
-    if(total>0){h+='<div style="height:3px;background:#f0f0f0"><div style="height:3px;background:'  +sec.color+  ';width:'  +pct+  '%"></div></div>';}
-    if(sec.open){
-      h+='<div style="padding:8px 16px">';
-      sec.tasks.forEach(function(t){
-        var isDone=t.status==="done";
-        h+='<div style="display:flex;align-items:center;padding:8px 4px;border-bottom:1px solid #f5f5f5">';
-        h+='<input type="checkbox" '  +(isDone?"checked":"")+  ' onchange="togglePlanTask(\''  +e.id+  '\',\''  +sec.id+  '\',\''  +t.id+  '\')" style="margin-right:10px;cursor:pointer">';
-        h+='<span style="flex:1;font-size:13px;'  +(isDone?"text-decoration:line-through;color:#999;":"color:#333;")+  '">'  +t.text+  '</span>';
-        h+='<button onclick="deletePlanTask(\''  +e.id+  '\',\''  +sec.id+  '\',\''  +t.id+  '\')" style="background:none;border:none;color:#ccc;cursor:pointer;padding:2px 6px">&times;</button>';
-        h+='</div>';
-      });
-      h+='<button onclick="addPlanTask(\''  +e.id+  '\',\''  +sec.id+  '\')" style="margin-top:8px;background:none;border:1px dashed #ccc;border-radius:4px;padding:6px 12px;color:#888;cursor:pointer;font-size:12px;width:100%">+ Add Task</button>';
-      h+='</div>';
-    }
-    h+='</div>';
-  });
-  h+='</div>';
+  var tabDefs=[
+    {id:'planning',label:'Planning & Design'},
+    {id:'delivery',label:'Workshop & Delivery'},
+    {id:'wrapup',label:'Wrap Up'},
+    {id:'complete',label:'Complete'}
+  ];
+  var ts='padding:12px 20px;border:none;border-bottom:2px solid transparent;background:#f9fafb;color:#6b7280;font-size:13px;cursor:pointer;white-space:nowrap;transition:color 0.15s';
+  var tabBar=tabDefs.map(function(td){
+    var sec=sections.find(function(s){return s.id===td.id;});
+    var cnt=td.id==='complete'
+      ?sections.reduce(function(n,s){return n+s.tasks.filter(function(t){return t.status==='done';}).length;},0)
+      :(sec?sec.tasks.filter(function(t){return t.status==='done';}).length:0);
+    var tot=td.id==='complete'
+      ?sections.reduce(function(n,s){return n+s.tasks.length;},0)
+      :(sec?sec.tasks.length:0);
+    var badge='<span style="background:#f3f4f6;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px;color:#6b7280">'+cnt+'/'+tot+'</span>';
+    return '<button id="ptab-'+td.id+'" onclick="showPlanTab(\''+e.id+'\',\''+td.id+'\')" style="'+ts+'">'+td.label+badge+'</button>';
+  }).join('');
+  var h='<div id="projPlanBody">'
+    +'<div style="display:flex;border-bottom:1px solid #e5e7eb;background:#f9fafb;overflow-x:auto">'+tabBar+'</div>'
+    +'<div id="planTabContent" style="padding:16px"></div>'
+    +'</div>';
   body.innerHTML=h;
+  showPlanTab(e.id,'planning');
 }
 function rProjectDetail(c, engId){
   const e=DB.engagements.find(x=>x.id===engId);
