@@ -6690,12 +6690,12 @@ function injectPhaseHeader(c,e){
 function selectPhaseBar(eId,pi){
   if(!window._phSel) window._phSel={};
   window._phSel[eId]=(window._phSel[eId]===pi)?-1:pi;
-  renderView();
+  S.view='projects';renderView();
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
   window._phTab[eId+"-"+pi]=tab;
-  renderView();
+  S.view='projects';renderView();
 }
 
 function setPhasesBillingMode(eId,mode){
@@ -6703,7 +6703,7 @@ function setPhasesBillingMode(eId,mode){
   if(!e) return;
   e.phasesBillingMode=mode;
   saveDB();
-  renderView();
+  S.view='projects';renderView();
 }
 function saveDB(){try{window._dbDirty=true;}catch(e){}}
 function closePlanModal(){var m=document.querySelector('.plan-modal');if(m)m.remove();}
@@ -6750,7 +6750,7 @@ function saveNewPhase(eId){
   });
   closePlanModal();
   saveDB();
-  renderView();
+  S.view='projects';renderView();
 }
 function openEditPhaseModal(eId,pi){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
@@ -6792,7 +6792,7 @@ function saveEditPhase(eId,pi){
   ph.amount=((document.getElementById("ph-amount")||{}).value||"");
   closePlanModal();
   saveDB();
-  renderView();
+  S.view='projects';renderView();
 }
 function deletePhase(eId,pi){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
@@ -6800,7 +6800,7 @@ function deletePhase(eId,pi){
   if(!confirm("Remove this phase?")) return;
   e.phases.splice(pi,1);
   saveDB();
-  renderView();
+  S.view='projects';renderView();
 }function rPhaseOverview(box,e,ph,pi){
   var eId=e.id;
   var statusColor={"Pending":"#6b7280","Active":"#3b82f6","Complete":"#10b981","On Hold":"#f59e0b"};
@@ -6934,7 +6934,7 @@ function savePhaseFinancials(eId,pi){
   if(amt) e.phases[pi].amount=parseFloat(amt.value)||0;
   if(bs) e.phases[pi].billingStatus=bs.value;
   if(bd) e.phases[pi].billedDate=bd.value;
-  saveDB(); renderView();
+  saveDB(); S.view='projects';renderView();
 }
 function openAddPhaseTaskModal(eId,pi){
   var overlay=document.createElement("div");
@@ -6963,7 +6963,7 @@ function savePhaseTask(eId,pi){
   e.phases[pi].tasks.push({name:nm.value.trim(),priority:document.getElementById("pht-pri").value,dueDate:document.getElementById("pht-due").value,assignee:document.getElementById("pht-asn").value,done:false});
   saveDB();
   var m=document.getElementById("phase-task-modal"); if(m) m.remove();
-  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; renderView();
+  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; S.view='projects';renderView();
 }
 function togglePhaseTask(eId,pi,ti,checked){
   var e=(DB.engagements||[]).find(function(x){return x.id===eId;});
@@ -6975,7 +6975,7 @@ function deletePhaseTask(eId,pi,ti){
   if(!e||!e.phases||!e.phases[pi]) return;
   if(!confirm("Delete this task?")) return;
   e.phases[pi].tasks.splice(ti,1); saveDB();
-  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; renderView();
+  S.tab.projDetailTab=S.tab.projDetailTab||"overview"; S.view='projects';renderView();
 }
 
 function openProjTaskModal(engId){
