@@ -2185,7 +2185,9 @@ async function seedSupabase(){
 }
 
 function setupRealtime(){
+  if(window._rtCh){try{sb.removeChannel(window._rtCh);}catch(e){}}
   const channel=sb.channel('gmg-realtime');
+  window._rtCh=channel;
   Object.entries(SB_TABLES).forEach(([dbKey,table])=>{
     channel.on('postgres_changes',{event:'*',schema:'public',table},payload=>{
       const rec=payload.new?.data;
