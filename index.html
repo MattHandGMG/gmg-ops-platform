@@ -6165,13 +6165,24 @@ function rProjectDetail(c, engId){
 </div>`;
 
   const body=document.getElementById('pd-body');
-  if(tab==='overview') rProjOverview(body,e,client,mentor,stages,tasks,sessions);
-  else if(tab==='tasks') rProjTasks(body,e,tasks);
-  else if(tab==='gantt') rProjGantt(body,e,stages,sessions);
-  else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
-  else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
-  else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
-  else if(tab==='plan') rProjPlan(body,e);
+  var _selPi=(window._phSel&&window._phSel[eId]!==undefined&&window._phSel[eId]>=0)?window._phSel[eId]:-1;
+  if(_selPi>=0&&e.phases&&e.phases[_selPi]){
+    var _ph=e.phases[_selPi];
+    if(tab==='overview') rPhaseOverview(body,e,_ph,_selPi);
+    else if(tab==='plan') rPhasePlan(body,e,_ph,_selPi);
+    else if(tab==='gantt'||tab==='timeline') rPhaseGantt(body,e,_ph,_selPi);
+    else if(tab==='financials') rPhaseFinancials(body,e,_ph,_selPi);
+    else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
+    else if(tab==='tasks') rPhasePlan(body,e,_ph,_selPi);
+  } else {
+    if(tab==='overview') rProjOverview(body,e,client,mentor,stages,tasks,sessions);
+    else if(tab==='tasks') rProjTasks(body,e,tasks);
+    else if(tab==='gantt') rProjGantt(body,e,stages,sessions);
+    else if(tab==='timeline') rProjTimeline(body,e,stages,sessions,tasks);
+    else if(tab==='calendar') rProjCalendar(body,e,stages,sessions,tasks);
+    else if(tab==='financials') rProjFinancials(body,e,stages,sessions);
+    else if(tab==='plan') rProjPlan(body,e);
+  }
   injectPhaseHeader(c,e);
 
   // Comments card
@@ -6650,48 +6661,12 @@ function injectPhaseHeader(c,e){
   }
   bar.innerHTML=bHtml;
   hero.appendChild(bar);
-  // Phase detail panel (if selected)
-  var oldPanel=document.getElementById("phpanel-"+eId);
-  if(oldPanel) oldPanel.remove();
-  if(selPi>=0 && selPi<total){
-    var ph=phases[selPi];
-    var tabKey=eId+"-"+selPi;
-    var curTab=window._phTab[tabKey]||"overview";
-    var mTabs=[{id:"overview",label:"Overview"},{id:"plan",label:"Plan"},{id:"gantt",label:"Gantt"},{id:"financials",label:"Financials"}];
-    var panel=document.createElement("div");
-    panel.id="phpanel-"+eId;
-    panel.style.cssText="background:#fff;border-bottom:2px solid #e5e7eb";
-    var pHtml='<div style="background:#f8faff;border-bottom:1px solid #e5e7eb;padding:10px 24px;display:flex;justify-content:space-between;align-items:center">';
-    pHtml+='<div style="display:flex;align-items:center;gap:10px">';
-    pHtml+='<span style="font-size:14px;font-weight:700;color:#1e3a5f">Phase '+( selPi+1)+': '+ph.name+'</span>';
-    pHtml+='<span style="font-size:11px;font-weight:600;color:'+( statusColor[ph.status]||"#6b7280")+';background:'+( statusColor[ph.status]||"#6b7280")+ '22;padding:2px 8px;border-radius:10px">'+ph.status+'</span>';
-    pHtml+='</div>';
-    pHtml+='<div style="display:flex;gap:0">';
-    for(var ti=0;ti<mTabs.length;ti++){
-      var t=mTabs[ti];
-      var active=(t.id===curTab);
-      pHtml+='<button data-eid="'+eId+'" data-pi="'+selPi+'" data-tab="'+t.id+'" onclick="selectPhaseSubTab(this.dataset.eid,parseInt(this.dataset.pi),this.dataset.tab)" style="padding:8px 16px;border:none;border-bottom:'+( active?"2px solid #2563eb":"2px solid transparent")+';background:transparent;color:'+( active?"#2563eb":"#6b7280")+';cursor:pointer;font-size:13px;font-weight:'+( active?"600":"400")+'">'+t.label+'</button>';
-    }
-    pHtml+='</div></div>';
-    pHtml+='<div id="phcontent-'+eId+'-'+selPi+'"></div>';
-    panel.innerHTML=pHtml;
-    var pdBody=document.getElementById("pd-body");
-    if(pdBody&&pdBody.parentNode) pdBody.parentNode.insertBefore(panel,pdBody);
-    var box=document.getElementById("phcontent-"+eId+"-"+selPi);
-    if(box){
-      if(curTab==="overview") rPhaseOverview(box,e,ph,selPi);
-      else if(curTab==="plan") rPhasePlan(box,e,ph,selPi);
-      else if(curTab==="gantt") rPhaseGantt(box,e,ph,selPi);
-      else if(curTab==="financials") rPhaseFinancials(box,e,ph,selPi);
-    }
-  }
 }
 
 function selectPhaseBar(eId,pi){
   if(!window._phSel) window._phSel={};
   window._phSel[eId]=(window._phSel[eId]===pi)?-1:pi;
-  var e=DB.engagements.find(function(x){return x.id===eId;});
-  if(e) injectPhaseHeader(document.getElementById('content'),e);
+  rProjectDetail(document.getElementById('content'),eId);
 }
 function selectPhaseSubTab(eId,pi,tab){
   if(!window._phTab) window._phTab={};
