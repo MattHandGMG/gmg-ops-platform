@@ -6621,45 +6621,49 @@ function injectPhaseHeader(c,e){
   var phases=e.phases;
   var total=phases.length;
   var selPi=(window._phSel[eId]!==undefined)?window._phSel[eId]:-1;
-  var statusColor={"Pending":"#f59e0b","Active":"#34d399","Complete":"#a78bfa","On Hold":"#fb923c"};
-  // Build phase section in hero
-  var wrapper=c.firstElementChild;
-  if(!wrapper) return;
-  var hero=wrapper.children[0];
-  if(!hero) return;
-  // Remove any existing phase bar
-  var old=document.getElementById("phdr-"+eId);
+  var statusColor={active:'#22c55e',upcoming:'#f59e0b',completed:'#6b7280',paused:'#ef4444'};
+  var old=document.getElementById('phdr-'+eId);
   if(old) old.remove();
-  var bar=document.createElement("div");
-  bar.id="phdr-"+eId;
-  bar.style.cssText="padding:0 24px 20px;margin-top:4px";
-  var bHtml='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-  bHtml+='<span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em">Phases</span>';
-  bHtml+='<button data-eid="'+eId+'" onclick="openAddPhaseModal(this.dataset.eid)" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:12px;font-weight:600;backdrop-filter:blur(4px)">+ Add Phase</button>';
-  bHtml+='</div>';
-  if(total===0){
-    bHtml+='<div style="font-size:13px;color:rgba(255,255,255,0.5);padding:8px 0">No phases yet — click &ldquo;+ Add Phase&rdquo; to begin.</div>';
-  } else {
-    bHtml+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
-    for(var i=0;i<total;i++){
-      var ph=phases[i];
-      var col=statusColor[ph.status]||"#94a3b8";
-      var isSel=(selPi===i);
-      var bg=isSel?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)";
-      var border=isSel?"2px solid rgba(255,255,255,0.7)":"1px solid rgba(255,255,255,0.2)";
-      bHtml+='<div data-eid="'+eId+'" data-pi="'+i+'" onclick="selectPhaseBar(this.dataset.eid,parseInt(this.dataset.pi))" style="min-width:140px;flex:1;padding:10px 14px;border-radius:8px;cursor:pointer;border:'+border+';background:'+bg+';transition:all 0.15s">';
-      bHtml+='<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">';
-      bHtml+='<div style="width:8px;height:8px;border-radius:50%;background:'+col+'"></div>';
-      bHtml+='<span style="font-size:12px;font-weight:700;color:#fff">Phase '+( i+1)+'</span>';
-      if(isSel) bHtml+='<span style="font-size:10px;color:rgba(255,255,255,0.6);margin-left:auto">▲ open</span>';
-      bHtml+='</div>';
-      bHtml+='<div style="font-size:12px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">'+ph.name+'</div>';
-      bHtml+='<div style="font-size:10px;color:'+col+';margin-top:2px;font-weight:600">'+ph.status+'</div>';
-      bHtml+='</div>';
-    }
-    bHtml+='</div>';
-  }
-  bar.innerHTML=bHtml;
+  var hero=c.querySelector('.hero-band');
+  if(!hero) return;
+  var bar=document.createElement('div');
+  bar.id='phdr-'+eId;
+  bar.style.cssText='display:flex;align-items:stretch;gap:8px;padding:10px 20px 0;overflow-x:auto;flex-wrap:nowrap;';
+  // Total Project card
+  var isTotal=(selPi<0);
+  var completedCt=phases.filter(function(p){return p.status==='completed';}).length;
+  var phaseLabel=total>0?total+' phase'+(total!==1?'s':''):'No phases yet';
+  var totCard=document.createElement('div');
+  totCard.style.cssText='flex:0 0 auto;min-width:158px;padding:10px 14px;border-radius:8px;cursor:pointer;border:2px solid '+(isTotal?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.2)')+';background:'+(isTotal?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)')+';transition:all 0.15s;';
+  totCard.innerHTML='<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="font-size:13px;">📊</span><span style="font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:'+(isTotal?'#fff':'rgba(255,255,255,0.65)')+';">Total Project</span>'+(isTotal?'<span style="margin-left:auto;font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.28);color:#fff;">ACTIVE</span>':'')+'</div><div style="font-size:11px;color:'+(isTotal?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.45)')+';">'+phaseLabel+(completedCt>0?' · '+completedCt+' done':'')+'</div>';
+  totCard.onclick=function(){selectPhaseBar(eId,-1);};
+  bar.appendChild(totCard);
+  // Divider
+  var div=document.createElement('div');
+  div.style.cssText='width:1px;background:rgba(255,255,255,0.2);align-self:stretch;margin:4px 0;flex-shrink:0;';
+  bar.appendChild(div);
+  // Phase cards
+  phases.forEach(function(ph,pi){
+    var isSel=(selPi===pi);
+    var sc=statusColor[ph.status]||'#94a3b8';
+    var card=document.createElement('div');
+    card.style.cssText='flex:0 0 auto;min-width:158px;padding:10px 14px;border-radius:8px;cursor:pointer;border:2px solid '+(isSel?'rgba(255,255,255,0.85)':'rgba(255,255,255,0.2)')+';background:'+(isSel?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)')+';transition:all 0.15s;';
+    card.innerHTML='<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;"><span style="width:7px;height:7px;border-radius:50%;background:'+sc+';display:inline-block;flex-shrink:0;"></span><span style="font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:'+(isSel?'#fff':'rgba(255,255,255,0.65)')+';">Phase '+(pi+1)+'</span>'+(isSel?'<span style="margin-left:auto;font-size:9px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.28);color:#fff;">ACTIVE</span>':'')+'</div><div style="font-size:12px;font-weight:500;color:'+(isSel?'rgba(255,255,255,0.92)':'rgba(255,255,255,0.6)')+';">'+(ph.name||'Phase '+(pi+1))+'</div><div style="margin-top:3px;font-size:10px;color:'+sc+';">'+ph.status+'</div>';
+    card.onclick=(function(idx){return function(){selectPhaseBar(eId,idx);};})(pi);
+    bar.appendChild(card);
+  });
+  // Add Phase button
+  var addBtn=document.createElement('div');
+  addBtn.style.cssText='flex:0 0 auto;padding:10px 14px;border-radius:8px;cursor:pointer;border:2px dashed rgba(255,255,255,0.22);background:transparent;display:flex;align-items:center;color:rgba(255,255,255,0.5);font-size:12px;gap:5px;white-space:nowrap;align-self:center;';
+  addBtn.innerHTML='<span style="font-size:18px;line-height:1;font-weight:300;">+</span> Add Phase';
+  addBtn.onclick=function(){
+    var name=window.prompt('Phase name:');
+    if(!name) return;
+    if(!e.phases) e.phases=[];
+    e.phases.push({id:'ph'+Date.now(),name:name,status:'upcoming',tasks:[],plan:{sections:[]},ganttItems:[],budget:0,invoiced:0});
+    injectPhaseHeader(c,e);
+  };
+  bar.appendChild(addBtn);
   hero.appendChild(bar);
 }
 
@@ -6795,37 +6799,53 @@ function deletePhase(eId,pi){
   saveDB();
   S.view='projects';renderView();
 }function rPhaseOverview(box,e,ph,pi){
-  var sc={"Pending":"#f59e0b","Active":"#34d399","Complete":"#a78bfa","On Hold":"#fb923c"};
-  var col=sc[ph.status]||"#94a3b8";
-  var amt=ph.amount?parseFloat(ph.amount):0;
-  var h="<div style=\"padding:20px;\">";
-  h+="<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;\">";
-  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
-  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Phase Name</div>";
-  h+="<div style=\"font-size:18px;font-weight:700;color:#f1f5f9;\">"+(ph.name||"Unnamed")+"</div>";
-  if(ph.desc)h+="<div style=\"color:#94a3b8;margin-top:8px;font-size:13px;line-height:1.5;\">"+ph.desc+"</div>";
-  h+="</div>";
-  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
-  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;\">Status</div>";
-  h+="<span style=\"background:"+col+"22;color:"+col+";padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;\">"+(ph.status||"Pending")+"</span>";
-  h+="</div>";
-  h+="</div>";
-  h+="<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;\">";
-  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
-  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Start Date</div>";
-  h+="<div style=\"font-size:16px;font-weight:600;color:#f1f5f9;\">"+(ph.start||"Not set")+"</div>";
-  h+="</div>";
-  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
-  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">End Date</div>";
-  h+="<div style=\"font-size:16px;font-weight:600;color:#f1f5f9;\">"+(ph.end||"Not set")+"</div>";
-  h+="</div>";
-  h+="<div style=\"background:#1e293b;border-radius:8px;padding:16px;\">";
-  h+="<div style=\"font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;\">Phase Budget</div>";
-  h+="<div style=\"font-size:16px;font-weight:700;color:#34d399;\">£"+amt.toLocaleString()+"</div>";
-  h+="</div>";
-  h+="</div>";
-  h+="</div>";
-  box.innerHTML=h;
+  var fmtCcy=function(n){return typeof window._fmt==='function'?window._fmt(n||0):'£'+(n||0);};
+  box.innerHTML='';
+  var wrap=document.createElement('div');
+  wrap.style.cssText='padding:20px;';
+  var statusColors={active:'#22c55e',upcoming:'#f59e0b',completed:'#6b7280',paused:'#ef4444'};
+  var sc=statusColors[ph.status]||'#6b7280';
+  // Banner
+  var banner=document.createElement('div');
+  banner.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#1e293b,#334155);border-radius:10px;margin-bottom:16px;';
+  banner.innerHTML='<div><div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;">'+(ph.name||'Phase '+(pi+1))+'</div><div style="font-size:12px;color:#94a3b8;">'+(ph.start||'—')+(ph.end?' → '+ph.end:'')+'</div></div><span style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;">'+ph.status+'</span>';
+  wrap.appendChild(banner);
+  // KPI row
+  var tasks=ph.tasks||[];
+  var doneCt=tasks.filter(function(t){return t.status==='done'||t.status==='completed';}).length;
+  var durDays=ph.start&&ph.end?Math.round((new Date(ph.end)-new Date(ph.start))/864e5):null;
+  var kpiRow=document.createElement('div');
+  kpiRow.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;';
+  [{icon:'✅',label:'Tasks Complete',val:doneCt+' / '+tasks.length},{icon:'📅',label:'Duration',val:durDays!==null?durDays+' days':'—'},{icon:'💰',label:'Phase Budget',val:fmtCcy(ph.budget)},{icon:'📤',label:'Invoiced',val:fmtCcy(ph.invoiced)}].forEach(function(k){
+    var c2=document.createElement('div');
+    c2.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;';
+    c2.innerHTML='<div style="font-size:20px;margin-bottom:6px;">'+k.icon+'</div><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">'+k.label+'</div><div style="font-size:20px;font-weight:700;color:#1e293b;">'+k.val+'</div>';
+    kpiRow.appendChild(c2);
+  });
+  wrap.appendChild(kpiRow);
+  // Tasks
+  var tHdr=document.createElement('div');
+  tHdr.style.cssText='font-size:14px;font-weight:600;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;';
+  tHdr.innerHTML='<span>Phase Tasks</span><span style="font-size:12px;color:#64748b;font-weight:400;">'+doneCt+' of '+tasks.length+' complete</span>';
+  wrap.appendChild(tHdr);
+  if(tasks.length===0){
+    var empty=document.createElement('div');
+    empty.style.cssText='text-align:center;padding:28px;background:#f8fafc;border-radius:8px;border:1px dashed #e2e8f0;color:#94a3b8;font-size:13px;';
+    empty.textContent='No tasks added to this phase yet.';
+    wrap.appendChild(empty);
+  } else {
+    var tList=document.createElement('div');
+    tList.style.cssText='display:flex;flex-direction:column;gap:6px;';
+    tasks.forEach(function(t){
+      var done=(t.status==='done'||t.status==='completed');
+      var row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid '+(done?'#dcfce7':'#e2e8f0')+';border-radius:8px;';
+      row.innerHTML='<span style="width:18px;height:18px;border-radius:50%;border:2px solid '+(done?'#22c55e':'#cbd5e1')+';background:'+(done?'#22c55e':'#fff')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(done?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.5l2.5 2.5 4-4" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')+'</span><span style="flex:1;font-size:13px;color:'+(done?'#94a3b8':'#1e293b')+';'+(done?'text-decoration:line-through;':'')+'">'+t.title+'</span>'+(t.assignee?'<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px;">'+t.assignee+'</span>':'');
+      tList.appendChild(row);
+    });
+    wrap.appendChild(tList);
+  }
+  box.appendChild(wrap);
 }
 function rPhasePlan(box,e,ph,pi){
   var tasks=ph.tasks||[];
