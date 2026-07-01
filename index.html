@@ -6169,6 +6169,7 @@ function rProjectDetail(c, engId){
   if(_selPi>=0&&e.phases&&e.phases[_selPi]){
     var _ph=e.phases[_selPi];
     if(tab==='overview') rPhaseOverview(body,e,_ph,_selPi);
+    else if(tab==='financials') rPhaseFinancials(body,e,_ph,_selPi);
     else if(tab==='plan') rPhasePlan(body,e,_ph,_selPi);
     else if(tab==='gantt'||tab==='timeline') rPhaseGantt(body,e,_ph,_selPi);
     else if(tab==='financials') rPhaseFinancials(body,e,_ph,_selPi);
@@ -6730,6 +6731,7 @@ function selectPhaseSubTab(eId,pi,tab){
     if(e&&e.phases&&e.phases[pi]){
       var ph=e.phases[pi];
       if(tab==='overview') rPhaseOverview(box,e,ph,pi);
+      else if(tab==='financials') rPhaseFinancials(box,e,ph,pi);
       else if(tab==='plan') rPhasePlan(box,e,ph,pi);
       else if(tab==='gantt') rPhaseGantt(box,e,ph,pi);
       else if(tab==='financials') rPhaseFinancials(box,e,ph,pi);
@@ -7160,7 +7162,256 @@ window.phToggleTask=function(eId,pi,tid){
   if(!t)return;
   if(t.status==='done'||t.status==='completed'){t.status='pending';t.done=false;}
   else{t.status='done';t.done=true;}
-  if(typeof saveDB==='function')saveDB();
+  i
+window.rPhaseFinancials=function(box,e,ph,pi){
+  var eId=e.id;
+  if(!ph.budgetItems)ph.budgetItems=[];
+  if(!ph.mfs)ph.mfs={};
+  if(!DB.autoBills)DB.autoBills=[];
+  var SESS=['exec-mentoring','pre-workshop','workshop','post-workshop','check-in'];
+  var SLBL={'exec-mentoring':'Exec Mentoring','pre-workshop':'Pre-Workshop','workshop':'Workshop','post-workshop':'Post-Workshop','check-in':'Check-In'};
+  var fmt=function(n){return typeof window._fmt==='function'?window._fmt(n||0):'£'+(n||0).toLocaleString();};
+  var esc=function(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var mentors=(ph.mentors||[]).map(function(m){
+    var all=(DB.contacts||[]).concat(DB.appUsers||[]);
+    var ct=all.find(function(x){return x.id===m.id;});
+    var nm=ct?(ct.name||((ct.firstName||'')+' '+(ct.lastName||'')).trim()||m.id):m.id;
+    return {id:m.id,name:nm};
+  });
+  function sc(mId,type){return(ph.sessions||[]).filter(function(s){return s.mentorId===mId&&s.type===type&&s.status!=='cancelled';}).length;}
+  var cardStyle='background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;';
+  var hdrStyle='background:#f8fafc;border-bottom:1px solid #e5e7eb;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;';
+  var h3Style='margin:0;font-size:14px;font-weight:700;color:#1e293b;';
+  var btnPri='padding:6px 14px;border:none;border-radius:8px;background:#1e293b;color:#fff;font-size:12px;font-weight:600;cursor:pointer;';
+  var btnGrn='padding:8px 18px;border:none;border-radius:8px;background:#10b981;color:#fff;font-size:13px;font-weight:600;cursor:pointer;';
+  var thStyle='padding:8px 6px;text-align:left;color:#64748b;font-size:11px;font-weight:600;border-bottom:1px solid #e5e7eb;white-space:nowrap;';
+  var inputStyle='border:1px solid #e5e7eb;border-radius:6px;padding:5px 8px;font-size:13px;box-sizing:border-box;';
+  var budRows=ph.budgetItems.map(function(item){
+    var tot=(item.qty||0)*(item.unitPrice||0);
+    var liveBtn=item.isLiveFee
+      ?'<span style="color:#10b981;font-size:11px;font-weight:700;">✓ Live Fee</span>'
+      :'<button onclick="phFinActivate(\''+eId+'\','+pi+',\''+item.id+'\')" style="padding:3px 9px;border:none;border-radius:5px;background:#3b82f6;color:#fff;font-size:11px;cursor:pointer;">→ Activate</button>';
+    var typeOpts=SESS.concat(['other']).map(function(t){return'<option value="'+t+'"'+(item.type===t?' selected':'')+'>'+( SLBL[t]||'Other')+'</option>';}).join('');
+    return '<tr style="border-bottom:1px solid #f1f5f9;">'
+      +'<td style="padding:6px;"><input id="bitem-desc-'+eId+'-'+pi+'-'+item.id+'" value="'+esc(item.desc)+'" placeholder="Description" style="'+inputStyle+'width:100%;"/></td>'
+      +'<td style="padding:6px;"><select id="bitem-type-'+eId+'-'+pi+'-'+item.id+'" style="'+inputStyle+'">'+typeOpts+'</select></td>'
+      +'<td style="padding:6px;"><input id="bitem-qty-'+eId+'-'+pi+'-'+item.id+'" type="number" value="'+(item.qty||1)+'" min="0" style="'+inputStyle+'width:60px;"/></td>'
+      +'<td style="padding:6px;"><input id="bitem-price-'+eId+'-'+pi+'-'+item.id+'" type="number" value="'+(item.unitPrice||0)+'" min="0" style="'+inputStyle+'width:90px;"/></td>'
+      +'<td style="padding:6px 8px;font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;">'+fmt(tot)+'</td>'
+      +'<td style="padding:6px;">'+liveBtn+'</td>'
+      +'<td style="padding:6px;white-space:nowrap;">'
+      +'<button onclick="phFinSaveBudget(\''+eId+'\','+pi+',\''+item.id+'\')" style="padding:3px 9px;border:none;border-radius:5px;background:#1e293b;color:#fff;font-size:11px;cursor:pointer;">Save</button>'
+      +' <button onclick="phFinDelBudget(\''+eId+'\','+pi+',\''+item.id+'\')" style="padding:3px 7px;border:1px solid #e5e7eb;border-radius:5px;background:#fff;color:#ef4444;font-size:11px;cursor:pointer;">✕</button>'
+      +'</td></tr>';
+  }).join('');
+  var budTotal=ph.budgetItems.reduce(function(s,i){return s+(i.qty||0)*(i.unitPrice||0);},0);
+  var budHTML='<div style="'+cardStyle+'">'
+    +'<div style="'+hdrStyle+'"><h3 style="'+h3Style+'"> Budget</h3>'
+    +'<button onclick="phFinAddBudget(\''+eId+'\','+pi+')" style="'+btnPri+'">+ Add Item</button></div>'
+    +(ph.budgetItems.length===0
+      ?'<div style="padding:28px;text-align:center;color:#94a3b8;font-size:13px;">No budget items yet — add items then click Activate to populate the Mentor Fee Schedule.</div>'
+      :'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        +'<thead><tr><th style="'+thStyle+'">DESCRIPTION</th><th style="'+thStyle+'">SESSION TYPE</th>'
+        +'<th style="'+thStyle+'">QTY</th><th style="'+thStyle+'">UNIT PRICE (£)</th>'
+        +'<th style="'+thStyle+'">TOTAL</th><th style="'+thStyle+'">STATUS</th><th style="'+thStyle+'"></th></tr></thead>'
+        +'<tbody>'+budRows+'</tbody>'
+        +'<tfoot><tr style="background:#f8fafc;"><td colspan="4" style="padding:10px 6px;font-weight:700;color:#1e293b;font-size:13px;">Total Budget</td>'
+        +'<td style="padding:10px 6px;font-weight:700;color:#1e293b;font-size:13px;">'+fmt(budTotal)+'</td><td colspan="2"></td></tr></tfoot>'
+        +'</table></div>')
+    +'</div>';
+  var mfsCards=mentors.length===0
+    ?'<div style="'+cardStyle+'"><div style="padding:20px;"><p style="margin:0;color:#94a3b8;font-size:13px;">No mentors assigned — add mentors in the People tab first.</p></div></div>'
+    :mentors.map(function(m){
+      var mfs=ph.mfs[m.id]||{};
+      var mfsRows=SESS.map(function(st){
+        var fee=mfs[st]||{clientFee:0,feeType:'percent',feeValue:40};
+        var mv=fee.feeType==='percent'?(fee.clientFee||0)*(fee.feeValue||40)/100:(fee.feeValue||0);
+        var sessQty=sc(m.id,st);
+        return '<tr style="border-bottom:1px solid #f1f5f9;">'
+          +'<td style="padding:9px 8px;font-size:13px;color:#374151;white-space:nowrap;">'+esc(SLBL[st])+'</td>'
+          +'<td style="padding:9px 8px;"><input id="mfs-cf-'+eId+'-'+pi+'-'+m.id+'-'+st+'" type="number" value="'+(fee.clientFee||0)+'" min="0" style="'+inputStyle+'width:90px;"/></td>'
+          +'<td style="padding:9px 8px;"><select id="mfs-ft-'+eId+'-'+pi+'-'+m.id+'-'+st+'" style="'+inputStyle+'">'
+          +'<option value="percent"'+(fee.feeType==='percent'?' selected':'')+'>% of Client Fee</option>'
+          +'<option value="fixed"'+(fee.feeType==='fixed'?' selected':'')+'>Fixed £</option></select></td>'
+          +'<td style="padding:9px 8px;"><input id="mfs-fv-'+eId+'-'+pi+'-'+m.id+'-'+st+'" type="number" value="'+(fee.feeType==='percent'?fee.feeValue||40:fee.feeValue||0)+'" min="0" style="'+inputStyle+'width:70px;"/>'
+          +'<span style="font-size:11px;color:#64748b;margin-left:3px;">'+(fee.feeType==='percent'?'%':'£')+'</span></td>'
+          +'<td style="padding:9px 8px;font-size:13px;font-weight:600;color:#10b981;white-space:nowrap;">'+fmt(mv)+'</td>'
+          +'<td style="padding:9px 8px;text-align:center;font-size:13px;color:#64748b;">'+sessQty+'</td>'
+          +'<td style="padding:9px 8px;font-size:13px;font-weight:600;color:#1e293b;white-space:nowrap;">'+fmt(mv*sessQty)+'</td>'
+          +'</tr>';
+      }).join('');
+      var totCl=SESS.reduce(function(s,st){var f=mfs[st]||{clientFee:0};return s+(f.clientFee||0)*sc(m.id,st);},0);
+      var totMn=SESS.reduce(function(s,st){var f=mfs[st]||{clientFee:0,feeType:'percent',feeValue:40};var mv=f.feeType==='percent'?(f.clientFee||0)*(f.feeValue||40)/100:(f.feeValue||0);return s+mv*sc(m.id,st);},0);
+      return '<div style="'+cardStyle+'">'
+        +'<div style="'+hdrStyle+'">'
+        +'<div><span style="font-size:14px;font-weight:700;color:#1e293b;">'+esc(m.name)+'</span>'
+        +' <span style="font-size:12px;color:#64748b;">· Mentor Fee Schedule</span></div>'
+        +'<button onclick="phFinSaveMFS(\''+eId+'\','+pi+',\''+m.id+'\')" style="'+btnPri+'">Save Rates</button></div>'
+        +'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">'
+        +'<thead><tr>'
+        +'<th style="'+thStyle+'">SESSION TYPE</th>'
+        +'<th style="'+thStyle+'">CLIENT FEE (£)</th>'
+        +'<th style="'+thStyle+'">MENTOR BASIS</th>'
+        +'<th style="'+thStyle+'">VALUE</th>'
+        +'<th style="'+thStyle+'">MENTOR FEE</th>'
+        +'<th style="'+thStyle+'text-align:center;"># LOGGED</th>'
+        +'<th style="'+thStyle+'">MENTOR TOTAL</th>'
+        +'</tr></thead>'
+        +'<tbody>'+mfsRows+'</tbody>'
+        +'<tfoot><tr style="background:#f8fafc;font-weight:700;">'
+        +'<td colspan="4" style="padding:10px 8px;font-size:13px;color:#1e293b;">Totals (logged sessions)</td>'
+        +'<td style="padding:10px 8px;font-size:13px;color:#64748b;">'+fmt(totCl)+'</td>'
+        +'<td></td>'
+        +'<td style="padding:10px 8px;font-size:13px;color:#10b981;">'+fmt(totMn)+'</td>'
+        +'</tr></tfoot></table></div>'
+        +'<div style="padding:12px 16px;border-top:1px solid #e5e7eb;display:flex;gap:10px;align-items:center;justify-content:flex-end;">'
+        +'<span style="font-size:12px;color:#64748b;">Period: <strong>'+new Date().toISOString().slice(0,7)+'</strong></span>'
+        +'<button onclick="phFinGenerateBill(\''+eId+'\','+pi+',\''+m.id+'\')" style="'+btnGrn+'">Generate Bill →</button>'
+        +'</div></div>';
+    }).join('');
+  var mfsHTML='<div>'
+    +'<h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:#1e293b;"> Mentor Fee Schedules (MFS)</h3>'
+    +'<div style="display:grid;gap:16px;">'+mfsCards+'</div></div>';
+  var bills=(DB.autoBills||[]).filter(function(b){return b.engId===eId&&b.phId===ph.id;});
+  var sColor={pending:'#f59e0b',approved:'#10b981',sent:'#3b82f6',paid:'#6366f1'};
+  var billRows=bills.map(function(b){
+    var sc2=sColor[b.status]||'#94a3b8';
+    return '<tr style="border-bottom:1px solid #f1f5f9;">'
+      +'<td style="padding:10px 8px;font-size:13px;color:#1e293b;font-weight:600;">'+esc(b.mentorName||b.mentorId)+'</td>'
+      +'<td style="padding:10px 8px;font-size:13px;color:#64748b;">'+esc(b.period||'—')+'</td>'
+      +'<td style="padding:10px 8px;font-size:13px;font-weight:600;color:#1e293b;">'+fmt(b.totalClient||0)+'</td>'
+      +'<td style="padding:10px 8px;font-size:13px;font-weight:600;color:#10b981;">'+fmt(b.totalMentor||0)+'</td>'
+      +'<td style="padding:10px 8px;"><span style="padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:'+sc2+'22;color:'+sc2+';text-transform:uppercase;">'+esc(b.status||'pending')+'</span></td>'
+      +'<td style="padding:10px 8px;font-size:12px;color:#94a3b8;">'+(b.created?b.created.slice(0,10):'')+'</td>'
+      +'</tr>';
+  }).join('');
+  var billsHTML='<div style="'+cardStyle+'">'
+    +'<div style="'+hdrStyle+'"><h3 style="'+h3Style+'">茶 Generated Bills</h3></div>'
+    +(bills.length===0
+      ?'<div style="padding:28px;text-align:center;color:#94a3b8;font-size:13px;">No bills generated for this phase yet. Use "Generate Bill" above.</div>'
+      :'<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;">'
+        +'<thead><tr><th style="'+thStyle+'">MENTOR</th><th style="'+thStyle+'">PERIOD</th>'
+        +'<th style="'+thStyle+'">CLIENT TOTAL</th><th style="'+thStyle+'">MENTOR TOTAL</th>'
+        +'<th style="'+thStyle+'">STATUS</th><th style="'+thStyle+'">CREATED</th></tr></thead>'
+        +'<tbody>'+billRows+'</tbody></table></div>')
+    +'</div>';
+  box.innerHTML='';
+  var wrap=document.createElement('div');
+  wrap.style.cssText='padding:20px;display:grid;gap:24px;';
+  wrap.innerHTML=budHTML+mfsHTML+billsHTML;
+  box.appendChild(wrap);
+};
+window.phFinAddBudget=function(eId,pi){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  if(!ph.budgetItems)ph.budgetItems=[];
+  ph.budgetItems.push({id:'bi'+Date.now(),desc:'',type:'exec-mentoring',qty:1,unitPrice:0,isLiveFee:false});
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+window.phFinSaveBudget=function(eId,pi,itemId){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  var item=(ph.budgetItems||[]).find(function(i){return i.id===itemId;});
+  if(!item)return;
+  item.desc=(document.getElementById('bitem-desc-'+eId+'-'+pi+'-'+itemId)||{}).value||'';
+  item.type=(document.getElementById('bitem-type-'+eId+'-'+pi+'-'+itemId)||{}).value||'exec-mentoring';
+  item.qty=parseFloat((document.getElementById('bitem-qty-'+eId+'-'+pi+'-'+itemId)||{}).value)||0;
+  item.unitPrice=parseFloat((document.getElementById('bitem-price-'+eId+'-'+pi+'-'+itemId)||{}).value)||0;
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+window.phFinDelBudget=function(eId,pi,itemId){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  ph.budgetItems=(ph.budgetItems||[]).filter(function(i){return i.id!==itemId;});
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+window.phFinActivate=function(eId,pi,itemId){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  window.phFinSaveBudget(eId,pi,itemId);
+  var item=(ph.budgetItems||[]).find(function(i){return i.id===itemId;});
+  if(!item||item.type==='other')return;
+  if(!ph.mfs)ph.mfs={};
+  (ph.mentors||[]).forEach(function(m){
+    if(!ph.mfs[m.id])ph.mfs[m.id]={};
+    if(!ph.mfs[m.id][item.type]){
+      ph.mfs[m.id][item.type]={clientFee:item.unitPrice,feeType:'percent',feeValue:40};
+    } else {
+      ph.mfs[m.id][item.type].clientFee=item.unitPrice;
+    }
+  });
+  item.isLiveFee=true;
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+window.phFinSaveMFS=function(eId,pi,mentorId){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  if(!ph.mfs)ph.mfs={};
+  if(!ph.mfs[mentorId])ph.mfs[mentorId]={};
+  var SESS=['exec-mentoring','pre-workshop','workshop','post-workshop','check-in'];
+  SESS.forEach(function(st){
+    ph.mfs[mentorId][st]={
+      clientFee:parseFloat((document.getElementById('mfs-cf-'+eId+'-'+pi+'-'+mentorId+'-'+st)||{}).value)||0,
+      feeType:(document.getElementById('mfs-ft-'+eId+'-'+pi+'-'+mentorId+'-'+st)||{}).value||'percent',
+      feeValue:parseFloat((document.getElementById('mfs-fv-'+eId+'-'+pi+'-'+mentorId+'-'+st)||{}).value)||40
+    };
+  });
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+window.phFinGenerateBill=function(eId,pi,mentorId){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  window.phFinSaveMFS(eId,pi,mentorId);
+  var mfs=(ph.mfs&&ph.mfs[mentorId])||{};
+  var SESS=['exec-mentoring','pre-workshop','workshop','post-workshop','check-in'];
+  var lineItems=[],totCl=0,totMn=0;
+  SESS.forEach(function(st){
+    var fee=mfs[st]||{clientFee:0,feeType:'percent',feeValue:40};
+    var qty=(ph.sessions||[]).filter(function(s){return s.mentorId===mentorId&&s.type===st&&s.status!=='cancelled';}).length;
+    if(qty===0)return;
+    var mv=fee.feeType==='percent'?(fee.clientFee||0)*(fee.feeValue||40)/100:(fee.feeValue||0);
+    lineItems.push({type:st,qty:qty,clientFee:fee.clientFee||0,mentorFee:mv});
+    totCl+=(fee.clientFee||0)*qty;
+    totMn+=mv*qty;
+  });
+  if(lineItems.length===0){alert('No sessions logged for this mentor in this phase yet.');return;}
+  var all=(DB.contacts||[]).concat(DB.appUsers||[]);
+  var ct=all.find(function(x){return x.id===mentorId;});
+  var mentorName=ct?(ct.name||((ct.firstName||'')+' '+(ct.lastName||'')).trim()):mentorId;
+  if(!DB.autoBills)DB.autoBills=[];
+  DB.autoBills.push({
+    id:'ab'+Date.now(),
+    engId:eId,phId:ph.id,phName:ph.name||'Phase '+(pi+1),
+    mentorId:mentorId,mentorName:mentorName,
+    period:new Date().toISOString().slice(0,7),
+    lineItems:lineItems,
+    totalClient:totCl,totalMentor:totMn,
+    status:'pending',
+    created:new Date().toISOString(),
+    xeroSynced:false
+  });
+  saveDB();
+  var box=document.getElementById('pd-body');
+  if(box)window.rPhaseFinancials(box,eng,ph,pi);
+};
+
+f(typeof saveDB==='function')saveDB();
   var body=document.getElementById('pd-body');
   if(body&&eng)rPhaseOverview(body,eng,ph,pi);
 };
