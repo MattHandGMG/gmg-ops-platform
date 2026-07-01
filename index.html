@@ -6800,53 +6800,335 @@ function deletePhase(eId,pi){
   S.view='projects';renderView();
 }function rPhaseOverview(box,e,ph,pi){
   var fmtCcy=function(n){return typeof window._fmt==='function'?window._fmt(n||0):'£'+(n||0);};
+  var eId=e.id;
   box.innerHTML='';
   var wrap=document.createElement('div');
   wrap.style.cssText='padding:20px;';
-  var statusColors={active:'#22c55e',upcoming:'#f59e0b',completed:'#6b7280',paused:'#ef4444'};
-  var sc=statusColors[ph.status]||'#6b7280';
-  // Banner
-  var banner=document.createElement('div');
-  banner.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#1e293b,#334155);border-radius:10px;margin-bottom:16px;';
-  banner.innerHTML='<div><div style="font-size:17px;font-weight:700;color:#fff;margin-bottom:3px;">'+(ph.name||'Phase '+(pi+1))+'</div><div style="font-size:12px;color:#94a3b8;">'+(ph.start||'—')+(ph.end?' → '+ph.end:'')+'</div></div><span style="padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;background:'+sc+'22;color:'+sc+';border:1px solid '+sc+'44;">'+ph.status+'</span>';
-  wrap.appendChild(banner);
-  // KPI row
+  if(!ph.mentors)ph.mentors=[];
+  if(!ph.mentees)ph.mentees=[];
+  if(!ph.members)ph.members=[];
+  if(!ph.sessions)ph.sessions=[];
+
+  // ── PHASE DETAILS EDIT ──────────────────────────────────────────────
+  var statusOpts=['upcoming','active','completed','paused'].map(function(s){
+    return '<option value="'+s+'"'+(ph.status===s?' selected':'')+'>'+s.charAt(0).toUpperCase()+s.slice(1)+'</option>';
+  }).join('');
+  var detailCard=document.createElement('div');
+  detailCard.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:14px;';
+  detailCard.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:13px;font-weight:700;color:#1e293b;">Phase Details</span><span id="phsave-'+eId+'-'+pi+'" style="font-size:11px;color:#22c55e;display:none;">&#10003; Saved</span></div>'
+    +'<div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;align-items:end;margin-bottom:10px;">'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Name</div><input id="phn-'+eId+'-'+pi+'" value="'+(ph.name||'')+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;"></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Start Date</div><input type="date" id="phs-'+eId+'-'+pi+'" value="'+(ph.start||'')+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;"></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">End Date</div><input type="date" id="phe-'+eId+'-'+pi+'" value="'+(ph.end||'')+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;"></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Status</div><select id="phst-'+eId+'-'+pi+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;background:#fff;">'+statusOpts+'</select></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;">'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Budget (£)</div><input type="number" id="phb-'+eId+'-'+pi+'" value="'+(ph.budget||0)+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;"></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Invoiced (£)</div><input type="number" id="phi-'+eId+'-'+pi+'" value="'+(ph.invoiced||0)+'" style="width:100%;padding:7px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;outline:none;box-sizing:border-box;"></div>'
+    +'<button onclick="savePhDet(\''+eId+'\','+pi+')" style="padding:8px 22px;background:#1e293b;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Save Changes</button>'
+    +'</div>';
+  wrap.appendChild(detailCard);
+
+  // ── KPI CARDS ──────────────────────────────────────────────────────
+  var dur=ph.start&&ph.end?Math.round((new Date(ph.end)-new Date(ph.start))/864e5):null;
   var tasks=ph.tasks||[];
-  var doneCt=tasks.filter(function(t){return t.status==='done'||t.status==='completed';}).length;
-  var durDays=ph.start&&ph.end?Math.round((new Date(ph.end)-new Date(ph.start))/864e5):null;
+  var doneCt=tasks.filter(function(t){return t.status==='done'||t.status==='completed'||t.done;}).length;
+  var sessCount=(ph.sessions||[]).length;
   var kpiRow=document.createElement('div');
-  kpiRow.style.cssText='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;';
-  [{icon:'✅',label:'Tasks Complete',val:doneCt+' / '+tasks.length},{icon:'📅',label:'Duration',val:durDays!==null?durDays+' days':'—'},{icon:'💰',label:'Phase Budget',val:fmtCcy(ph.budget)},{icon:'📤',label:'Invoiced',val:fmtCcy(ph.invoiced)}].forEach(function(k){
+  kpiRow.style.cssText='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px;';
+  [{icon:'📋',label:'Tasks',value:doneCt+' / '+tasks.length+' done'},{icon:'📅',label:'Duration',value:dur?dur+' days':'—'},{icon:'💷',label:'Budget',value:fmtCcy(ph.budget)},{icon:'🧾',label:'Invoiced',value:fmtCcy(ph.invoiced)},{icon:'🗓️',label:'Sessions',value:sessCount+' logged'}].forEach(function(k){
     var c2=document.createElement('div');
-    c2.style.cssText='background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;';
-    c2.innerHTML='<div style="font-size:20px;margin-bottom:6px;">'+k.icon+'</div><div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">'+k.label+'</div><div style="font-size:20px;font-weight:700;color:#1e293b;">'+k.val+'</div>';
+    c2.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;';
+    c2.innerHTML='<div style="font-size:16px;margin-bottom:3px;">'+k.icon+'</div><div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;">'+k.label+'</div><div style="font-size:15px;font-weight:700;color:#1e293b;">'+k.value+'</div>';
     kpiRow.appendChild(c2);
   });
   wrap.appendChild(kpiRow);
-  // Tasks
-  var tHdr=document.createElement('div');
-  tHdr.style.cssText='font-size:14px;font-weight:600;color:#1e293b;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;';
-  tHdr.innerHTML='<span>Phase Tasks</span><span style="font-size:12px;color:#64748b;font-weight:400;">'+doneCt+' of '+tasks.length+' complete</span>';
-  wrap.appendChild(tHdr);
-  if(tasks.length===0){
-    var empty=document.createElement('div');
-    empty.style.cssText='text-align:center;padding:28px;background:#f8fafc;border-radius:8px;border:1px dashed #e2e8f0;color:#94a3b8;font-size:13px;';
-    empty.textContent='No tasks added to this phase yet.';
-    wrap.appendChild(empty);
-  } else {
-    var tList=document.createElement('div');
-    tList.style.cssText='display:flex;flex-direction:column;gap:6px;';
-    tasks.forEach(function(t){
-      var done=(t.status==='done'||t.status==='completed');
-      var row=document.createElement('div');
-      row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fff;border:1px solid '+(done?'#dcfce7':'#e2e8f0')+';border-radius:8px;';
-      row.innerHTML='<span style="width:18px;height:18px;border-radius:50%;border:2px solid '+(done?'#22c55e':'#cbd5e1')+';background:'+(done?'#22c55e':'#fff')+';flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(done?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 5.5l2.5 2.5 4-4" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>':'')+'</span><span style="flex:1;font-size:13px;color:'+(done?'#94a3b8':'#1e293b')+';'+(done?'text-decoration:line-through;':'')+'">'+t.title+'</span>'+(t.assignee?'<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px;">'+t.assignee+'</span>':'');
-      tList.appendChild(row);
-    });
-    wrap.appendChild(tList);
+
+  // ── PEOPLE & ALLOCATION ─────────────────────────────────────────────
+  var peopleCard=document.createElement('div');
+  peopleCard.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:14px;';
+  peopleCard.innerHTML='<div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:14px;">People & Allocation</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;" id="phpeople-'+eId+'-'+pi+'"></div>';
+  wrap.appendChild(peopleCard);
+
+  function buildPeopleCol(role,label,icon,color,bgColor,arr){
+    var colEl=document.createElement('div');
+    function getChips(){
+      return arr.map(function(id){
+        var rec=null;
+        if(role==='member'){rec=DB.appUsers?DB.appUsers.find(function(x){return x.id===id;}):null;}
+        else{rec=DB.contacts?DB.contacts.find(function(x){return x.id===id;}):null;}
+        var name=rec?(rec.name||(rec.firstName||'')+(rec.lastName?' '+rec.lastName:''))||id:id;
+        return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;background:'+bgColor+';color:'+color+';border-radius:20px;font-size:12px;font-weight:500;margin:2px;">'+name+'<span onclick="phRemove(\''+eId+'\','+pi+',\''+role+'\',\''+id+'\')" style="cursor:pointer;font-weight:700;font-size:13px;line-height:1;margin-left:2px;">&times;</span></span>';
+      }).join('');
+    }
+    function render(){
+      colEl.innerHTML='<div style="font-size:10px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">'+icon+' '+label+'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:3px;min-height:28px;margin-bottom:8px;">'+(getChips()||'<span style="font-size:12px;color:#94a3b8;font-style:italic;">None assigned</span>')+'</div>'
+        +'<div style="position:relative;">'
+        +'<input placeholder="Search & add..." id="phsearch-'+eId+'-'+pi+'-'+role+'" oninput="phSearch(\''+eId+'\','+pi+',\''+role+'\')" onfocus="phSearch(\''+eId+'\','+pi+',\''+role+'\')" style="width:100%;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;">'
+        +'<div id="phdrop-'+eId+'-'+pi+'-'+role+'" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:200;background:#fff;border:1px solid #e2e8f0;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-height:140px;overflow-y:auto;"></div>'
+        +'</div>';
+    }
+    render();
+    return colEl;
   }
+  var peopleGrid=peopleCard.querySelector('#phpeople-'+eId+'-'+pi);
+  peopleGrid.appendChild(buildPeopleCol('mentor','Mentors','🎓','#0369a1','#e0f2fe',ph.mentors));
+  peopleGrid.appendChild(buildPeopleCol('mentee','Mentees / Executives','👤','#92400e','#fef3c7',ph.mentees));
+  peopleGrid.appendChild(buildPeopleCol('member','Team Members','🏢','#166534','#dcfce7',ph.members));
+
+  // ── SESSIONS & ENGAGEMENTS ──────────────────────────────────────────
+  var sessCard=document.createElement('div');
+  sessCard.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-bottom:14px;';
+  var sessTypes=[{key:'all',label:'All'},{key:'exec-mentoring',label:'Executive Mentoring'},{key:'pre-workshop',label:'Pre-Workshop'},{key:'workshop',label:'Workshop'},{key:'post-workshop',label:'Post-Workshop'},{key:'check-in',label:'Check-in'}];
+  var sessTabs=sessTypes.map(function(t,i){
+    return '<button onclick="phSessTab(\''+eId+'\','+pi+',\''+t.key+'\')" id="pstab-'+eId+'-'+pi+'-'+t.key+'" style="padding:5px 12px;border-radius:20px;border:1px solid '+(i===0?'#1e293b':'#e2e8f0')+';background:'+(i===0?'#1e293b':'#fff')+';color:'+(i===0?'#fff':'#64748b')+';font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;">'+t.label+'</button>';
+  }).join('');
+  sessCard.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+    +'<div style="font-size:13px;font-weight:700;color:#1e293b;">Sessions & Engagements</div>'
+    +'<button onclick="phAddSessForm(\''+eId+'\','+pi+')" style="padding:5px 14px;background:#1e293b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">+ Add Session</button>'
+    +'</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">'+sessTabs+'</div>'
+    +'<div id="phsessadd-'+eId+'-'+pi+'" style="display:none;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:12px;"></div>'
+    +'<div id="phsesslist-'+eId+'-'+pi+'"></div>';
+  wrap.appendChild(sessCard);
+
+  // ── TASKS ──────────────────────────────────────────────────────────
+  var taskCard=document.createElement('div');
+  taskCard.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;';
+  var taskRows=tasks.length?tasks.map(function(t){
+    var done=t.status==='done'||t.status==='completed'||t.done;
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;">'
+      +'<div onclick="phToggleTask(\''+eId+'\','+pi+',\''+t.id+'\')" style="width:18px;height:18px;border-radius:4px;border:2px solid '+(done?'#22c55e':'#cbd5e1')+';background:'+(done?'#22c55e':'#fff')+';cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+(done?'<svg width="10" height="10" viewBox="0 0 10 10"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="#fff" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>':'')+'</div>'
+      +'<span style="font-size:13px;color:#1e293b;'+(done?'text-decoration:line-through;color:#94a3b8;':'')+'">'+( t.title||t.name||t.text||'Untitled task')+'</span>'
+      +'</div>';
+  }).join(''):'<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">No tasks yet</div>';
+  taskCard.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">'
+    +'<div style="font-size:13px;font-weight:700;color:#1e293b;">Phase Tasks <span style="font-size:12px;font-weight:400;color:#64748b;">'+doneCt+' of '+tasks.length+' complete</span></div>'
+    +'<button onclick="phAddTask(\''+eId+'\','+pi+')" style="padding:5px 12px;background:#f1f5f9;color:#1e293b;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">+ Add Task</button>'
+    +'</div>'
+    +'<div>'+taskRows+'</div>';
+  wrap.appendChild(taskCard);
+
   box.appendChild(wrap);
+
+  // Render session list
+  phRenderSessions(eId,pi,'all');
 }
+
+// ── GLOBAL HELPERS ─────────────────────────────────────────────────────
+
+window.savePhDet=function(eId,pi){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  if(!eng||!eng.phases||!eng.phases[pi])return;
+  var ph=eng.phases[pi];
+  ph.name=document.getElementById('phn-'+eId+'-'+pi).value;
+  ph.start=document.getElementById('phs-'+eId+'-'+pi).value;
+  ph.end=document.getElementById('phe-'+eId+'-'+pi).value;
+  ph.status=document.getElementById('phst-'+eId+'-'+pi).value;
+  ph.budget=parseFloat(document.getElementById('phb-'+eId+'-'+pi).value)||0;
+  ph.invoiced=parseFloat(document.getElementById('phi-'+eId+'-'+pi).value)||0;
+  var st=document.getElementById('phsave-'+eId+'-'+pi);
+  if(st){st.style.display='block';setTimeout(function(){st.style.display='none';},2000);}
+  if(typeof saveDB==='function')saveDB();
+  var c=document.getElementById('content');
+  if(c)injectPhaseHeader(c,eng);
+};
+
+window.phSearch=function(eId,pi,role){
+  var inp=document.getElementById('phsearch-'+eId+'-'+pi+'-'+role);
+  var drop=document.getElementById('phdrop-'+eId+'-'+pi+'-'+role);
+  if(!inp||!drop)return;
+  var q=(inp.value||'').toLowerCase();
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  var pool=[];
+  if(role==='member'){
+    pool=(DB.appUsers||[]).filter(function(u){return !ph.members.includes(u.id)&&(!q||u.name.toLowerCase().includes(q));});
+  }else{
+    pool=(DB.contacts||[]).filter(function(c){
+      var name=(c.name||(c.firstName||'')+(c.lastName?' '+c.lastName:'')).toLowerCase();
+      var inList=(role==='mentor'?ph.mentors:ph.mentees).includes(c.id);
+      return !inList&&(!q||name.includes(q));
+    });
+  }
+  drop.style.display=pool.length?'block':'none';
+  drop.innerHTML=pool.slice(0,8).map(function(r){
+    var name=role==='member'?r.name:(r.name||(r.firstName||'')+(r.lastName?' '+r.lastName:''));
+    return '<div onclick="phAdd(\''+eId+'\','+pi+',\''+role+'\',\''+r.id+'\')" style="padding:7px 12px;cursor:pointer;font-size:12px;border-bottom:1px solid #f1f5f9;color:#1e293b;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">'+name+'</div>';
+  }).join('');
+};
+
+window.phAdd=function(eId,pi,role,id){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  var arr=role==='mentor'?ph.mentors:role==='mentee'?ph.mentees:ph.members;
+  if(!arr.includes(id))arr.push(id);
+  if(typeof saveDB==='function')saveDB();
+  // Re-render people section
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
+window.phRemove=function(eId,pi,role,id){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  var arr=role==='mentor'?ph.mentors:role==='mentee'?ph.mentees:ph.members;
+  var idx=arr.indexOf(id);
+  if(idx>-1)arr.splice(idx,1);
+  if(typeof saveDB==='function')saveDB();
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
+window.phSessTab=function(eId,pi,key){
+  var types=['all','exec-mentoring','pre-workshop','workshop','post-workshop','check-in'];
+  types.forEach(function(t){
+    var btn=document.getElementById('pstab-'+eId+'-'+pi+'-'+t);
+    if(btn){btn.style.background=t===key?'#1e293b':'#fff';btn.style.color=t===key?'#fff':'#64748b';btn.style.borderColor=t===key?'#1e293b':'#e2e8f0';}
+  });
+  phRenderSessions(eId,pi,key);
+};
+
+window.phRenderSessions=function(eId,pi,filter){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  var list=document.getElementById('phsesslist-'+eId+'-'+pi);
+  if(!list)return;
+  var sessions=(ph.sessions||[]).filter(function(s){return filter==='all'||s.type===filter;});
+  if(!sessions.length){list.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">No sessions logged yet</div>';return;}
+  var typeLabels={'exec-mentoring':'Executive Mentoring','pre-workshop':'Pre-Workshop','workshop':'Workshop','post-workshop':'Post-Workshop','check-in':'Check-in'};
+  var typeColors={'exec-mentoring':'#0369a1','pre-workshop':'#d97706','workshop':'#7c3aed','post-workshop':'#0f766e','check-in':'#374151'};
+  var typeBg={'exec-mentoring':'#e0f2fe','pre-workshop':'#fef3c7','workshop':'#ede9fe','post-workshop':'#ccfbf1','check-in':'#f1f5f9'};
+  var statusColors={completed:'#22c55e',scheduled:'#f59e0b',cancelled:'#ef4444'};
+  list.innerHTML=sessions.map(function(s){
+    var tc=typeColors[s.type]||'#374151';var tb=typeBg[s.type]||'#f1f5f9';
+    var mentorRec=s.mentorId?(DB.contacts||[]).find(function(x){return x.id===s.mentorId;}):null;
+    var menteeRec=s.menteeId?(DB.contacts||[]).find(function(x){return x.id===s.menteeId;}):null;
+    var mentorName=mentorRec?(mentorRec.name||(mentorRec.firstName||'')+(mentorRec.lastName?' '+mentorRec.lastName:'')):'—';
+    var menteeName=menteeRec?(menteeRec.name||(menteeRec.firstName||'')+(menteeRec.lastName?' '+menteeRec.lastName:'')):'—';
+    return '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid #f1f5f9;">'
+      +'<div style="flex-shrink:0;width:36px;height:36px;border-radius:8px;background:'+tb+';display:flex;align-items:center;justify-content:center;font-size:16px;">'+(s.type==='exec-mentoring'?'🎓':s.type==='pre-workshop'?'📞':s.type==='workshop'?'🏛️':s.type==='post-workshop'?'📋':'✅')+'</div>'
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;">'
+      +'<span style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:10px;background:'+tb+';color:'+tc+';">'+(typeLabels[s.type]||s.type)+'</span>'
+      +'<span style="font-size:12px;color:#64748b;">'+( s.date||'—')+'</span>'
+      +(s.duration?'<span style="font-size:11px;color:#94a3b8;">'+s.duration+' min</span>':'')
+      +'<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+(statusColors[s.status]||'#64748b')+';">'+(s.status||'scheduled').toUpperCase()+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;color:#475569;">'
+      +(s.type==='exec-mentoring'?'<span>Mentor: <b>'+mentorName+'</b> &nbsp;|&nbsp; Mentee: <b>'+menteeName+'</b></span>':'')
+      +(s.notes?'<div style="margin-top:2px;color:#64748b;">'+s.notes+'</div>':'')
+      +'</div></div>'
+      +'<div onclick="phDelSession(\''+eId+'\','+pi+',\''+s.id+'\')" style="cursor:pointer;color:#94a3b8;font-size:18px;line-height:1;padding:2px 4px;" title="Remove">&times;</div>'
+      +'</div>';
+  }).join('');
+};
+
+window.phAddSessForm=function(eId,pi){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  var formEl=document.getElementById('phsessadd-'+eId+'-'+pi);
+  if(!formEl)return;
+  if(formEl.style.display!=='none'){formEl.style.display='none';return;}
+  var mentorOpts=(DB.contacts||[]).map(function(c){var n=c.name||(c.firstName||'')+(c.lastName?' '+c.lastName:'');return '<option value="'+c.id+'">'+n+'</option>';}).join('');
+  var menteeOpts=mentorOpts;
+  formEl.innerHTML='<div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:10px;">New Session</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Type</div>'
+    +'<select id="psntype-'+eId+'-'+pi+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">'
+    +'<option value="exec-mentoring">Executive Mentoring</option>'
+    +'<option value="pre-workshop">Pre-Workshop Call</option>'
+    +'<option value="workshop">Workshop</option>'
+    +'<option value="post-workshop">Post-Workshop Call</option>'
+    +'<option value="check-in">Check-in / Follow-up</option>'
+    +'</select></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Date</div>'
+    +'<input type="date" id="psndate-'+eId+'-'+pi+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;"></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Duration (min)</div>'
+    +'<input type="number" id="psndur-'+eId+'-'+pi+'" value="60" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;box-sizing:border-box;"></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Mentor</div>'
+    +'<select id="psnmentor-'+eId+'-'+pi+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;"><option value="">— None —</option>'+mentorOpts+'</select></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Mentee / Executive</div>'
+    +'<select id="psnmentee-'+eId+'-'+pi+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;"><option value="">— None —</option>'+menteeOpts+'</select></div>'
+    +'<div><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Status</div>'
+    +'<select id="psnstatus-'+eId+'-'+pi+'" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;">'
+    +'<option value="scheduled">Scheduled</option><option value="completed">Completed</option><option value="cancelled">Cancelled</option>'
+    +'</select></div>'
+    +'</div>'
+    +'<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:600;color:#64748b;text-transform:uppercase;margin-bottom:4px;">Notes</div>'
+    +'<textarea id="psnnotes-'+eId+'-'+pi+'" rows="2" placeholder="Session notes..." style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;outline:none;resize:vertical;box-sizing:border-box;"></textarea></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button onclick="phSaveSession(\''+eId+'\','+pi+')" style="padding:6px 18px;background:#1e293b;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Save Session</button>'
+    +'<button onclick="document.getElementById(\'phsessadd-'+eId+'-'+pi+'\').style.display=\'none\'" style="padding:6px 14px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;cursor:pointer;">Cancel</button>'
+    +'</div>';
+  formEl.style.display='block';
+};
+
+window.phSaveSession=function(eId,pi){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  if(!ph.sessions)ph.sessions=[];
+  ph.sessions.push({
+    id:'ps'+Date.now(),
+    type:document.getElementById('psntype-'+eId+'-'+pi).value,
+    date:document.getElementById('psndate-'+eId+'-'+pi).value,
+    duration:parseInt(document.getElementById('psndur-'+eId+'-'+pi).value)||60,
+    mentorId:document.getElementById('psnmentor-'+eId+'-'+pi).value||null,
+    menteeId:document.getElementById('psnmentee-'+eId+'-'+pi).value||null,
+    status:document.getElementById('psnstatus-'+eId+'-'+pi).value,
+    notes:document.getElementById('psnnotes-'+eId+'-'+pi).value
+  });
+  if(typeof saveDB==='function')saveDB();
+  document.getElementById('phsessadd-'+eId+'-'+pi).style.display='none';
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
+window.phDelSession=function(eId,pi,sid){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph||!ph.sessions)return;
+  ph.sessions=ph.sessions.filter(function(s){return s.id!==sid;});
+  if(typeof saveDB==='function')saveDB();
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
+window.phToggleTask=function(eId,pi,tid){
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph||!ph.tasks)return;
+  var t=ph.tasks.find(function(x){return x.id===tid;});
+  if(!t)return;
+  if(t.status==='done'||t.status==='completed'){t.status='pending';t.done=false;}
+  else{t.status='done';t.done=true;}
+  if(typeof saveDB==='function')saveDB();
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
+window.phAddTask=function(eId,pi){
+  var title=prompt('Task name:');
+  if(!title)return;
+  var eng=DB.engagements.find(function(x){return x.id===eId;});
+  var ph=eng&&eng.phases?eng.phases[pi]:null;
+  if(!ph)return;
+  if(!ph.tasks)ph.tasks=[];
+  ph.tasks.push({id:'pt'+Date.now(),title:title,status:'pending',done:false});
+  if(typeof saveDB==='function')saveDB();
+  var body=document.getElementById('pd-body');
+  if(body&&eng)rPhaseOverview(body,eng,ph,pi);
+};
+
 function rPhasePlan(box,e,ph,pi){
   var tasks=ph.tasks||[];
   var h="<div style=\"padding:20px;\">";
